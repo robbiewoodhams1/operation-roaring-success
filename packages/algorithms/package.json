@@ -1,5 +1,6 @@
 {
   "name": "@roaring/algorithms",
+  "type": "module",
   "version": "0.0.0",
   "private": true,
   "exports": {
@@ -9,7 +10,8 @@
     }
   },
   "scripts": {
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src"
   },
   "devDependencies": {
     "@roaring/config": "workspace:*",
