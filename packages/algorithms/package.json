@@ -1,0 +1,18 @@
+{
+  "name": "@roaring/algorithms",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@roaring/config": "workspace:*",
+    "typescript": "^5.9.3"
+  }
+}

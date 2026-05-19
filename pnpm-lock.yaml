@@ -92,6 +92,53 @@ importers:
         specifier: ^5
         version: 5.9.3
 
+  packages/algorithms:
+    devDependencies:
+      '@roaring/config':
+        specifier: workspace:*
+        version: link:../config
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/auth:
+    devDependencies:
+      '@roaring/config':
+        specifier: workspace:*
+        version: link:../config
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/config: {}
+
+  packages/db:
+    devDependencies:
+      '@roaring/config':
+        specifier: workspace:*
+        version: link:../config
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/telephony:
+    devDependencies:
+      '@roaring/config':
+        specifier: workspace:*
+        version: link:../config
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/ui:
+    devDependencies:
+      '@roaring/config':
+        specifier: workspace:*
+        version: link:../config
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
 packages:
 
   '@alloc/quick-lru@5.2.0':

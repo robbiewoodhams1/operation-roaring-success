@@ -1,0 +1,10 @@
+{
+  "name": "@roaring/config",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./tsconfig": "./tsconfig/base.json",
+    "./tsconfig/nextjs": "./tsconfig/nextjs.json",
+    "./tsconfig/package": "./tsconfig/package.json"
+  }
+}
