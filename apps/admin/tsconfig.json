@@ -2,6 +2,7 @@
   "extends": "../../packages/config/tsconfig/nextjs.json",
   "compilerOptions": {
     "noEmit": true,
+    "moduleResolution": "Bundler",
     "paths": {
       "@/*": ["./*"]
     }

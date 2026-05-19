@@ -3,10 +3,19 @@
   "type": "module",
   "version": "0.0.0",
   "private": true,
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.9.3",
+    "zod": "^4.0.0"
+  },
   "exports": {
     "./tsconfig": "./tsconfig/base.json",
     "./tsconfig/nextjs": "./tsconfig/nextjs.json",
     "./tsconfig/package": "./tsconfig/package.json",
-    "./eslint": "./eslint/base.js"
+    "./eslint": "./eslint/base.js",
+    "./env": {
+      "types": "./src/env.ts",
+      "default": "./src/env.ts"
+    }
   }
 }

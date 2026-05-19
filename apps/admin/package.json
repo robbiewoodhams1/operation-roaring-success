@@ -11,7 +11,14 @@
   "dependencies": {
     "next": "16.2.6",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "@roaring/algorithms": "workspace:*",
+    "@roaring/auth": "workspace:*",
+    "@roaring/config": "workspace:*",
+    "@roaring/db": "workspace:*",
+    "@roaring/telephony": "workspace:*",
+    "@roaring/ui": "workspace:*",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

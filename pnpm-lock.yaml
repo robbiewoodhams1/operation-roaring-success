@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      '@types/node':
+        specifier: ^20
+        version: 20.19.41
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.59.4
         version: 8.59.4(@typescript-eslint/parser@8.59.4(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3)
@@ -35,6 +38,24 @@ importers:
 
   apps/admin:
     dependencies:
+      '@roaring/algorithms':
+        specifier: workspace:*
+        version: link:../../packages/algorithms
+      '@roaring/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@roaring/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@roaring/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@roaring/telephony':
+        specifier: workspace:*
+        version: link:../../packages/telephony
+      '@roaring/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       next:
         specifier: 16.2.6
         version: 16.2.6(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -44,6 +65,9 @@ importers:
       react-dom:
         specifier: 19.2.4
         version: 19.2.4(react@19.2.4)
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@tailwindcss/postcss':
         specifier: ^4
@@ -72,6 +96,24 @@ importers:
 
   apps/platform:
     dependencies:
+      '@roaring/algorithms':
+        specifier: workspace:*
+        version: link:../../packages/algorithms
+      '@roaring/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@roaring/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@roaring/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@roaring/telephony':
+        specifier: workspace:*
+        version: link:../../packages/telephony
+      '@roaring/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       next:
         specifier: 16.2.6
         version: 16.2.6(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -81,6 +123,9 @@ importers:
       react-dom:
         specifier: 19.2.4
         version: 19.2.4(react@19.2.4)
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@tailwindcss/postcss':
         specifier: ^4
@@ -125,7 +170,17 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/config: {}
+  packages/config:
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.41
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      zod:
+        specifier: ^4.0.0
+        version: 4.4.3
 
   packages/db:
     devDependencies:
