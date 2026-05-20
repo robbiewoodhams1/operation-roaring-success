@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# @roaring/admin
+
+The internal admin dashboard. Used for back-office operations, data management, and monitoring — not intended for end users.
+
+## Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **React**: 19
+- **Styling**: TailwindCSS 4
+- **Auth / DB**: Supabase
+- **Language**: TypeScript (strict)
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# From the monorepo root
+pnpm install
+
+# Copy the env template and fill in your Supabase credentials
+cp lib/.env.example .env.local
+
+# Start the dev server
+pnpm --filter @roaring/admin dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Runs on **http://localhost:3001**.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Copy `lib/.env.example` to `.env.local` and set:
 
-## Learn More
+| Variable                        | Description                                                  |
+| ------------------------------- | ------------------------------------------------------------ |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase project URL                                         |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon key (safe to expose in browser)                         |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Service role key — server-side only, never expose publicly   |
+| `NEXT_PUBLIC_APP_URL`           | Public URL of this app (defaults to `http://localhost:3001`) |
 
-To learn more about Next.js, take a look at the following resources:
+All variables are validated at startup via `@roaring/config/env` using Zod. The app will throw on launch if any required variable is missing or malformed.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Command           | Description                   |
+| ----------------- | ----------------------------- |
+| `pnpm dev`        | Start dev server on port 3001 |
+| `pnpm build`      | Production build              |
+| `pnpm start`      | Start production server       |
+| `pnpm lint`       | Run ESLint                    |
+| `pnpm type-check` | TypeScript type checking      |
 
-## Deploy on Vercel
+## Key Files
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Path               | Description                             |
+| ------------------ | --------------------------------------- |
+| `app/layout.tsx`   | Root layout (fonts, global styles)      |
+| `app/page.tsx`     | Dashboard homepage                      |
+| `app/globals.css`  | Global CSS (Tailwind base)              |
+| `lib/env.ts`       | Typed env config (validated at startup) |
+| `lib/.env.example` | Environment variable template           |
+| `next.config.ts`   | Next.js configuration                   |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Shared Packages
+
+This app consumes all workspace packages:
+
+- `@roaring/algorithms` — business logic
+- `@roaring/auth` — authentication helpers
+- `@roaring/config` — TypeScript, ESLint, env validation
+- `@roaring/db` — database client and schema
+- `@roaring/telephony` — telephony integration
+- `@roaring/ui` — shared UI components
