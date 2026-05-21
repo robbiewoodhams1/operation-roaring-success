@@ -2,4 +2,6 @@
 // Database client, schema, and types
 // This file grows as you add Drizzle schema and Supabase client
 
-export {}
+export { db } from './client'
+export type { Database } from './client'
+export * from './schema'

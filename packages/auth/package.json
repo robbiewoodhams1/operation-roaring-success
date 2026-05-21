@@ -7,6 +7,18 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./client": {
+      "types": "./src/actions.client.ts",
+      "default": "./src/actions.client.ts"
+    },
+    "./server": {
+      "types": "./src/actions.server.ts",
+      "default": "./src/actions.server.ts"
+    },
+    "./middleware": {
+      "types": "./src/middleware.ts",
+      "default": "./src/middleware.ts"
     }
   },
   "scripts": {
@@ -16,11 +28,14 @@
   "devDependencies": {
     "@roaring/config": "workspace:*",
     "@types/node": "^25.9.1",
+    "next": "16.2.6",
     "tsx": "^4.22.3",
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@roaring/db": "workspace:^",
     "@supabase/ssr": "^0.10.3",
-    "@supabase/supabase-js": "^2.106.0"
+    "@supabase/supabase-js": "^2.106.0",
+    "drizzle-orm": "^0.45.2"
   }
 }
