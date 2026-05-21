@@ -8,5 +8,6 @@ export const env = createEnv(
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
     NEXT_PUBLIC_APP_URL: z.url().default('http://localhost:3000'),
     DATABASE_URL: z.string().min(1),
+    RESEND_API_KEY: z.string().min(1),
   })
 )
