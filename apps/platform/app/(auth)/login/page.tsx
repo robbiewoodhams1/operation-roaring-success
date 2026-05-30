@@ -2,9 +2,16 @@ import { redirect } from 'next/navigation'
 import { getUser } from '@roaring/auth/server'
 import { LoginForm } from './login-form'
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | undefined }>
+}) {
   const user = await getUser()
   if (user) redirect('/dashboard')
+
+  const params = await searchParams
+  const activated = params['activated'] === 'true'
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
@@ -13,6 +20,11 @@ export default async function LoginPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Roaring Success</h1>
           <p className="text-sm text-muted-foreground mt-2">Sign in to your account</p>
         </div>
+        {activated && (
+          <p className="text-sm text-center text-green-600 mb-4">
+            Account set up successfully — sign in to continue
+          </p>
+        )}
         <LoginForm />
       </div>
     </div>

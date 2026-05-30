@@ -1,0 +1,28 @@
+import Link from 'next/link'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+
+export default function UnauthorizedPage() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="w-full max-w-md px-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Access denied</CardTitle>
+            <CardDescription>
+              You don&apos;t have permission to access this page. Contact your administrator if you
+              think this is a mistake.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/dashboard">
+              <Button variant="outline" className="w-full">
+                Back to dashboard
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}

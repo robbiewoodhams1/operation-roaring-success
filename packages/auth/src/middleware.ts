@@ -33,10 +33,12 @@ export async function updateSession(request: NextRequest) {
   if (
     !user &&
     !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/auth') &&
     !request.nextUrl.pathname.startsWith('/reset-password') &&
+    !request.nextUrl.pathname.startsWith('/update-password') &&
     !request.nextUrl.pathname.startsWith('/confirm') &&
-    !request.nextUrl.pathname.startsWith('/update-password')
+    !request.nextUrl.pathname.startsWith('/pending-approval') &&
+    !request.nextUrl.pathname.startsWith('/unauthorized') &&
+    !request.nextUrl.pathname.startsWith('/rejected')
   ) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'

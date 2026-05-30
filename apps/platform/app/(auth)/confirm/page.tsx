@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { setPasswordAndActivate } from './actions'
 import { Button } from '@/components/ui/button'
@@ -10,15 +10,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 
 export default function ConfirmPage() {
   const router = useRouter()
+  const accessTokenRef = useRef<string | null>(null)
+  const refreshTokenRef = useRef<string | null>(null)
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [accessToken, setAccessToken] = useState<string | null>(null)
-  const [refreshToken, setRefreshToken] = useState<string | null>(null)
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    // Extract tokens from URL fragment
     const hash = window.location.hash
     const params = new URLSearchParams(hash.slice(1))
     const token = params.get('access_token')
@@ -30,11 +30,13 @@ export default function ConfirmPage() {
       return
     }
 
-    setAccessToken(token)
-    setRefreshToken(refresh)
+    accessTokenRef.current = token
+    refreshTokenRef.current = refresh
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setReady(true)
   }, [router])
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault()
     setError(null)
 
@@ -48,7 +50,7 @@ export default function ConfirmPage() {
       return
     }
 
-    if (!accessToken || !refreshToken) {
+    if (!accessTokenRef.current || !refreshTokenRef.current) {
       setError('Invalid invite link')
       return
     }
@@ -57,8 +59,8 @@ export default function ConfirmPage() {
 
     const { error } = await setPasswordAndActivate({
       password,
-      accessToken,
-      refreshToken,
+      accessToken: accessTokenRef.current,
+      refreshToken: refreshTokenRef.current,
     })
 
     if (error) {
@@ -67,8 +69,15 @@ export default function ConfirmPage() {
       return
     }
 
-    router.push('/dashboard')
-    router.refresh()
+    window.location.href = '/login?activated=true'
+  }
+
+  if (!ready) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Setting up your account...</p>
+      </div>
+    )
   }
 
   return (
@@ -111,7 +120,7 @@ export default function ConfirmPage() {
                 />
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button type="submit" className="w-full" disabled={loading || !accessToken}>
+              <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Setting up account...' : 'Set password'}
               </Button>
             </form>
