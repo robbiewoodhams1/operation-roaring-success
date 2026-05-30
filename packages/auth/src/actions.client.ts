@@ -50,3 +50,31 @@ export async function getSession() {
   if (error || !session) return null
   return session
 }
+
+export async function resetPassword(email: string): Promise<{ error: string | null }> {
+  const supabase = createClient()
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/update-password`,
+  })
+
+  return { error: error?.message ?? null }
+}
+
+export async function setSessionFromTokens(
+  accessToken: string,
+  refreshToken: string
+): Promise<{ error: string | null }> {
+  const supabase = createClient()
+  const { error } = await supabase.auth.setSession({
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  })
+  return { error: error?.message ?? null }
+}
+
+export async function updatePassword(password: string): Promise<{ error: string | null }> {
+  const supabase = createClient()
+  const { error } = await supabase.auth.updateUser({ password })
+  return { error: error?.message ?? null }
+}

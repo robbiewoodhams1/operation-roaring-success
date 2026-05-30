@@ -13,8 +13,21 @@
     "type-check": "tsc --noEmit",
     "lint": "eslint src"
   },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
   "devDependencies": {
     "@roaring/config": "workspace:*",
+    "@types/node": "^20.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "next": "16.2.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@roaring/auth": "workspace:^"
   }
 }

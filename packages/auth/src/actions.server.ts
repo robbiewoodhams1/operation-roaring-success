@@ -167,3 +167,13 @@ export async function activateUser(
 }
 
 export { createAdminClient } from './server'
+
+export async function sendPasswordResetEmail(email: string): Promise<{ error: string | null }> {
+  const supabase = createAdminClient()
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/update-password`,
+  })
+
+  return { error: error?.message ?? null }
+}
