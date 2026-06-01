@@ -1,9 +1,9 @@
 import { requireUser } from '@roaring/auth/server'
 import { db, customers } from '@roaring/db'
 import { eq } from 'drizzle-orm'
-import { CustomersTable } from './customers-table'
+import SalesForm from './sales-form'
 
-export default async function CustomersPage() {
+export default async function DealSheetPage() {
   const user = await requireUser()
 
   const allCustomers = await db.query.customers.findMany({
@@ -15,11 +15,11 @@ export default async function CustomersPage() {
     <div className="px-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold">Customers</h1>
-          <p className="text-sm text-muted-foreground mt-1">{allCustomers.length} accounts</p>
+          <h1 className="text-2xl font-semibold">Deal Sheet</h1>
+          <p className="text-sm text-muted-foreground mt-1">v1.0.12</p>
         </div>
       </div>
-      <CustomersTable customers={allCustomers} />
+      <SalesForm />
     </div>
   )
 }

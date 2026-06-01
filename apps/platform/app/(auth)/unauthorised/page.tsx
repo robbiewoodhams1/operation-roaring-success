@@ -15,7 +15,7 @@ export default function UnauthorizedPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Link href="/dashboard">
+            <Link href="/home">
               <Button variant="outline" className="w-full">
                 Back to dashboard
               </Button>

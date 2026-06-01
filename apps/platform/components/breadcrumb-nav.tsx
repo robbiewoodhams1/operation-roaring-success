@@ -12,7 +12,7 @@ import {
 import React from 'react'
 
 const routeLabels: Record<string, string> = {
-  dashboard: 'Home',
+  home: 'Home',
   customers: 'Customers',
   deals: 'Deals',
   provisioning: 'Provisioning',
@@ -23,6 +23,7 @@ const routeLabels: Record<string, string> = {
   users: 'Users',
   admin: 'Admin',
   new: 'New',
+  'deal-sheet': 'Deal Sheet',
 }
 
 function getLabel(segment: string): string {

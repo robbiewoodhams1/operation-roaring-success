@@ -8,7 +8,7 @@ export default async function LoginPage({
   searchParams: Promise<{ [key: string]: string | undefined }>
 }) {
   const user = await getUser()
-  if (user) redirect('/dashboard')
+  if (user) redirect('/home')
 
   const params = await searchParams
   const activated = params['activated'] === 'true'

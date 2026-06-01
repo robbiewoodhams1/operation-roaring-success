@@ -19,13 +19,10 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   }
 
   return (
-    <div className="p-6 max-w-3xl">
+    <div className="px-6 max-w-3xl">
       <div className="flex items-center gap-4 mb-8">
         <Link href="/customers">
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="size-4 mr-2" />
-            Back
-          </Button>
+          <ArrowLeft className="size-4" />
         </Link>
         <div>
           <h1 className="text-2xl font-semibold">

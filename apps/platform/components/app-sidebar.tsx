@@ -25,6 +25,7 @@ import {
   Target,
   ChartColumn,
   UserRoundPen,
+  FilePlusCorner,
 } from 'lucide-react'
 
 // Nav items with role requirements
@@ -47,13 +48,6 @@ const navItems = [
         active: true,
       },
       {
-        title: 'Deals',
-        href: '/deals',
-        icon: FileChartLine,
-        roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
-        active: true,
-      },
-      {
         title: 'Provisioning',
         href: '/provisioning',
         icon: PanelBottomOpen,
@@ -72,6 +66,25 @@ const navItems = [
         href: '/tech',
         icon: Package,
         roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
+        active: true,
+      },
+    ],
+  },
+  {
+    label: 'Sales',
+    items: [
+      {
+        title: 'Deal Sheet',
+        href: '/deal-sheet',
+        icon: FilePlusCorner,
+        roles: ['team_leader', 'manager', 'director', 'admin'],
+        active: true,
+      },
+      {
+        title: 'Deals',
+        href: '/deals',
+        icon: FileChartLine,
+        roles: ['manager', 'director', 'admin'],
         active: true,
       },
     ],

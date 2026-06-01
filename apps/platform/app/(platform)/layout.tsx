@@ -11,8 +11,10 @@ export default async function PlatformLayout({ children }: { children: React.Rea
       <AppSidebar user={user} />
       <SidebarInset>
         <header className="flex flex-row gap-3 p-3 items-center">
-          <SidebarTrigger />
-          <BreadcrumbNav />
+          <div className="flex items-center gap-2">
+            <SidebarTrigger className="-ml-1" />
+            <BreadcrumbNav />
+          </div>
         </header>
 
         <main className="flex-1">{children}</main>
