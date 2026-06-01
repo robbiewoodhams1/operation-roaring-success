@@ -22,8 +22,8 @@ export function CustomersTable({ customers }: { customers: Customer[] }) {
   const router = useRouter()
 
   return (
-    <div className="border rounded-lg overflow-hidden">
-      <Table>
+    <div className="border rounded-lg overflow-hidden overflow-x-auto">
+      <Table className="min-w-max">
         <TableHeader>
           <TableRow>
             <TableHead>Account</TableHead>

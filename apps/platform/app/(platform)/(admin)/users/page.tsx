@@ -3,6 +3,15 @@ import { db, users } from '@roaring/db'
 import { eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
 
 export default async function UsersPage() {
   const currentUser = await requireRole('admin')
@@ -13,7 +22,7 @@ export default async function UsersPage() {
   })
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
+    <div className="px-6 mx-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-semibold">Users</h1>
@@ -25,34 +34,32 @@ export default async function UsersPage() {
       </div>
 
       <div className="border rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 border-b">
-            <tr>
-              <th className="text-left px-4 py-3 font-medium">Name</th>
-              <th className="text-left px-4 py-3 font-medium">Email</th>
-              <th className="text-left px-4 py-3 font-medium">Role</th>
-              <th className="text-left px-4 py-3 font-medium">Status</th>
-              <th className="text-left px-4 py-3 font-medium">Joined</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Joined</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {allUsers.map((user) => (
-              <tr key={user.id} className="hover:bg-muted/30">
-                <td className="px-4 py-3 font-medium">{user.fullName}</td>
-                <td className="px-4 py-3 text-muted-foreground">{user.email}</td>
-                <td className="px-4 py-3">
-                  <span className="capitalize">{user.role.replace('_', ' ')}</span>
-                </td>
-                <td className="px-4 py-3">
+              <TableRow key={user.id}>
+                <TableCell className="font-medium">{user.fullName}</TableCell>
+                <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                <TableCell className="capitalize">{user.role.replace('_', ' ')}</TableCell>
+                <TableCell>
                   <StatusBadge approvalStatus={user.approvalStatus} isActive={user.isActive} />
-                </td>
-                <td className="px-4 py-3 text-muted-foreground">
+                </TableCell>
+                <TableCell className="text-muted-foreground">
                   {new Date(user.createdAt).toLocaleDateString('en-GB')}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
 
         {allUsers.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
@@ -67,21 +74,21 @@ export default async function UsersPage() {
 function StatusBadge({ approvalStatus, isActive }: { approvalStatus: string; isActive: boolean }) {
   if (!isActive && approvalStatus === 'pending') {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+      <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">
         Pending setup
-      </span>
+      </Badge>
     )
   }
   if (!isActive) {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+      <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
         Inactive
-      </span>
+      </Badge>
     )
   }
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+    <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
       Active
-    </span>
+    </Badge>
   )
 }
