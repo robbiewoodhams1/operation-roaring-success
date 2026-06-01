@@ -1,12 +1,12 @@
 import { requireUser } from '@roaring/auth/server'
 import { SignOutButton } from '@roaring/ui'
 
-export default async function DashboardPage() {
+export default async function DealsPage() {
   const user = await requireUser()
 
   return (
     <div className="p-8 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-semibold mb-6">Dashboard</h1>
+      <h1 className="text-2xl font-semibold mb-6">Deals</h1>
       <div className="border rounded-lg divide-y">
         <div className="flex px-4 py-3">
           <span className="text-muted-foreground w-36 shrink-0">Name</span>

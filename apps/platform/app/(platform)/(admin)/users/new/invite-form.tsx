@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import type { UserRole } from '@roaring/auth'
+import { Spinner } from '@/components/ui/spinner'
 
 const ROLES = [
   { value: 'agent', label: 'Agent' },
@@ -173,7 +174,7 @@ export function InviteUserForm({
           Cancel
         </Button>
         <Button type="submit" disabled={loading} className="flex-1">
-          {loading ? 'Sending invite...' : 'Send invite'}
+          {loading ? <Spinner /> : 'Send invite'}
         </Button>
       </div>
     </form>
