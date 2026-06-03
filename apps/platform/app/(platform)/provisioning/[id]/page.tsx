@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { ProvisioningEdit } from './provisioning-edit'
 
 const statusColours: Record<string, string> = {
   not_started: 'bg-gray-100 text-gray-700 border-gray-200',
@@ -88,6 +89,9 @@ export default async function ProvisioningDetailPage({
           </div>
         </div>
       </div>
+
+      {/* Editable provisioning sections */}
+      <ProvisioningEdit prov={prov} />
 
       <div className="grid grid-cols-1 gap-6">
         <Section title="Welcome Calls">
@@ -237,7 +241,7 @@ function Row({
   children,
 }: {
   label: string
-  value?: string | null
+  value?: string | null | undefined
   mono?: boolean
   children?: React.ReactNode
 }) {
