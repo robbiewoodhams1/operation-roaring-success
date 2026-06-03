@@ -27,6 +27,7 @@ import {
   UserRoundPen,
   FilePlusCorner,
   Router,
+  TriangleAlert,
 } from 'lucide-react'
 
 // Nav items with role requirements
@@ -73,6 +74,13 @@ const navItems = [
         title: 'Routers',
         href: '/routers',
         icon: Router,
+        roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
+        active: true,
+      },
+      {
+        title: 'Faults',
+        href: '/faults',
+        icon: TriangleAlert,
         roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
         active: true,
       },
