@@ -1,37 +1,45 @@
 import { requireUser } from '@roaring/auth/server'
-import { SignOutButton } from '@roaring/ui'
+import { db, deals, customers, dealPricing } from '@roaring/db'
+import { eq } from 'drizzle-orm'
+import { DealsTable } from './deals-table'
 
 export default async function DealsPage() {
   const user = await requireUser()
 
+  const allDeals = await db
+    .select({
+      id: deals.id,
+      dealDate: deals.dealDate,
+      status: deals.status,
+      dealType: deals.dealType,
+      salesAgent: deals.salesAgent,
+      closingAgent: deals.closingAgent,
+      softFacts: deals.softFacts,
+      customerId: deals.customerId,
+      companyName: customers.companyName,
+      firstName: customers.firstName,
+      lastName: customers.lastName,
+      accountNumber: customers.accountNumber,
+      bundlePrice: dealPricing.bundlePrice,
+      wholesaleCost: dealPricing.wholesaleCost,
+      monthlyGp: dealPricing.monthlyGp,
+      contractLength: dealPricing.contractLength,
+    })
+    .from(deals)
+    .leftJoin(customers, eq(deals.customerId, customers.id))
+    .leftJoin(dealPricing, eq(deals.id, dealPricing.dealId))
+    .where(eq(deals.tenantId, user.tenantId))
+    .orderBy(deals.dealDate)
+
   return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-semibold mb-6">Deals</h1>
-      <div className="border rounded-lg divide-y">
-        <div className="flex px-4 py-3">
-          <span className="text-muted-foreground w-36 shrink-0">Name</span>
-          <span className="font-medium">{user.fullName}</span>
-        </div>
-        <div className="flex px-4 py-3">
-          <span className="text-muted-foreground w-36 shrink-0">Email</span>
-          <span>{user.email}</span>
-        </div>
-        <div className="flex px-4 py-3">
-          <span className="text-muted-foreground w-36 shrink-0">Role</span>
-          <span className="capitalize">{user.role.replace('_', ' ')}</span>
-        </div>
-        <div className="flex px-4 py-3">
-          <span className="text-muted-foreground w-36 shrink-0">Tenant ID</span>
-          <span className="text-sm font-mono text-muted-foreground">{user.tenantId}</span>
-        </div>
-        <div className="flex px-4 py-3">
-          <span className="text-muted-foreground w-36 shrink-0">Status</span>
-          <span className="capitalize">{user.approvalStatus}</span>
-        </div>
-        <div className="flex px-4 py-3">
-          <SignOutButton className="cursor-pointer" />
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold">Deals</h1>
+          <p className="text-sm text-muted-foreground mt-1">{allDeals.length} deals</p>
         </div>
       </div>
+      <DealsTable deals={allDeals} />
     </div>
   )
 }
