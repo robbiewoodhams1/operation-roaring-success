@@ -26,6 +26,7 @@ import {
   ChartColumn,
   UserRoundPen,
   FilePlusCorner,
+  Router,
 } from 'lucide-react'
 
 // Nav items with role requirements
@@ -59,12 +60,19 @@ const navItems = [
         href: '/complaints',
         icon: SquareX,
         roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
-        active: true,
+        active: false,
       },
       {
         title: 'Tech',
         href: '/tech',
         icon: Package,
+        roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
+        active: false,
+      },
+      {
+        title: 'Routers',
+        href: '/routers',
+        icon: Router,
         roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
         active: true,
       },
