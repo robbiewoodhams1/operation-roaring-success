@@ -3,9 +3,9 @@ import { db, customers } from '@roaring/db'
 import { eq } from 'drizzle-orm'
 import SalesForm from './sales-form'
 
+// page.tsx
 export default async function DealSheetPage() {
   const user = await requireUser()
-
   const allCustomers = await db.query.customers.findMany({
     where: eq(customers.tenantId, user.tenantId),
     orderBy: (customers, { asc }) => [asc(customers.accountNumber)],
@@ -19,7 +19,7 @@ export default async function DealSheetPage() {
           <p className="text-sm text-muted-foreground mt-1">v1.0.12</p>
         </div>
       </div>
-      <SalesForm />
+      <SalesForm customers={allCustomers} tenantId={user.tenantId} createdBy={user.id} />
     </div>
   )
 }

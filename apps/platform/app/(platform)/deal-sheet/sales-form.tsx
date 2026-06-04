@@ -16,6 +16,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { AlertCircle } from 'lucide-react'
+import { submitDeal } from './actions'
 
 const SALES_AGENTS = [
   'Tiahh Price',
@@ -159,7 +160,28 @@ function PriceBreakdown({ lines }: { lines: { label: string; amount: number }[] 
   )
 }
 
-export default function SalesForm() {
+export default function SalesForm({
+  customers,
+  tenantId,
+  createdBy,
+}: {
+  customers: {
+    id: string
+    accountNumber: string
+    companyName: string | null
+    firstName: string
+    lastName: string
+    mobile: string | null
+    email: string | null
+    addressLine1: string | null
+    addressLine2: string | null
+    addressLine3: string | null
+    addressLine4: string | null
+    postcode: string | null
+  }[]
+  tenantId: string
+  createdBy: string
+}) {
   const [submitted, setSubmitted] = useState(false)
   const [errors, setErrors] = useState<Errors>({})
   const [submitting, setSubmitting] = useState(false)
@@ -169,7 +191,8 @@ export default function SalesForm() {
   const [closingAgent, setClosingAgent] = useState('')
   const [businessName, setBusinessName] = useState('')
   const [customerTitle, setCustomerTitle] = useState('')
-  const [customerName, setCustomerName] = useState('')
+  const [customerFirstName, setCustomerFirstName] = useState('')
+  const [customerLastName, setCustomerLastName] = useState('')
   const [additionalHolder, setAdditionalHolder] = useState('')
   const [landline, setLandline] = useState('')
   const [mobile, setMobile] = useState('')
@@ -220,6 +243,9 @@ export default function SalesForm() {
   const [bankChecked, setBankChecked] = useState('')
   const [dealType, setDealType] = useState('')
   const [welcomeCall, setWelcomeCall] = useState('')
+
+  const [existingCustomerId, setExistingCustomerId] = useState<string | null>(null)
+  const [customerSearch, setCustomerSearch] = useState('')
 
   // Wholesale lines
   const wholesaleLines: { label: string; amount: number }[] = []
@@ -284,7 +310,8 @@ export default function SalesForm() {
     if (!closingAgent) e.closingAgent = true
     if (!businessName.trim()) e.businessName = true
     if (!customerTitle) e.customerTitle = true
-    if (!customerName.trim()) e.customerName = true
+    if (!customerFirstName.trim()) e.customerFirstName = true
+    if (!customerLastName.trim()) e.customerLastName = true
     if (!landline.trim()) e.landline = true
     if (!postcode.trim()) e.postcode = true
     if (!address1.trim()) e.address1 = true
@@ -337,7 +364,8 @@ export default function SalesForm() {
     closingAgent,
     businessName,
     customerTitle,
-    customerName,
+    customerFirstName,
+    customerLastName,
     landline,
     postcode,
     address1,
@@ -398,29 +426,34 @@ export default function SalesForm() {
       return
     }
 
-    const phoneEquipment = PHONE_ITEMS.filter((item) => (phoneQtys[item.key] ?? 0) > 0)
-      .map((item) => `${item.label} × ${phoneQtys[item.key]}`)
-      .join(', ')
+    const phoneEquipment = PHONE_ITEMS.filter((item) => (phoneQtys[item.key] ?? 0) > 0).map(
+      (item) => ({ item: item.label, qty: phoneQtys[item.key]!, wholesale: item.wholesale })
+    )
 
-    const payload = {
-      date,
-      salesAgent,
-      closingAgent,
+    await submitDeal({
+      existingCustomerId,
+      tenantId,
+      createdBy,
       businessName,
-      customerTitle,
-      customerName,
-      additionalHolder,
-      landline,
+      customerFirstName,
+      customerLastName,
       mobile,
+      landline,
+      email: emailAddress,
       postcode,
       address1,
       town,
       county,
+      dealType,
+      date,
+      salesAgent,
+      closingAgent,
       tradingAddress,
-      lineChecked,
+      softFacts,
+      welcomeCall,
+      lineChecked: lineChecked === 'Line checked – BT Wholesale',
       connectionFee,
-      connectionFeeOther,
-      voice,
+      voice: voice === 'Yes',
       currentVoiceType,
       lineType,
       numLicenses,
@@ -428,12 +461,11 @@ export default function SalesForm() {
       voiceOption,
       callTariff,
       bbType,
+      installType,
+      serialNumber,
       normalBbSpeed,
       minSpeed,
       maxSpeed,
-      bbCost,
-      bundlePrice,
-      monthlyGp,
       intlPackage,
       intlPackageOther,
       intlLocation,
@@ -441,45 +473,24 @@ export default function SalesForm() {
       premiumPackage,
       premiumOther,
       phoneEquipment,
+      bbCost,
+      bundlePrice,
+      monthlyGp,
+      billAmount,
+      contractLength,
+      contractLengthOther,
       billingType,
       paymentMethod,
       emailAddress,
       phoneProvider,
       broadbandProvider,
-      billAmount,
-      contractLength,
-      contractLengthOther,
-      softFacts,
-      ddCollected,
+      ddCollected: ddCollected === 'Yes',
       invoiceName,
       bankBranch,
       sortCode,
       accountNumber,
-      bankChecked,
-      dealType,
-      welcomeCall,
-      installType,
-      serialNumber,
-    }
-
-    try {
-      const res = await fetch('/api/submit-deal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      const data = await res.json()
-      if (data.success) {
-        alert('✅ Deal submitted!')
-        window.location.reload()
-      } else {
-        alert('❌ Submission failed')
-        console.error(data.error)
-      }
-    } catch (err) {
-      alert('❌ Network error')
-      console.error(err)
-    }
+      bankChecked: bankChecked === 'Yes',
+    })
   }
 
   const e = errors
@@ -515,6 +526,79 @@ export default function SalesForm() {
           </CardContent>
         </Card>
       )}
+
+      <Card>
+        <CardContent className="pt-4 space-y-3">
+          <Label className="text-sm font-semibold">Existing Customer (optional)</Label>
+          <p className="text-xs text-muted-foreground">
+            Search to pre-fill customer details. Leave blank to create a new customer.
+          </p>
+          <Input
+            value={customerSearch}
+            onChange={(e) => setCustomerSearch(e.target.value)}
+            placeholder="Search by account number or name..."
+          />
+          {customerSearch.length > 1 && (
+            <div className="border rounded-md divide-y max-h-48 overflow-y-auto">
+              {customers
+                .filter(
+                  (c) =>
+                    c.accountNumber.toLowerCase().includes(customerSearch.toLowerCase()) ||
+                    (c.companyName ?? '').toLowerCase().includes(customerSearch.toLowerCase()) ||
+                    `${c.firstName} ${c.lastName}`
+                      .toLowerCase()
+                      .includes(customerSearch.toLowerCase())
+                )
+                .slice(0, 8)
+                .map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center justify-between"
+                    onClick={() => {
+                      setExistingCustomerId(c.id)
+                      setCustomerSearch(c.companyName ?? `${c.firstName} ${c.lastName}`)
+                      // Pre-fill fields
+                      setBusinessName(c.companyName ?? '')
+                      setCustomerFirstName(c.firstName)
+                      setCustomerLastName(c.lastName)
+                      setMobile(c.mobile ?? '')
+                      setLandline('')
+                      setPostcode(c.postcode ?? '')
+                      setAddress1(c.addressLine1 ?? '')
+                      setTown(c.addressLine2 ?? '')
+                      setCounty(c.addressLine3 ?? '')
+                    }}
+                  >
+                    <span className="font-medium">
+                      {c.companyName ?? `${c.firstName} ${c.lastName}`}
+                    </span>
+                    <span className="text-xs text-muted-foreground font-mono">
+                      {c.accountNumber}
+                    </span>
+                  </button>
+                ))}
+              {customers.filter(
+                (c) =>
+                  c.accountNumber.toLowerCase().includes(customerSearch.toLowerCase()) ||
+                  (c.companyName ?? '').toLowerCase().includes(customerSearch.toLowerCase()) ||
+                  `${c.firstName} ${c.lastName}`
+                    .toLowerCase()
+                    .includes(customerSearch.toLowerCase())
+              ).length === 0 && (
+                <p className="px-3 py-2 text-sm text-muted-foreground">
+                  No customers found — will create new.
+                </p>
+              )}
+            </div>
+          )}
+          {existingCustomerId && (
+            <p className="text-xs text-green-600 font-medium">
+              ✓ Existing customer selected — fields pre-filled.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       <SectionHeader title="Deal Information" />
       <QuestionCard label="Date" required error={!!e.date}>
@@ -601,15 +685,26 @@ export default function SalesForm() {
           </SelectContent>
         </Select>
       </QuestionCard>
-      <QuestionCard label="Customer Name" required error={!!e.customerName}>
+      <QuestionCard label="Customer First Name" required error={!!e.customerFirstName}>
         <Input
-          value={customerName}
+          value={customerFirstName}
           onChange={(e) => {
-            setCustomerName(e.target.value)
-            clear('customerName')
+            setCustomerFirstName(e.target.value)
+            clear('customerFirstName')
           }}
-          placeholder="Full name"
-          className={cn(errors.customerName && 'border-destructive')}
+          placeholder="e.g. Robbie"
+          className={cn(errors.customerFirstName && 'border-destructive')}
+        />
+      </QuestionCard>
+      <QuestionCard label="Customer Last Name" required error={!!e.customerLastName}>
+        <Input
+          value={customerLastName}
+          onChange={(e) => {
+            setCustomerLastName(e.target.value)
+            clear('customerLastName')
+          }}
+          placeholder="e.g. Woodhams"
+          className={cn(errors.customerLastName && 'border-destructive')}
         />
       </QuestionCard>
       <QuestionCard label="Additional Account Holder">
@@ -708,7 +803,7 @@ export default function SalesForm() {
       </QuestionCard>
       <QuestionCard label="Connection Fee" required error={!!e.connectionFee}>
         <SRadioGroup
-          options={['£149.99', 'Other']}
+          options={['149.99', 'Other']}
           value={connectionFee}
           onChange={(v) => {
             setConnectionFee(v)

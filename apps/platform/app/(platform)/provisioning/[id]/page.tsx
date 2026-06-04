@@ -93,68 +93,7 @@ export default async function ProvisioningDetailPage({
       {/* Editable provisioning sections */}
       <ProvisioningEdit prov={prov} />
 
-      <div className="grid grid-cols-1 gap-6">
-        <Section title="Welcome Calls">
-          <Row label="WC1 outcome">
-            {prov.wc1Outcome ? (
-              <Badge variant="outline" className={wcColours[prov.wc1Outcome]}>
-                {prov.wc1Outcome.replace('_', ' ')}
-              </Badge>
-            ) : (
-              '—'
-            )}
-          </Row>
-          <Row label="WC1 comments" value={prov.wc1Comments} />
-          <Row label="WC2 outcome">
-            {prov.wc2Outcome ? (
-              <Badge variant="outline" className={wcColours[prov.wc2Outcome]}>
-                {prov.wc2Outcome.replace('_', ' ')}
-              </Badge>
-            ) : (
-              '—'
-            )}
-          </Row>
-          <Row label="WC2 comments" value={prov.wc2Comments} />
-        </Section>
-
-        <Section title="Order">
-          <Row label="Status">
-            <Badge variant="outline" className={statusColours[prov.status]}>
-              {statusLabels[prov.status]}
-            </Badge>
-          </Row>
-          <Row label="Install type" value={prov.installType?.replace('_', ' ')} />
-          <Row label="BB applied for" value={prov.bbAppliedFor} />
-          <Row label="BB order ref" value={prov.bbOrderRef} mono />
-          <Row label="WHC reference" value={prov.whcReference} mono />
-          <Row
-            label="Date ordered"
-            value={prov.dateOrdered ? new Date(prov.dateOrdered).toLocaleDateString('en-GB') : null}
-          />
-          <Row
-            label="Proposed live date"
-            value={
-              prov.proposedLiveDate
-                ? new Date(prov.proposedLiveDate).toLocaleDateString('en-GB')
-                : null
-            }
-          />
-          <Row label="Order fault ref" value={prov.orderFaultRef} mono />
-          <Row label="Order comments" value={prov.orderComments} />
-          <Row label="Provisioner" value={prov.provisioner} />
-          <Row label="Last checked">
-            {prov.lastCheckedAt
-              ? `${new Date(prov.lastCheckedAt).toLocaleDateString('en-GB')}${prov.lastCheckedBy ? ` · ${prov.lastCheckedBy}` : ''}`
-              : '—'}
-          </Row>
-        </Section>
-
-        <Section title="Router">
-          <Row label="Dispatched" value={prov.routerDispatched ? 'Yes' : 'No'} />
-          <Row label="Dispatch ref" value={prov.routerDispatchRef} mono />
-          <Row label="Tracking number" value={prov.routerTrackingNumber} mono />
-        </Section>
-
+      <div className="grid grid-cols-1 gap-6 pt-6">
         {services && (
           <Section title="Services (from deal)">
             <Row label="Broadband type" value={services.broadbandType} />
