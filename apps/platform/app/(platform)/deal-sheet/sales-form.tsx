@@ -475,6 +475,7 @@ export default function SalesForm({
       phoneEquipment,
       bbCost,
       bundlePrice,
+      connectionFeeOther,
       monthlyGp,
       billAmount,
       contractLength,

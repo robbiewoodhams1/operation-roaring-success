@@ -10,6 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
 const statusColours: Record<string, string> = {
   not_started: 'bg-gray-100 text-gray-700 border-gray-200',
@@ -29,11 +30,12 @@ const statusLabels: Record<string, string> = {
   failed: 'Failed',
 }
 
-const wcColours: Record<string, string> = {
-  answered: 'bg-green-100 text-green-800 border-green-200',
-  call_back: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  no_answer: 'bg-gray-100 text-gray-700 border-gray-200',
+const serviceStatusColours: Record<string, string> = {
+  not_applied: 'bg-gray-100 text-gray-600 border-gray-200',
+  applied: 'bg-blue-100 text-blue-800 border-blue-200',
+  delayed: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   cancelled: 'bg-red-100 text-red-800 border-red-200',
+  live: 'bg-green-100 text-green-800 border-green-200',
 }
 
 type ProvisioningRow = {
@@ -45,17 +47,29 @@ type ProvisioningRow = {
   dateOrdered: string | null
   lastCheckedAt: Date | null
   lastCheckedBy: string | null
-  installType: string | null
   wc1Outcome: string | null
   wc2Outcome: string | null
   routerDispatched: boolean
-  bbAppliedFor: string | null
   accountNumber: string | null
   companyName: string | null
   firstName: string | null
   lastName: string | null
   salesAgent: string | null
   dealDate: string | null
+  bbStatus: string | null
+  whcStatus: string | null
+}
+
+function ServiceBadge({ status, label }: { status: string | null; label: string }) {
+  if (!status) return <span className="text-muted-foreground text-xs">—</span>
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <Badge variant="outline" className={cn('text-xs', serviceStatusColours[status])}>
+        {status.replace('_', ' ')}
+      </Badge>
+    </div>
+  )
 }
 
 export function ProvisioningTable({ rows }: { rows: ProvisioningRow[] }) {
@@ -68,15 +82,12 @@ export function ProvisioningTable({ rows }: { rows: ProvisioningRow[] }) {
           <TableRow>
             <TableHead>Account</TableHead>
             <TableHead>Customer</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>WC1</TableHead>
-            <TableHead>WC2</TableHead>
-            <TableHead>BB Applied For</TableHead>
+            <TableHead>Overall</TableHead>
+            <TableHead>BB</TableHead>
+            <TableHead>WHC</TableHead>
             <TableHead>Router</TableHead>
-            <TableHead>Install Type</TableHead>
             <TableHead>Proposed Live</TableHead>
             <TableHead>Date Ordered</TableHead>
-            <TableHead>Provisioner</TableHead>
             <TableHead>Last Checked</TableHead>
           </TableRow>
         </TableHeader>
@@ -97,24 +108,11 @@ export function ProvisioningTable({ rows }: { rows: ProvisioningRow[] }) {
                 </Badge>
               </TableCell>
               <TableCell>
-                {row.wc1Outcome ? (
-                  <Badge variant="outline" className={wcColours[row.wc1Outcome]}>
-                    {row.wc1Outcome.replace('_', ' ')}
-                  </Badge>
-                ) : (
-                  '—'
-                )}
+                <ServiceBadge status={row.bbStatus} label="BB" />
               </TableCell>
               <TableCell>
-                {row.wc2Outcome ? (
-                  <Badge variant="outline" className={wcColours[row.wc2Outcome]}>
-                    {row.wc2Outcome.replace('_', ' ')}
-                  </Badge>
-                ) : (
-                  '—'
-                )}
+                <ServiceBadge status={row.whcStatus} label="WHC" />
               </TableCell>
-              <TableCell>{row.bbAppliedFor ?? '—'}</TableCell>
               <TableCell>
                 {row.routerDispatched ? (
                   <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
@@ -124,9 +122,6 @@ export function ProvisioningTable({ rows }: { rows: ProvisioningRow[] }) {
                   '—'
                 )}
               </TableCell>
-              <TableCell className="capitalize">
-                {row.installType?.replace('_', ' ') ?? '—'}
-              </TableCell>
               <TableCell>
                 {row.proposedLiveDate
                   ? new Date(row.proposedLiveDate).toLocaleDateString('en-GB')
@@ -135,7 +130,6 @@ export function ProvisioningTable({ rows }: { rows: ProvisioningRow[] }) {
               <TableCell>
                 {row.dateOrdered ? new Date(row.dateOrdered).toLocaleDateString('en-GB') : '—'}
               </TableCell>
-              <TableCell>{row.provisioner ?? '—'}</TableCell>
               <TableCell className="text-muted-foreground text-xs">
                 {row.lastCheckedAt
                   ? `${new Date(row.lastCheckedAt).toLocaleDateString('en-GB')}${row.lastCheckedBy ? ` · ${row.lastCheckedBy}` : ''}`

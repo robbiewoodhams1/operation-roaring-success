@@ -1,6 +1,14 @@
 import { requireUser } from '@roaring/auth/server'
-import { db, provisioning, deals, customers, dealServices, dealPricing } from '@roaring/db'
-import { eq } from 'drizzle-orm'
+import {
+  db,
+  provisioning,
+  deals,
+  customers,
+  dealServices,
+  dealPricing,
+  provisioningServices,
+} from '@roaring/db'
+import { eq, asc } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
@@ -23,13 +31,6 @@ const statusLabels: Record<string, string> = {
   broadband_and_whc_applied: 'BB & WHC applied',
   live: 'Live',
   failed: 'Failed',
-}
-
-const wcColours: Record<string, string> = {
-  answered: 'bg-green-100 text-green-800 border-green-200',
-  call_back: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  no_answer: 'bg-gray-100 text-gray-700 border-gray-200',
-  cancelled: 'bg-red-100 text-red-800 border-red-200',
 }
 
 export default async function ProvisioningDetailPage({
@@ -66,6 +67,15 @@ export default async function ProvisioningDetailPage({
     where: eq(dealPricing.dealId, deal.id),
   })
 
+  const provServices = await db
+    .select()
+    .from(provisioningServices)
+    .where(eq(provisioningServices.provisioningId, prov.id))
+    .orderBy(asc(provisioningServices.serviceType), asc(provisioningServices.attempt))
+
+  const bbServices = provServices.filter((s) => s.serviceType === 'bb')
+  const whcServices = provServices.filter((s) => s.serviceType === 'whc')
+
   const customerName = customer.companyName ?? `${customer.firstName} ${customer.lastName}`
 
   return (
@@ -76,7 +86,9 @@ export default async function ProvisioningDetailPage({
         </Link>
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold">{customerName}</h1>
+            <Link href={`/customers/${customer.accountNumber}`}>
+              <h1 className="text-2xl font-semibold">{customerName}</h1>
+            </Link>
             <Badge variant="outline" className={statusColours[prov.status]}>
               {statusLabels[prov.status]}
             </Badge>
@@ -90,14 +102,12 @@ export default async function ProvisioningDetailPage({
         </div>
       </div>
 
-      {/* Editable provisioning sections */}
-      <ProvisioningEdit prov={prov} />
+      <ProvisioningEdit prov={prov} bbServices={bbServices} whcServices={whcServices} />
 
-      <div className="grid grid-cols-1 gap-6 pt-6">
+      <div className="grid grid-cols-1 gap-6 mt-6">
         {services && (
           <Section title="Services (from deal)">
             <Row label="Broadband type" value={services.broadbandType} />
-            <Row label="Install type (deal)" value={services.installType?.replace('_', ' ')} />
             <Row label="ONT serial" value={services.ontSerialNumber} mono />
             <Row label="Normal speed" value={services.normalSpeed} />
             <Row label="Min speed" value={services.minSpeed} />
@@ -136,25 +146,12 @@ export default async function ProvisioningDetailPage({
           <Row label="Contact" value={`${customer.firstName} ${customer.lastName}`} />
           <Row label="Mobile" value={customer.mobile} />
           <Row label="Email" value={customer.email} />
-          <Row
-            label="Address"
-            value={[
-              customer.addressLine1,
-              customer.addressLine2,
-              customer.addressLine3,
-              customer.addressLine4,
-              customer.postcode,
-            ]
-              .filter(Boolean)
-              .join(', ')}
-          />
         </Section>
 
         <Section title="Deal">
           <Row label="Sales agent" value={deal.salesAgent} />
           <Row label="Closing agent" value={deal.closingAgent} />
           <Row label="Deal type" value={deal.dealType} />
-          <Row label="Deal date" value={new Date(deal.dealDate).toLocaleDateString('en-GB')} />
           <Row label="Soft facts" value={deal.softFacts} />
         </Section>
       </div>
@@ -177,21 +174,15 @@ function Row({
   label,
   value,
   mono = false,
-  children,
 }: {
   label: string
-  value?: string | null | undefined
+  value: string | null | undefined
   mono?: boolean
-  children?: React.ReactNode
 }) {
   return (
-    <div className="flex px-4 py-3 items-center">
+    <div className="flex px-4 py-3">
       <span className="text-muted-foreground w-40 shrink-0 text-sm">{label}</span>
-      {children ? (
-        <div className="text-sm">{children}</div>
-      ) : (
-        <span className={`text-sm ${mono ? 'font-mono' : ''}`}>{value ?? '—'}</span>
-      )}
+      <span className={`text-sm ${mono ? 'font-mono' : ''}`}>{value ?? '—'}</span>
     </div>
   )
 }

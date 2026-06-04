@@ -1,7 +1,7 @@
 'use server'
 
-import { db, provisioning } from '@roaring/db'
-import { eq } from 'drizzle-orm'
+import { db, provisioning, provisioningServices } from '@roaring/db'
+import { eq, and } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 
 export async function updateProvisioning(
@@ -12,12 +12,8 @@ export async function updateProvisioning(
     wc2Outcome: string | null
     wc2Comments: string | null
     status: string
-    installType: string | null
-    bbAppliedFor: string | null
-    bbOrderRef: string | null
-    whcReference: string | null
-    dateOrdered: string | null
     proposedLiveDate: string | null
+    dateOrdered: string | null
     orderFaultRef: string | null
     orderComments: string | null
     provisioner: string | null
@@ -36,12 +32,8 @@ export async function updateProvisioning(
       wc2Outcome: (data.wc2Outcome || null) as any,
       wc2Comments: data.wc2Comments || null,
       status: data.status as any,
-      installType: (data.installType || null) as any,
-      bbAppliedFor: data.bbAppliedFor || null,
-      bbOrderRef: data.bbOrderRef || null,
-      whcReference: data.whcReference || null,
-      dateOrdered: data.dateOrdered || null,
       proposedLiveDate: data.proposedLiveDate || null,
+      dateOrdered: data.dateOrdered || null,
       orderFaultRef: data.orderFaultRef || null,
       orderComments: data.orderComments || null,
       provisioner: data.provisioner || null,
@@ -53,5 +45,58 @@ export async function updateProvisioning(
     })
     .where(eq(provisioning.id, id))
 
-  revalidatePath(`/provisioning`)
+  revalidatePath('/provisioning')
+}
+
+export async function updateProvisioningService(
+  id: string,
+  data: {
+    status: string
+    reference: string | null
+    dateOrdered: string | null
+    liveDate: string | null
+    lastCheckedAt: string | null
+    cancelledDate: string | null
+    cancelledBy: string | null
+    cancellationReason: string | null
+    delayedDate: string | null
+    presumedSolveDate: string | null
+    delayReason: string | null
+    notes: string | null
+  }
+) {
+  await db
+    .update(provisioningServices)
+    .set({
+      status: data.status as any,
+      reference: data.reference || null,
+      dateOrdered: data.dateOrdered || null,
+      liveDate: data.liveDate || null,
+      lastCheckedAt: data.lastCheckedAt || null,
+      cancelledDate: data.cancelledDate || null,
+      cancelledBy: (data.cancelledBy || null) as any,
+      cancellationReason: data.cancellationReason || null,
+      delayedDate: data.delayedDate || null,
+      presumedSolveDate: data.presumedSolveDate || null,
+      delayReason: data.delayReason || null,
+      notes: data.notes || null,
+    })
+    .where(eq(provisioningServices.id, id))
+
+  revalidatePath('/provisioning')
+}
+
+export async function addProvisioningServiceAttempt(
+  provisioningId: string,
+  serviceType: 'bb' | 'whc',
+  currentMaxAttempt: number
+) {
+  await db.insert(provisioningServices).values({
+    provisioningId,
+    serviceType,
+    status: 'not_applied',
+    attempt: currentMaxAttempt + 1,
+  })
+
+  revalidatePath('/provisioning')
 }

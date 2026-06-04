@@ -1,7 +1,7 @@
 import { requireUser } from '@roaring/auth/server'
-import { db, provisioning, deals, customers } from '@roaring/db'
-import { eq } from 'drizzle-orm'
-import { ProvisioningTable } from './provisioning-table'
+import { db, provisioning, deals, customers, provisioningServices } from '@roaring/db'
+import { eq, asc } from 'drizzle-orm'
+import { ProvisioningFilters } from './provisioning-filters'
 
 export default async function ProvisioningPage() {
   const user = await requireUser()
@@ -16,11 +16,9 @@ export default async function ProvisioningPage() {
       dateOrdered: provisioning.dateOrdered,
       lastCheckedAt: provisioning.lastCheckedAt,
       lastCheckedBy: provisioning.lastCheckedBy,
-      installType: provisioning.installType,
       wc1Outcome: provisioning.wc1Outcome,
       wc2Outcome: provisioning.wc2Outcome,
       routerDispatched: provisioning.routerDispatched,
-      bbAppliedFor: provisioning.bbAppliedFor,
       accountNumber: customers.accountNumber,
       companyName: customers.companyName,
       firstName: customers.firstName,
@@ -34,15 +32,37 @@ export default async function ProvisioningPage() {
     .where(eq(provisioning.tenantId, user.tenantId))
     .orderBy(provisioning.createdAt)
 
+  // Fetch latest service statuses for each provisioning record
+  const allServices = await db
+    .select()
+    .from(provisioningServices)
+    .orderBy(asc(provisioningServices.attempt))
+
+  // Map provisioning id → latest bb/whc status
+  const serviceMap: Record<string, { bbStatus: string | null; whcStatus: string | null }> = {}
+  for (const svc of allServices) {
+    if (!serviceMap[svc.provisioningId]) {
+      serviceMap[svc.provisioningId] = { bbStatus: null, whcStatus: null }
+    }
+    if (svc.serviceType === 'bb') serviceMap[svc.provisioningId].bbStatus = svc.status
+    if (svc.serviceType === 'whc') serviceMap[svc.provisioningId].whcStatus = svc.status
+  }
+
+  const rows = allProvisioning.map((p) => ({
+    ...p,
+    bbStatus: serviceMap[p.id]?.bbStatus ?? null,
+    whcStatus: serviceMap[p.id]?.whcStatus ?? null,
+  }))
+
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold">Provisioning</h1>
-          <p className="text-sm text-muted-foreground mt-1">{allProvisioning.length} orders</p>
+          <p className="text-sm text-muted-foreground mt-1">{rows.length} orders</p>
         </div>
       </div>
-      <ProvisioningTable rows={allProvisioning} />
+      <ProvisioningFilters rows={rows} />
     </div>
   )
 }

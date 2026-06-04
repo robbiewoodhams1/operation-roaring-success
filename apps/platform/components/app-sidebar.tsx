@@ -28,6 +28,7 @@ import {
   FilePlusCorner,
   Router,
   TriangleAlert,
+  Search,
 } from 'lucide-react'
 
 // Nav items with role requirements
@@ -100,6 +101,18 @@ const navItems = [
         title: 'Deals',
         href: '/deals',
         icon: FileChartLine,
+        roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
+        active: true,
+      },
+    ],
+  },
+  {
+    label: 'Tools',
+    items: [
+      {
+        title: 'Search',
+        href: '/search',
+        icon: Search,
         roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
         active: true,
       },

@@ -13,11 +13,16 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Pencil } from 'lucide-react'
-import { updateProvisioning } from './actions'
-import type { Provisioning } from '@roaring/db'
+import { Pencil, Plus, ChevronDown, ChevronUp } from 'lucide-react'
+import {
+  updateProvisioning,
+  updateProvisioningService,
+  addProvisioningServiceAttempt,
+} from './actions'
+import type { Provisioning, ProvisioningService } from '@roaring/db'
+import { cn } from '@/lib/utils'
 
-const statusColours: Record<string, string> = {
+const provStatusColours: Record<string, string> = {
   not_started: 'bg-gray-100 text-gray-700 border-gray-200',
   broadband_applied: 'bg-blue-100 text-blue-800 border-blue-200',
   whc_applied: 'bg-purple-100 text-purple-800 border-purple-200',
@@ -26,13 +31,21 @@ const statusColours: Record<string, string> = {
   failed: 'bg-red-100 text-red-800 border-red-200',
 }
 
-const statusLabels: Record<string, string> = {
+const provStatusLabels: Record<string, string> = {
   not_started: 'Not started',
   broadband_applied: 'BB applied',
   whc_applied: 'WHC applied',
   broadband_and_whc_applied: 'BB & WHC applied',
   live: 'Live',
   failed: 'Failed',
+}
+
+const serviceStatusColours: Record<string, string> = {
+  not_applied: 'bg-gray-100 text-gray-700 border-gray-200',
+  applied: 'bg-blue-100 text-blue-800 border-blue-200',
+  delayed: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  cancelled: 'bg-red-100 text-red-800 border-red-200',
+  live: 'bg-green-100 text-green-800 border-green-200',
 }
 
 const wcColours: Record<string, string> = {
@@ -43,7 +56,7 @@ const wcColours: Record<string, string> = {
 }
 
 const WC_OUTCOMES = ['call_back', 'answered', 'no_answer', 'cancelled']
-const STATUSES = [
+const PROV_STATUSES = [
   'not_started',
   'broadband_applied',
   'whc_applied',
@@ -51,18 +64,418 @@ const STATUSES = [
   'live',
   'failed',
 ]
-const INSTALL_TYPES = ['new_install', 'migration']
+const SERVICE_STATUSES = ['not_applied', 'applied', 'delayed', 'cancelled', 'live']
+const CANCELLED_BY_OPTIONS = ['customer', 'bt_wholesale', 'openreach', 'us']
 
 function formatDate(date: string | Date | null | undefined): string {
   if (!date) return ''
-  const d = new Date(date)
-  return d.toISOString().split('T')[0]
+  return new Date(date).toISOString().split('T')[0]
 }
 
-export function ProvisioningEdit({ prov }: { prov: Provisioning }) {
+// ── Service Panel ─────────────────────────────────────────────────────────────
+function ServicePanel({
+  service,
+  label,
+  onSave,
+  onAddAttempt,
+  isLatest,
+}: {
+  service: ProvisioningService
+  label: string
+  onSave: (id: string, data: any) => Promise<void>
+  onAddAttempt: () => Promise<void>
+  isLatest: boolean
+}) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [addingAttempt, setAddingAttempt] = useState(false)
+
+  const [form, setForm] = useState({
+    status: service.status as string,
+    reference: service.reference ?? '',
+    dateOrdered: formatDate(service.dateOrdered),
+    liveDate: formatDate(service.liveDate),
+    lastCheckedAt: formatDate(service.lastCheckedAt),
+    cancelledDate: formatDate(service.cancelledDate),
+    cancelledBy: service.cancelledBy ?? '',
+    cancellationReason: service.cancellationReason ?? '',
+    delayedDate: formatDate(service.delayedDate),
+    presumedSolveDate: formatDate(service.presumedSolveDate),
+    delayReason: service.delayReason ?? '',
+    notes: service.notes ?? '',
+  })
+
+  function update(field: string, value: string) {
+    setForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  async function handleSave() {
+    setSaving(true)
+    await onSave(service.id, {
+      status: form.status,
+      reference: form.reference || null,
+      dateOrdered: form.dateOrdered || null,
+      liveDate: form.liveDate || null,
+      lastCheckedAt: form.lastCheckedAt || null,
+      cancelledDate: form.cancelledDate || null,
+      cancelledBy: form.cancelledBy || null,
+      cancellationReason: form.cancellationReason || null,
+      delayedDate: form.delayedDate || null,
+      presumedSolveDate: form.presumedSolveDate || null,
+      delayReason: form.delayReason || null,
+      notes: form.notes || null,
+    })
+    setSaving(false)
+    setIsEditing(false)
+  }
+
+  function handleCancel() {
+    setForm({
+      status: service.status as string,
+      reference: service.reference ?? '',
+      dateOrdered: formatDate(service.dateOrdered),
+      liveDate: formatDate(service.liveDate),
+      lastCheckedAt: formatDate(service.lastCheckedAt),
+      cancelledDate: formatDate(service.cancelledDate),
+      cancelledBy: service.cancelledBy ?? '',
+      cancellationReason: service.cancellationReason ?? '',
+      delayedDate: formatDate(service.delayedDate),
+      presumedSolveDate: formatDate(service.presumedSolveDate),
+      delayReason: service.delayReason ?? '',
+      notes: service.notes ?? '',
+    })
+    setIsEditing(false)
+  }
+
+  const showCancelled = form.status === 'cancelled' || service.status === 'cancelled'
+  const showDelayed = form.status === 'delayed' || service.status === 'delayed'
+
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      <div className="px-4 py-3 border-b bg-muted/30 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h2 className="text-sm font-medium">{label}</h2>
+          {service.attempt > 1 && (
+            <span className="text-xs text-muted-foreground">Attempt {service.attempt}</span>
+          )}
+          <Badge variant="outline" className={serviceStatusColours[service.status]}>
+            {service.status.replace('_', ' ')}
+          </Badge>
+          {service.status === 'cancelled' && (
+            <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200 text-xs">
+              {service.cancelledBy?.replace('_', ' ') ?? 'unknown'}
+            </Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {isLatest && service.status === 'cancelled' && !isEditing && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={addingAttempt}
+              onClick={async () => {
+                setAddingAttempt(true)
+                await onAddAttempt()
+                setAddingAttempt(false)
+              }}
+            >
+              <Plus className="size-3 mr-1" />
+              Re-apply
+            </Button>
+          )}
+          {isEditing ? (
+            <>
+              <Button variant="outline" size="sm" onClick={handleCancel} disabled={saving}>
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleSave} disabled={saving}>
+                {saving ? 'Saving...' : 'Save'}
+              </Button>
+            </>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+              <Pencil className="size-3 mr-1" />
+              Edit
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="divide-y">
+        <Row label="Status">
+          {isEditing ? (
+            <Select value={form.status} onValueChange={(v) => update('status', v)}>
+              <SelectTrigger className="h-8 w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SERVICE_STATUSES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s.replace('_', ' ')}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Badge variant="outline" className={serviceStatusColours[form.status]}>
+              {form.status.replace('_', ' ')}
+            </Badge>
+          )}
+        </Row>
+
+        <Row label="Reference">
+          {isEditing ? (
+            <Input
+              value={form.reference}
+              onChange={(e) => update('reference', e.target.value)}
+              className="h-8 w-48 font-mono"
+              placeholder="e.g. BTWYPT690"
+            />
+          ) : (
+            <span className="font-mono text-sm">{form.reference || '—'}</span>
+          )}
+        </Row>
+
+        <Row label="Date ordered">
+          {isEditing ? (
+            <Input
+              type="date"
+              value={form.dateOrdered}
+              onChange={(e) => update('dateOrdered', e.target.value)}
+              className="h-8 w-48"
+            />
+          ) : (
+            <span className="text-sm">
+              {form.dateOrdered ? new Date(form.dateOrdered).toLocaleDateString('en-GB') : '—'}
+            </span>
+          )}
+        </Row>
+
+        <Row label="Live date">
+          {isEditing ? (
+            <Input
+              type="date"
+              value={form.liveDate}
+              onChange={(e) => update('liveDate', e.target.value)}
+              className="h-8 w-48"
+            />
+          ) : (
+            <span className="text-sm">
+              {form.liveDate ? new Date(form.liveDate).toLocaleDateString('en-GB') : '—'}
+            </span>
+          )}
+        </Row>
+
+        <Row label="Last checked">
+          {isEditing ? (
+            <Input
+              type="date"
+              value={form.lastCheckedAt}
+              onChange={(e) => update('lastCheckedAt', e.target.value)}
+              className="h-8 w-48"
+            />
+          ) : (
+            <span className="text-sm">
+              {form.lastCheckedAt ? new Date(form.lastCheckedAt).toLocaleDateString('en-GB') : '—'}
+            </span>
+          )}
+        </Row>
+
+        {(showCancelled || isEditing) && (
+          <>
+            <Row label="Cancelled date">
+              {isEditing ? (
+                <Input
+                  type="date"
+                  value={form.cancelledDate}
+                  onChange={(e) => update('cancelledDate', e.target.value)}
+                  className="h-8 w-48"
+                />
+              ) : (
+                <span className="text-sm">
+                  {form.cancelledDate
+                    ? new Date(form.cancelledDate).toLocaleDateString('en-GB')
+                    : '—'}
+                </span>
+              )}
+            </Row>
+            <Row label="Cancelled by">
+              {isEditing ? (
+                <Select value={form.cancelledBy} onValueChange={(v) => update('cancelledBy', v)}>
+                  <SelectTrigger className="h-8 w-48">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">—</SelectItem>
+                    {CANCELLED_BY_OPTIONS.map((o) => (
+                      <SelectItem key={o} value={o}>
+                        {o.replace('_', ' ')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <span className="text-sm capitalize">
+                  {form.cancelledBy?.replace('_', ' ') || '—'}
+                </span>
+              )}
+            </Row>
+            <Row label="Cancellation reason">
+              {isEditing ? (
+                <Textarea
+                  value={form.cancellationReason}
+                  onChange={(e) => update('cancellationReason', e.target.value)}
+                  className="min-h-16 text-sm"
+                  placeholder="Reason..."
+                />
+              ) : (
+                <span className="text-sm">{form.cancellationReason || '—'}</span>
+              )}
+            </Row>
+          </>
+        )}
+
+        {(showDelayed || isEditing) && (
+          <>
+            <Row label="Delayed date">
+              {isEditing ? (
+                <Input
+                  type="date"
+                  value={form.delayedDate}
+                  onChange={(e) => update('delayedDate', e.target.value)}
+                  className="h-8 w-48"
+                />
+              ) : (
+                <span className="text-sm">
+                  {form.delayedDate ? new Date(form.delayedDate).toLocaleDateString('en-GB') : '—'}
+                </span>
+              )}
+            </Row>
+            <Row label="Presumed solve">
+              {isEditing ? (
+                <Input
+                  type="date"
+                  value={form.presumedSolveDate}
+                  onChange={(e) => update('presumedSolveDate', e.target.value)}
+                  className="h-8 w-48"
+                />
+              ) : (
+                <span className="text-sm">
+                  {form.presumedSolveDate
+                    ? new Date(form.presumedSolveDate).toLocaleDateString('en-GB')
+                    : '—'}
+                </span>
+              )}
+            </Row>
+            <Row label="Delay reason">
+              {isEditing ? (
+                <Textarea
+                  value={form.delayReason}
+                  onChange={(e) => update('delayReason', e.target.value)}
+                  className="min-h-16 text-sm"
+                  placeholder="Reason..."
+                />
+              ) : (
+                <span className="text-sm">{form.delayReason || '—'}</span>
+              )}
+            </Row>
+          </>
+        )}
+
+        <Row label="Notes">
+          {isEditing ? (
+            <Textarea
+              value={form.notes}
+              onChange={(e) => update('notes', e.target.value)}
+              className="min-h-16 text-sm"
+              placeholder="Any notes..."
+            />
+          ) : (
+            <span className="text-sm">{form.notes || '—'}</span>
+          )}
+        </Row>
+      </div>
+    </div>
+  )
+}
+
+// ── Service History ───────────────────────────────────────────────────────────
+function ServiceHistory({ services, label }: { services: ProvisioningService[]; label: string }) {
+  const [open, setOpen] = useState(false)
+  const history = services.slice(0, -1) // all but latest
+
+  if (history.length === 0) return null
+
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      <button
+        className="w-full px-4 py-3 flex items-center justify-between bg-muted/20 hover:bg-muted/40 transition-colors"
+        onClick={() => setOpen(!open)}
+      >
+        <span className="text-sm font-medium text-muted-foreground">
+          {label} history ({history.length} previous attempt{history.length !== 1 ? 's' : ''})
+        </span>
+        {open ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+      </button>
+      {open && (
+        <div className="divide-y">
+          {history.map((s) => (
+            <div key={s.id} className="px-4 py-3 space-y-1 bg-muted/10">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium">Attempt {s.attempt}</span>
+                <Badge variant="outline" className={cn(serviceStatusColours[s.status], 'text-xs')}>
+                  {s.status.replace('_', ' ')}
+                </Badge>
+                {s.cancelledBy && (
+                  <span className="text-xs text-muted-foreground">
+                    by {s.cancelledBy.replace('_', ' ')}
+                  </span>
+                )}
+              </div>
+              {s.reference && (
+                <p className="text-xs font-mono text-muted-foreground">Ref: {s.reference}</p>
+              )}
+              {s.dateOrdered && (
+                <p className="text-xs text-muted-foreground">
+                  Ordered: {new Date(s.dateOrdered).toLocaleDateString('en-GB')}
+                </p>
+              )}
+              {s.cancelledDate && (
+                <p className="text-xs text-muted-foreground">
+                  Cancelled: {new Date(s.cancelledDate).toLocaleDateString('en-GB')}
+                </p>
+              )}
+              {s.cancellationReason && (
+                <p className="text-xs text-muted-foreground">Reason: {s.cancellationReason}</p>
+              )}
+              {s.delayReason && (
+                <p className="text-xs text-muted-foreground">Delay: {s.delayReason}</p>
+              )}
+              {s.notes && <p className="text-xs text-muted-foreground">Notes: {s.notes}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
+export function ProvisioningEdit({
+  prov,
+  bbServices,
+  whcServices,
+}: {
+  prov: Provisioning
+  bbServices: ProvisioningService[]
+  whcServices: ProvisioningService[]
+}) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  const latestBb = bbServices[bbServices.length - 1]
+  const latestWhc = whcServices[whcServices.length - 1]
 
   const [form, setForm] = useState({
     wc1Outcome: prov.wc1Outcome ?? '',
@@ -70,12 +483,8 @@ export function ProvisioningEdit({ prov }: { prov: Provisioning }) {
     wc2Outcome: prov.wc2Outcome ?? '',
     wc2Comments: prov.wc2Comments ?? '',
     status: prov.status as string,
-    installType: prov.installType ?? '',
-    bbAppliedFor: prov.bbAppliedFor ?? '',
-    bbOrderRef: prov.bbOrderRef ?? '',
-    whcReference: prov.whcReference ?? '',
-    dateOrdered: formatDate(prov.dateOrdered),
     proposedLiveDate: formatDate(prov.proposedLiveDate),
+    dateOrdered: formatDate(prov.dateOrdered),
     orderFaultRef: prov.orderFaultRef ?? '',
     orderComments: prov.orderComments ?? '',
     provisioner: prov.provisioner ?? '',
@@ -97,13 +506,9 @@ export function ProvisioningEdit({ prov }: { prov: Provisioning }) {
       wc1Comments: form.wc1Comments || null,
       wc2Outcome: form.wc2Outcome || null,
       wc2Comments: form.wc2Comments || null,
-      status: form.status ?? 'not_started',
-      installType: form.installType || null,
-      bbAppliedFor: form.bbAppliedFor || null,
-      bbOrderRef: form.bbOrderRef || null,
-      whcReference: form.whcReference || null,
-      dateOrdered: form.dateOrdered || null,
+      status: form.status,
       proposedLiveDate: form.proposedLiveDate || null,
+      dateOrdered: form.dateOrdered || null,
       orderFaultRef: form.orderFaultRef || null,
       orderComments: form.orderComments || null,
       provisioner: form.provisioner || null,
@@ -125,12 +530,8 @@ export function ProvisioningEdit({ prov }: { prov: Provisioning }) {
       wc2Outcome: prov.wc2Outcome ?? '',
       wc2Comments: prov.wc2Comments ?? '',
       status: prov.status as string,
-      installType: prov.installType ?? '',
-      bbAppliedFor: prov.bbAppliedFor ?? '',
-      bbOrderRef: prov.bbOrderRef ?? '',
-      whcReference: prov.whcReference ?? '',
-      dateOrdered: formatDate(prov.dateOrdered),
       proposedLiveDate: formatDate(prov.proposedLiveDate),
+      dateOrdered: formatDate(prov.dateOrdered),
       orderFaultRef: prov.orderFaultRef ?? '',
       orderComments: prov.orderComments ?? '',
       provisioner: prov.provisioner ?? '',
@@ -144,332 +545,312 @@ export function ProvisioningEdit({ prov }: { prov: Provisioning }) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Edit / Save / Cancel buttons */}
-      <div className="flex justify-end gap-2">
-        {isEditing ? (
-          <>
-            <Button variant="outline" onClick={handleCancel} disabled={saving}>
-              Cancel
+    <div className="space-y-6 pb-6">
+      {/* BB Service */}
+      {latestBb && (
+        <>
+          <ServicePanel
+            service={latestBb}
+            label="Broadband"
+            isLatest
+            onSave={async (id, data) => {
+              await updateProvisioningService(id, data)
+              router.refresh()
+            }}
+            onAddAttempt={async () => {
+              await addProvisioningServiceAttempt(prov.id, 'bb', latestBb.attempt)
+              router.refresh()
+            }}
+          />
+          <ServiceHistory services={bbServices} label="Broadband" />
+        </>
+      )}
+
+      {/* WHC Service */}
+      {latestWhc && (
+        <>
+          <ServicePanel
+            service={latestWhc}
+            label="WHC"
+            isLatest
+            onSave={async (id, data) => {
+              await updateProvisioningService(id, data)
+              router.refresh()
+            }}
+            onAddAttempt={async () => {
+              await addProvisioningServiceAttempt(prov.id, 'whc', latestWhc.attempt)
+              router.refresh()
+            }}
+          />
+          <ServiceHistory services={whcServices} label="WHC" />
+        </>
+      )}
+
+      {/* Overall provisioning */}
+      <div className="border rounded-lg overflow-hidden">
+        <div className="px-4 py-3 border-b bg-muted/30 flex items-center justify-between">
+          <h2 className="text-sm font-medium">Order</h2>
+          {isEditing ? (
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleCancel} disabled={saving}>
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleSave} disabled={saving}>
+                {saving ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+              <Pencil className="size-3 mr-1" />
+              Edit
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? 'Saving...' : 'Save changes'}
-            </Button>
-          </>
-        ) : (
-          <Button variant="outline" onClick={() => setIsEditing(true)}>
-            <Pencil className="size-4 mr-2" />
-            Edit
-          </Button>
-        )}
+          )}
+        </div>
+        <div className="divide-y">
+          <Row label="Overall status">
+            {isEditing ? (
+              <Select value={form.status} onValueChange={(v) => update('status', v)}>
+                <SelectTrigger className="h-8 w-56">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROV_STATUSES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {provStatusLabels[s]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Badge variant="outline" className={provStatusColours[form.status]}>
+                {provStatusLabels[form.status]}
+              </Badge>
+            )}
+          </Row>
+          <Row label="Proposed live date">
+            {isEditing ? (
+              <Input
+                type="date"
+                value={form.proposedLiveDate}
+                onChange={(e) => update('proposedLiveDate', e.target.value)}
+                className="h-8 w-48"
+              />
+            ) : (
+              <span className="text-sm">
+                {form.proposedLiveDate
+                  ? new Date(form.proposedLiveDate).toLocaleDateString('en-GB')
+                  : '—'}
+              </span>
+            )}
+          </Row>
+          <Row label="Date ordered">
+            {isEditing ? (
+              <Input
+                type="date"
+                value={form.dateOrdered}
+                onChange={(e) => update('dateOrdered', e.target.value)}
+                className="h-8 w-48"
+              />
+            ) : (
+              <span className="text-sm">
+                {form.dateOrdered ? new Date(form.dateOrdered).toLocaleDateString('en-GB') : '—'}
+              </span>
+            )}
+          </Row>
+          <Row label="Order fault ref">
+            {isEditing ? (
+              <Input
+                value={form.orderFaultRef}
+                onChange={(e) => update('orderFaultRef', e.target.value)}
+                className="h-8 w-48 font-mono"
+                placeholder="Fault ref"
+              />
+            ) : (
+              <span className="text-sm font-mono">{form.orderFaultRef || '—'}</span>
+            )}
+          </Row>
+          <Row label="Order comments">
+            {isEditing ? (
+              <Textarea
+                value={form.orderComments}
+                onChange={(e) => update('orderComments', e.target.value)}
+                className="min-h-16 text-sm"
+              />
+            ) : (
+              <span className="text-sm">{form.orderComments || '—'}</span>
+            )}
+          </Row>
+          <Row label="Provisioner">
+            {isEditing ? (
+              <Input
+                value={form.provisioner}
+                onChange={(e) => update('provisioner', e.target.value)}
+                className="h-8 w-48"
+              />
+            ) : (
+              <span className="text-sm">{form.provisioner || '—'}</span>
+            )}
+          </Row>
+          <Row label="Last checked at">
+            {isEditing ? (
+              <Input
+                type="date"
+                value={form.lastCheckedAt}
+                onChange={(e) => update('lastCheckedAt', e.target.value)}
+                className="h-8 w-48"
+              />
+            ) : (
+              <span className="text-sm">
+                {form.lastCheckedAt
+                  ? new Date(form.lastCheckedAt).toLocaleDateString('en-GB')
+                  : '—'}
+              </span>
+            )}
+          </Row>
+          <Row label="Last checked by">
+            {isEditing ? (
+              <Input
+                value={form.lastCheckedBy}
+                onChange={(e) => update('lastCheckedBy', e.target.value)}
+                className="h-8 w-48"
+              />
+            ) : (
+              <span className="text-sm">{form.lastCheckedBy || '—'}</span>
+            )}
+          </Row>
+        </div>
       </div>
 
       {/* Welcome Calls */}
-      <Section title="Welcome Calls">
-        <Row label="WC1 outcome">
-          {isEditing ? (
-            <Select value={form.wc1Outcome} onValueChange={(v) => update('wc1Outcome', v)}>
-              <SelectTrigger className="h-8 w-48">
-                <SelectValue placeholder="Select outcome" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">—</SelectItem>
-                {WC_OUTCOMES.map((o) => (
-                  <SelectItem key={o} value={o}>
-                    {o.replace('_', ' ')}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : form.wc1Outcome ? (
-            <Badge variant="outline" className={wcColours[form.wc1Outcome]}>
-              {form.wc1Outcome.replace('_', ' ')}
-            </Badge>
-          ) : (
-            '—'
-          )}
-        </Row>
-        <Row label="WC1 comments">
-          {isEditing ? (
-            <Textarea
-              value={form.wc1Comments}
-              onChange={(e) => update('wc1Comments', e.target.value)}
-              className="min-h-16 text-sm"
-              placeholder="Add comments..."
-            />
-          ) : (
-            form.wc1Comments || '—'
-          )}
-        </Row>
-        <Row label="WC2 outcome">
-          {isEditing ? (
-            <Select value={form.wc2Outcome} onValueChange={(v) => update('wc2Outcome', v)}>
-              <SelectTrigger className="h-8 w-48">
-                <SelectValue placeholder="Select outcome" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">—</SelectItem>
-                {WC_OUTCOMES.map((o) => (
-                  <SelectItem key={o} value={o}>
-                    {o.replace('_', ' ')}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : form.wc2Outcome ? (
-            <Badge variant="outline" className={wcColours[form.wc2Outcome]}>
-              {form.wc2Outcome.replace('_', ' ')}
-            </Badge>
-          ) : (
-            '—'
-          )}
-        </Row>
-        <Row label="WC2 comments">
-          {isEditing ? (
-            <Textarea
-              value={form.wc2Comments}
-              onChange={(e) => update('wc2Comments', e.target.value)}
-              className="min-h-16 text-sm"
-              placeholder="Add comments..."
-            />
-          ) : (
-            form.wc2Comments || '—'
-          )}
-        </Row>
-      </Section>
-
-      {/* Order */}
-      <Section title="Order">
-        <Row label="Status">
-          {isEditing ? (
-            <Select value={form.status} onValueChange={(v) => update('status', v)}>
-              <SelectTrigger className="h-8 w-56">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUSES.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {statusLabels[s]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <Badge variant="outline" className={statusColours[form.status]}>
-              {statusLabels[form.status]}
-            </Badge>
-          )}
-        </Row>
-        <Row label="Install type">
-          {isEditing ? (
-            <Select value={form.installType} onValueChange={(v) => update('installType', v)}>
-              <SelectTrigger className="h-8 w-48">
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">—</SelectItem>
-                {INSTALL_TYPES.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {t.replace('_', ' ')}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : form.installType ? (
-            form.installType.replace('_', ' ')
-          ) : (
-            '—'
-          )}
-        </Row>
-        <Row label="BB applied for">
-          {isEditing ? (
-            <Input
-              value={form.bbAppliedFor}
-              onChange={(e) => update('bbAppliedFor', e.target.value)}
-              className="h-8 w-48"
-              placeholder="e.g. FTTP"
-            />
-          ) : (
-            form.bbAppliedFor || '—'
-          )}
-        </Row>
-        <Row label="BB order ref">
-          {isEditing ? (
-            <Input
-              value={form.bbOrderRef}
-              onChange={(e) => update('bbOrderRef', e.target.value)}
-              className="h-8 w-48 font-mono"
-              placeholder="e.g. BTWYPT690"
-            />
-          ) : (
-            <span className="font-mono">{form.bbOrderRef || '—'}</span>
-          )}
-        </Row>
-        <Row label="WHC reference">
-          {isEditing ? (
-            <Input
-              value={form.whcReference}
-              onChange={(e) => update('whcReference', e.target.value)}
-              className="h-8 w-48 font-mono"
-              placeholder="e.g. BTWYPT980"
-            />
-          ) : (
-            <span className="font-mono">{form.whcReference || '—'}</span>
-          )}
-        </Row>
-        <Row label="Date ordered">
-          {isEditing ? (
-            <Input
-              type="date"
-              value={form.dateOrdered}
-              onChange={(e) => update('dateOrdered', e.target.value)}
-              className="h-8 w-48"
-            />
-          ) : form.dateOrdered ? (
-            new Date(form.dateOrdered).toLocaleDateString('en-GB')
-          ) : (
-            '—'
-          )}
-        </Row>
-        <Row label="Proposed live date">
-          {isEditing ? (
-            <Input
-              type="date"
-              value={form.proposedLiveDate}
-              onChange={(e) => update('proposedLiveDate', e.target.value)}
-              className="h-8 w-48"
-            />
-          ) : form.proposedLiveDate ? (
-            new Date(form.proposedLiveDate).toLocaleDateString('en-GB')
-          ) : (
-            '—'
-          )}
-        </Row>
-        <Row label="Order fault ref">
-          {isEditing ? (
-            <Input
-              value={form.orderFaultRef}
-              onChange={(e) => update('orderFaultRef', e.target.value)}
-              className="h-8 w-48 font-mono"
-              placeholder="Fault ref"
-            />
-          ) : (
-            <span className="font-mono">{form.orderFaultRef || '—'}</span>
-          )}
-        </Row>
-        <Row label="Order comments">
-          {isEditing ? (
-            <Textarea
-              value={form.orderComments}
-              onChange={(e) => update('orderComments', e.target.value)}
-              className="min-h-16 text-sm"
-              placeholder="Add comments..."
-            />
-          ) : (
-            form.orderComments || '—'
-          )}
-        </Row>
-        <Row label="Provisioner">
-          {isEditing ? (
-            <Input
-              value={form.provisioner}
-              onChange={(e) => update('provisioner', e.target.value)}
-              className="h-8 w-48"
-              placeholder="Name"
-            />
-          ) : (
-            form.provisioner || '—'
-          )}
-        </Row>
-        <Row label="Last checked at">
-          {isEditing ? (
-            <Input
-              type="date"
-              value={form.lastCheckedAt}
-              onChange={(e) => update('lastCheckedAt', e.target.value)}
-              className="h-8 w-48"
-            />
-          ) : form.lastCheckedAt ? (
-            new Date(form.lastCheckedAt).toLocaleDateString('en-GB')
-          ) : (
-            '—'
-          )}
-        </Row>
-        <Row label="Last checked by">
-          {isEditing ? (
-            <Input
-              value={form.lastCheckedBy}
-              onChange={(e) => update('lastCheckedBy', e.target.value)}
-              className="h-8 w-48"
-              placeholder="Name"
-            />
-          ) : (
-            form.lastCheckedBy || '—'
-          )}
-        </Row>
-      </Section>
+      <div className="border rounded-lg overflow-hidden">
+        <div className="px-4 py-3 border-b bg-muted/30">
+          <h2 className="text-sm font-medium">Welcome Calls</h2>
+        </div>
+        <div className="divide-y">
+          <Row label="WC1 outcome">
+            {isEditing ? (
+              <Select value={form.wc1Outcome} onValueChange={(v) => update('wc1Outcome', v)}>
+                <SelectTrigger className="h-8 w-48">
+                  <SelectValue placeholder="Select outcome" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">—</SelectItem>
+                  {WC_OUTCOMES.map((o) => (
+                    <SelectItem key={o} value={o}>
+                      {o.replace('_', ' ')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : form.wc1Outcome ? (
+              <Badge variant="outline" className={wcColours[form.wc1Outcome]}>
+                {form.wc1Outcome.replace('_', ' ')}
+              </Badge>
+            ) : (
+              '—'
+            )}
+          </Row>
+          <Row label="WC1 comments">
+            {isEditing ? (
+              <Textarea
+                value={form.wc1Comments}
+                onChange={(e) => update('wc1Comments', e.target.value)}
+                className="min-h-16 text-sm"
+              />
+            ) : (
+              <span className="text-sm">{form.wc1Comments || '—'}</span>
+            )}
+          </Row>
+          <Row label="WC2 outcome">
+            {isEditing ? (
+              <Select value={form.wc2Outcome} onValueChange={(v) => update('wc2Outcome', v)}>
+                <SelectTrigger className="h-8 w-48">
+                  <SelectValue placeholder="Select outcome" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">—</SelectItem>
+                  {WC_OUTCOMES.map((o) => (
+                    <SelectItem key={o} value={o}>
+                      {o.replace('_', ' ')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : form.wc2Outcome ? (
+              <Badge variant="outline" className={wcColours[form.wc2Outcome]}>
+                {form.wc2Outcome.replace('_', ' ')}
+              </Badge>
+            ) : (
+              '—'
+            )}
+          </Row>
+          <Row label="WC2 comments">
+            {isEditing ? (
+              <Textarea
+                value={form.wc2Comments}
+                onChange={(e) => update('wc2Comments', e.target.value)}
+                className="min-h-16 text-sm"
+              />
+            ) : (
+              <span className="text-sm">{form.wc2Comments || '—'}</span>
+            )}
+          </Row>
+        </div>
+      </div>
 
       {/* Router */}
-      <Section title="Router">
-        <Row label="Dispatched">
-          {isEditing ? (
-            <Select
-              value={form.routerDispatched ? 'yes' : 'no'}
-              onValueChange={(v) => update('routerDispatched', v === 'yes')}
-            >
-              <SelectTrigger className="h-8 w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="no">No</SelectItem>
-                <SelectItem value="yes">Yes</SelectItem>
-              </SelectContent>
-            </Select>
-          ) : form.routerDispatched ? (
-            <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
-              Dispatched
-            </Badge>
-          ) : (
-            'No'
-          )}
-        </Row>
-        <Row label="Dispatch ref">
-          {isEditing ? (
-            <Input
-              value={form.routerDispatchRef}
-              onChange={(e) => update('routerDispatchRef', e.target.value)}
-              className="h-8 w-48 font-mono"
-              placeholder="Dispatch ref"
-            />
-          ) : (
-            <span className="font-mono">{form.routerDispatchRef || '—'}</span>
-          )}
-        </Row>
-        <Row label="Tracking number">
-          {isEditing ? (
-            <Input
-              value={form.routerTrackingNumber}
-              onChange={(e) => update('routerTrackingNumber', e.target.value)}
-              className="h-8 w-48 font-mono"
-              placeholder="Tracking number"
-            />
-          ) : (
-            <span className="font-mono">{form.routerTrackingNumber || '—'}</span>
-          )}
-        </Row>
-      </Section>
-    </div>
-  )
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="border rounded-lg overflow-hidden">
-      <div className="px-4 py-3 border-b bg-muted/30">
-        <h2 className="text-sm font-medium">{title}</h2>
+      <div className="border rounded-lg overflow-hidden">
+        <div className="px-4 py-3 border-b bg-muted/30">
+          <h2 className="text-sm font-medium">Router</h2>
+        </div>
+        <div className="divide-y">
+          <Row label="Dispatched">
+            {isEditing ? (
+              <Select
+                value={form.routerDispatched ? 'yes' : 'no'}
+                onValueChange={(v) => update('routerDispatched', v === 'yes')}
+              >
+                <SelectTrigger className="h-8 w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="no">No</SelectItem>
+                  <SelectItem value="yes">Yes</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : form.routerDispatched ? (
+              <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
+                Dispatched
+              </Badge>
+            ) : (
+              'No'
+            )}
+          </Row>
+          <Row label="Dispatch ref">
+            {isEditing ? (
+              <Input
+                value={form.routerDispatchRef}
+                onChange={(e) => update('routerDispatchRef', e.target.value)}
+                className="h-8 w-48 font-mono"
+              />
+            ) : (
+              <span className="text-sm font-mono">{form.routerDispatchRef || '—'}</span>
+            )}
+          </Row>
+          <Row label="Tracking number">
+            {isEditing ? (
+              <Input
+                value={form.routerTrackingNumber}
+                onChange={(e) => update('routerTrackingNumber', e.target.value)}
+                className="h-8 w-48 font-mono"
+              />
+            ) : (
+              <span className="text-sm font-mono">{form.routerTrackingNumber || '—'}</span>
+            )}
+          </Row>
+        </div>
       </div>
-      <div className="divide-y">{children}</div>
-    </section>
+    </div>
   )
 }
 

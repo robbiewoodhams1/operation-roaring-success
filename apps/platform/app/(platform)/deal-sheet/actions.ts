@@ -8,6 +8,7 @@ import {
   dealPricing,
   dealBilling,
   provisioning,
+  provisioningServices,
 } from '@roaring/db'
 import { eq, desc } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
@@ -240,12 +241,32 @@ export async function submitDeal(data: {
       bankChecked: data.ddCollected ? data.bankChecked : false,
     })
 
-    // Step 6 — provisioning
-    await tx.insert(provisioning).values({
-      tenantId: data.tenantId,
-      dealId,
-      status: 'not_started',
-    })
+    // Step 6 — provisioning + services
+    const [newProv] = await tx
+      .insert(provisioning)
+      .values({
+        tenantId: data.tenantId,
+        dealId,
+        status: 'not_started',
+      })
+      .returning({ id: provisioning.id })
+
+    if (!newProv) throw new Error('Failed to create provisioning record')
+
+    await tx.insert(provisioningServices).values([
+      {
+        provisioningId: newProv.id,
+        serviceType: 'bb',
+        status: 'not_applied',
+        attempt: 1,
+      },
+      {
+        provisioningId: newProv.id,
+        serviceType: 'whc',
+        status: 'not_applied',
+        attempt: 1,
+      },
+    ])
   })
 
   redirect(`/deals/${accountNumber}`)

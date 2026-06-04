@@ -18,11 +18,6 @@ export const provisioningStatusEnum = appSchema.enum('provisioning_status', [
   'failed',
 ])
 
-export const provisioningInstallTypeEnum = appSchema.enum('provisioning_install_type', [
-  'new_install',
-  'migration',
-])
-
 export const provisioning = appSchema.table('provisioning', {
   id: uuid('id').primaryKey().defaultRandom(),
   tenantId: uuid('tenant_id')
@@ -32,17 +27,19 @@ export const provisioning = appSchema.table('provisioning', {
     .notNull()
     .references(() => deals.id),
   status: provisioningStatusEnum('status').notNull().default('not_started'),
+
+  // Welcome calls
   wc1Outcome: wcOutcomeEnum('wc1_outcome'),
   wc1Comments: text('wc1_comments'),
   wc2Outcome: wcOutcomeEnum('wc2_outcome'),
   wc2Comments: text('wc2_comments'),
+
+  // Router
   routerDispatched: boolean('router_dispatched').notNull().default(false),
   routerDispatchRef: text('router_dispatch_ref'),
   routerTrackingNumber: text('router_tracking_number'),
-  bbAppliedFor: text('bb_applied_for'),
-  bbOrderRef: text('bb_order_ref'),
-  whcReference: text('whc_reference'),
-  installType: provisioningInstallTypeEnum('install_type'),
+
+  // Order
   proposedLiveDate: date('proposed_live_date'),
   dateOrdered: date('date_ordered'),
   orderComments: text('order_comments'),
@@ -50,6 +47,7 @@ export const provisioning = appSchema.table('provisioning', {
   provisioner: text('provisioner'),
   lastCheckedAt: timestamp('last_checked_at', { withTimezone: true }),
   lastCheckedBy: text('last_checked_by'),
+
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })

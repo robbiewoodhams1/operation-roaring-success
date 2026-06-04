@@ -1,7 +1,7 @@
 import { requireUser } from '@roaring/auth/server'
 import { db, deals, customers, dealPricing } from '@roaring/db'
 import { eq } from 'drizzle-orm'
-import { DealsTable } from './deals-table'
+import { DealsFilters } from './deals-filter'
 
 export default async function DealsPage() {
   const user = await requireUser()
@@ -14,8 +14,6 @@ export default async function DealsPage() {
       dealType: deals.dealType,
       salesAgent: deals.salesAgent,
       closingAgent: deals.closingAgent,
-      softFacts: deals.softFacts,
-      customerId: deals.customerId,
       companyName: customers.companyName,
       firstName: customers.firstName,
       lastName: customers.lastName,
@@ -39,7 +37,7 @@ export default async function DealsPage() {
           <p className="text-sm text-muted-foreground mt-1">{allDeals.length} deals</p>
         </div>
       </div>
-      <DealsTable deals={allDeals} />
+      <DealsFilters deals={allDeals} />
     </div>
   )
 }
