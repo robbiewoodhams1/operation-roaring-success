@@ -88,7 +88,7 @@ export async function updateProvisioningService(
 
 export async function addProvisioningServiceAttempt(
   provisioningId: string,
-  serviceType: 'bb' | 'whc',
+  serviceType: 'bb' | 'whc' | 'nfon' | 'mpf',
   currentMaxAttempt: number
 ) {
   await db.insert(provisioningServices).values({

@@ -149,17 +149,14 @@ export function DealsFilters({ deals }: { deals: DealRow[] }) {
     label: string
     active: boolean
     onClick: () => void
-    colour?: string
+    colour?: string | undefined
   }) => (
     <button
       onClick={onClick}
       className={cn(
         'inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border transition-all',
         colour
-          ? cn(
-              colour,
-              active ? 'ring-2 ring-offset-1 ring-foreground/30' : 'opacity-60 hover:opacity-100'
-            )
+          ? cn(colour, active ? 'ring-2 ring-offset-1 ring-foreground/30' : 'hover:scale-103')
           : active
             ? 'bg-primary text-primary-foreground border-primary'
             : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'

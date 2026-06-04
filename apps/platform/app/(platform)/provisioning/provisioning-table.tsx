@@ -58,6 +58,8 @@ type ProvisioningRow = {
   dealDate: string | null
   bbStatus: string | null
   whcStatus: string | null
+  nfonStatus: string | null
+  mpfStatus: string | null
 }
 
 function ServiceBadge({ status, label }: { status: string | null; label: string }) {
@@ -82,9 +84,10 @@ export function ProvisioningTable({ rows }: { rows: ProvisioningRow[] }) {
           <TableRow>
             <TableHead>Account</TableHead>
             <TableHead>Customer</TableHead>
-            <TableHead>Overall</TableHead>
             <TableHead>BB</TableHead>
             <TableHead>WHC</TableHead>
+            <TableHead>NFON</TableHead>
+            <TableHead>MPF</TableHead>
             <TableHead>Router</TableHead>
             <TableHead>Proposed Live</TableHead>
             <TableHead>Date Ordered</TableHead>
@@ -103,15 +106,16 @@ export function ProvisioningTable({ rows }: { rows: ProvisioningRow[] }) {
                 {row.companyName ?? `${row.firstName} ${row.lastName}`}
               </TableCell>
               <TableCell>
-                <Badge variant="outline" className={statusColours[row.status]}>
-                  {statusLabels[row.status] ?? row.status}
-                </Badge>
-              </TableCell>
-              <TableCell>
                 <ServiceBadge status={row.bbStatus} label="BB" />
               </TableCell>
               <TableCell>
                 <ServiceBadge status={row.whcStatus} label="WHC" />
+              </TableCell>
+              <TableCell>
+                <ServiceBadge status={row.nfonStatus} label="NFON" />
+              </TableCell>
+              <TableCell>
+                <ServiceBadge status={row.mpfStatus} label="MPF" />
               </TableCell>
               <TableCell>
                 {row.routerDispatched ? (

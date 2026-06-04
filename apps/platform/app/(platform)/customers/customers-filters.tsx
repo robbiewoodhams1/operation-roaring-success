@@ -15,9 +15,15 @@ const statusColours: Record<string, string> = {
   churned: 'bg-red-100 text-red-800 border-red-200',
 }
 
+const typeColours: Record<string, string> = {
+  business: 'bg-purple-100 text-purple-800 border-purple-200',
+  residential: 'bg-orange-100 text-orange-800 border-orange-200',
+}
+
 export function CustomersFilters({ customers }: { customers: Customer[] }) {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string[]>([])
+  const [typeFilter, setTypeFilter] = useState<string[]>([])
 
   const filtered = useMemo(() => {
     let result = [...customers]
@@ -34,6 +40,10 @@ export function CustomersFilters({ customers }: { customers: Customer[] }) {
       )
     }
 
+    if (typeFilter.length > 0) {
+      result = result.filter((c) => typeFilter.includes(c.type))
+    }
+
     if (statusFilter.length > 0) {
       result = result.filter((c) => statusFilter.includes(c.status))
     }
@@ -47,10 +57,11 @@ export function CustomersFilters({ customers }: { customers: Customer[] }) {
 
   function clearAll() {
     setSearch('')
+    setTypeFilter([])
     setStatusFilter([])
   }
 
-  const hasFilters = search || statusFilter.length > 0
+  const hasFilters = search || statusFilter.length > 0 || typeFilter.length > 0
 
   return (
     <div className="space-y-4">
@@ -81,10 +92,35 @@ export function CustomersFilters({ customers }: { customers: Customer[] }) {
                 statusColours[s],
                 statusFilter.includes(s)
                   ? 'ring-2 ring-offset-1 ring-foreground/30'
-                  : 'opacity-60 hover:opacity-100'
+                  : 'hover:scale-103'
               )}
             >
               {s.replace('_', ' ')}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Type</p>
+        <div className="flex flex-wrap gap-2">
+          {Object.keys(typeColours).map((t) => (
+            <button
+              key={t}
+              onClick={() =>
+                setTypeFilter((prev) =>
+                  prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]
+                )
+              }
+              className={cn(
+                'inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border transition-all',
+                typeColours[t],
+                typeFilter.includes(t)
+                  ? 'ring-2 ring-offset-1 ring-foreground/30'
+                  : 'hover:scale-103'
+              )}
+            >
+              {t}
             </button>
           ))}
         </div>

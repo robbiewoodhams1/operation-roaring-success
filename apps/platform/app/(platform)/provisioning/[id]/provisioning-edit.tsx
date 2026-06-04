@@ -465,17 +465,23 @@ export function ProvisioningEdit({
   prov,
   bbServices,
   whcServices,
+  nfonServices,
+  mpfServices,
 }: {
   prov: Provisioning
   bbServices: ProvisioningService[]
   whcServices: ProvisioningService[]
+  nfonServices: ProvisioningService[]
+  mpfServices: ProvisioningService[]
 }) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  const latestBb = bbServices[bbServices.length - 1]
-  const latestWhc = whcServices[whcServices.length - 1]
+  const latestBb = bbServices[bbServices?.length - 1]
+  const latestWhc = whcServices[whcServices?.length - 1]
+  const latestNfon = nfonServices[nfonServices?.length - 1]
+  const latestMpf = mpfServices[mpfServices?.length - 1]
 
   const [form, setForm] = useState({
     wc1Outcome: prov.wc1Outcome ?? '',
@@ -583,6 +589,46 @@ export function ProvisioningEdit({
             }}
           />
           <ServiceHistory services={whcServices} label="WHC" />
+        </>
+      )}
+
+      {/* NFON Service */}
+      {latestNfon && (
+        <>
+          <ServicePanel
+            service={latestNfon}
+            label="NFON"
+            isLatest
+            onSave={async (id, data) => {
+              await updateProvisioningService(id, data)
+              router.refresh()
+            }}
+            onAddAttempt={async () => {
+              await addProvisioningServiceAttempt(prov.id, 'nfon', latestNfon.attempt)
+              router.refresh()
+            }}
+          />
+          <ServiceHistory services={nfonServices} label="NFON" />
+        </>
+      )}
+
+      {/* MPF Service */}
+      {latestMpf && (
+        <>
+          <ServicePanel
+            service={latestMpf}
+            label="MPF"
+            isLatest
+            onSave={async (id, data) => {
+              await updateProvisioningService(id, data)
+              router.refresh()
+            }}
+            onAddAttempt={async () => {
+              await addProvisioningServiceAttempt(prov.id, 'mpf', latestMpf.attempt)
+              router.refresh()
+            }}
+          />
+          <ServiceHistory services={mpfServices} label="MPF" />
         </>
       )}
 

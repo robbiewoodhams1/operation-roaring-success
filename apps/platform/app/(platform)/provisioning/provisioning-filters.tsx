@@ -60,6 +60,8 @@ type ProvisioningRow = {
   dealDate: string | null
   bbStatus: string | null
   whcStatus: string | null
+  nfonStatus: string | null
+  mpfStatus: string | null
 }
 
 type SortOption = 'newest' | 'oldest'
@@ -72,6 +74,8 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
   const [statusFilter, setStatusFilter] = useState<string[]>([])
   const [bbStatusFilter, setBbStatusFilter] = useState<string[]>([])
   const [whcStatusFilter, setWhcStatusFilter] = useState<string[]>([])
+  const [nfonStatusFilter, setNfonStatusFilter] = useState<string[]>([])
+  const [mpfStatusFilter, setMpfStatusFilter] = useState<string[]>([])
   const [wc1Filter, setWc1Filter] = useState<string[]>([])
   const [routerFilter, setRouterFilter] = useState<'all' | 'dispatched' | 'not_dispatched'>('all')
   const [wcDoneFilter, setWcDoneFilter] = useState<'all' | 'done' | 'not_done'>('all')
@@ -120,6 +124,13 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
       result = result.filter((r) => !r.routerDispatched)
     }
 
+    if (nfonStatusFilter.length > 0) {
+      result = result.filter((r) => r.nfonStatus && nfonStatusFilter.includes(r.nfonStatus))
+    }
+    if (mpfStatusFilter.length > 0) {
+      result = result.filter((r) => r.mpfStatus && mpfStatusFilter.includes(r.mpfStatus))
+    }
+
     result.sort((a, b) => {
       const dateA = a.dealDate ? new Date(a.dealDate).getTime() : 0
       const dateB = b.dealDate ? new Date(b.dealDate).getTime() : 0
@@ -137,6 +148,8 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
     wcDoneFilter,
     routerFilter,
     sort,
+    nfonStatusFilter,
+    mpfStatusFilter,
   ])
 
   function toggle(value: string, state: string[], setter: (v: string[]) => void) {
@@ -147,6 +160,8 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
     statusFilter.length +
     bbStatusFilter.length +
     whcStatusFilter.length +
+    nfonStatusFilter.length +
+    mpfStatusFilter.length +
     wc1Filter.length +
     (routerFilter !== 'all' ? 1 : 0) +
     (wcDoneFilter !== 'all' ? 1 : 0)
@@ -156,6 +171,8 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
     setStatusFilter([])
     setBbStatusFilter([])
     setWhcStatusFilter([])
+    setNfonStatusFilter([])
+    setMpfStatusFilter([])
     setWc1Filter([])
     setRouterFilter('all')
     setWcDoneFilter('all')
@@ -168,20 +185,17 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
     onClick,
     colour,
   }: {
-    label: string
+    label: string | undefined
     active: boolean
     onClick: () => void
-    colour?: string
+    colour?: string | undefined
   }) => (
     <button
       onClick={onClick}
       className={cn(
         'inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border transition-all',
         colour
-          ? cn(
-              colour,
-              active ? 'ring-2 ring-offset-1 ring-foreground/30' : 'opacity-60 hover:opacity-100'
-            )
+          ? cn(colour, active ? 'ring-2 ring-offset-1 ring-foreground/30' : 'hover:scale-103')
           : active
             ? 'bg-primary text-primary-foreground border-primary'
             : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
@@ -279,6 +293,42 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
         </div>
       </div>
 
+      {/* NFON status */}
+      <div className="space-y-2">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          NFON status
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {SERVICE_STATUSES.map((s) => (
+            <FilterChip
+              key={s}
+              label={s.replace('_', ' ')}
+              active={nfonStatusFilter.includes(s)}
+              onClick={() => toggle(s, nfonStatusFilter, setNfonStatusFilter)}
+              colour={serviceStatusColours[s]}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* MPF status */}
+      <div className="space-y-2">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          MPF status
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {SERVICE_STATUSES.map((s) => (
+            <FilterChip
+              key={s}
+              label={s.replace('_', ' ')}
+              active={mpfStatusFilter.includes(s)}
+              onClick={() => toggle(s, mpfStatusFilter, setMpfStatusFilter)}
+              colour={serviceStatusColours[s]}
+            />
+          ))}
+        </div>
+      </div>
+
       {/* Welcome call */}
       <div className="space-y-2">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -288,7 +338,7 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
           {(['all', 'done', 'not_done'] as const).map((w) => (
             <FilterChip
               key={w}
-              label={w === 'all' ? 'All' : w === 'done' ? 'Answered' : 'Not answered'}
+              label={w === 'all' ? 'All' : w === 'done' ? 'Done' : 'Not Done'}
               active={wcDoneFilter === w}
               onClick={() => setWcDoneFilter(w)}
             />

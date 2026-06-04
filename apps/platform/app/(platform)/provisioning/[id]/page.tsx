@@ -75,6 +75,8 @@ export default async function ProvisioningDetailPage({
 
   const bbServices = provServices.filter((s) => s.serviceType === 'bb')
   const whcServices = provServices.filter((s) => s.serviceType === 'whc')
+  const nfonServices = provServices.filter((s) => s.serviceType === 'nfon')
+  const mpfServices = provServices.filter((s) => s.serviceType === 'mpf')
 
   const customerName = customer.companyName ?? `${customer.firstName} ${customer.lastName}`
 
@@ -102,7 +104,13 @@ export default async function ProvisioningDetailPage({
         </div>
       </div>
 
-      <ProvisioningEdit prov={prov} bbServices={bbServices} whcServices={whcServices} />
+      <ProvisioningEdit
+        prov={prov}
+        bbServices={bbServices}
+        whcServices={whcServices}
+        nfonServices={nfonServices}
+        mpfServices={mpfServices}
+      />
 
       <div className="grid grid-cols-1 gap-6 mt-6">
         {services && (
