@@ -63,6 +63,7 @@ type ProvisioningRow = {
   whcStatus: string | null
   nfonStatus: string | null
   mpfStatus: string | null
+  customerType: string | null
 }
 
 type SortOption = 'newest' | 'oldest'
@@ -81,6 +82,9 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
   const [routerFilter, setRouterFilter] = useState<'all' | 'dispatched' | 'not_dispatched'>('all')
   const [wcDoneFilter, setWcDoneFilter] = useState<'all' | 'done' | 'not_done'>('all')
   const [sort, setSort] = useState<SortOption>('newest')
+  const [customerTypeFilter, setCustomerTypeFilter] = useState<'all' | 'business' | 'residential'>(
+    'all'
+  )
 
   const filtered = useMemo(() => {
     let result = [...rows]
@@ -132,6 +136,10 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
       result = result.filter((r) => r.mpfStatus && mpfStatusFilter.includes(r.mpfStatus))
     }
 
+    if (customerTypeFilter !== 'all') {
+      result = result.filter((r) => r.customerType === customerTypeFilter)
+    }
+
     result.sort((a, b) => {
       const dateA = a.dealDate ? new Date(a.dealDate).getTime() : 0
       const dateB = b.dealDate ? new Date(b.dealDate).getTime() : 0
@@ -151,6 +159,7 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
     sort,
     nfonStatusFilter,
     mpfStatusFilter,
+    customerTypeFilter,
   ])
 
   function toggle(value: string, state: string[], setter: (v: string[]) => void) {
@@ -164,6 +173,7 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
     nfonStatusFilter.length +
     mpfStatusFilter.length +
     wc1Filter.length +
+    (customerTypeFilter !== 'all' ? 1 : 0) +
     (routerFilter !== 'all' ? 1 : 0) +
     (wcDoneFilter !== 'all' ? 1 : 0)
 
@@ -177,6 +187,7 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
     setWc1Filter([])
     setRouterFilter('all')
     setWcDoneFilter('all')
+    setCustomerTypeFilter('all')
     setSort('newest')
   }
 
@@ -352,6 +363,28 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
               active={wc1Filter.includes(o)}
               onClick={() => toggle(o, wc1Filter, setWc1Filter)}
               colour={wcColours[o]}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Customer type */}
+      <div className="space-y-2">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Type</p>
+        <div className="flex gap-2">
+          {(['all', 'business', 'residential'] as const).map((t) => (
+            <FilterChip
+              key={t}
+              label={t === 'all' ? 'All' : capitalise(t)}
+              active={customerTypeFilter === t}
+              onClick={() => setCustomerTypeFilter(t)}
+              colour={
+                t === 'business'
+                  ? 'bg-purple-100 text-purple-800 border-purple-200'
+                  : t === 'residential'
+                    ? 'bg-orange-100 text-orange-800 border-orange-200'
+                    : undefined
+              }
             />
           ))}
         </div>

@@ -24,7 +24,7 @@ const typeColours: Record<string, string> = {
 export function CustomersFilters({ customers }: { customers: Customer[] }) {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string[]>([])
-  const [typeFilter, setTypeFilter] = useState<string[]>([])
+  const [typeFilter, setTypeFilter] = useState<'all' | 'business' | 'residential'>('all')
 
   const filtered = useMemo(() => {
     let result = [...customers]
@@ -41,8 +41,8 @@ export function CustomersFilters({ customers }: { customers: Customer[] }) {
       )
     }
 
-    if (typeFilter.length > 0) {
-      result = result.filter((c) => typeFilter.includes(c.type))
+    if (typeFilter !== 'all') {
+      result = result.filter((c) => c.type === typeFilter)
     }
 
     if (statusFilter.length > 0) {
@@ -50,7 +50,7 @@ export function CustomersFilters({ customers }: { customers: Customer[] }) {
     }
 
     return result
-  }, [customers, search, statusFilter])
+  }, [customers, search, statusFilter, typeFilter])
 
   function toggleStatus(s: string) {
     setStatusFilter((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]))
@@ -58,11 +58,11 @@ export function CustomersFilters({ customers }: { customers: Customer[] }) {
 
   function clearAll() {
     setSearch('')
-    setTypeFilter([])
+    setTypeFilter('all')
     setStatusFilter([])
   }
 
-  const hasFilters = search || statusFilter.length > 0 || typeFilter.length > 0
+  const hasFilters = search || statusFilter.length > 0 || typeFilter !== 'all'
 
   return (
     <div className="space-y-4">
@@ -105,23 +105,25 @@ export function CustomersFilters({ customers }: { customers: Customer[] }) {
       <div className="space-y-2">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Type</p>
         <div className="flex flex-wrap gap-2">
-          {Object.keys(typeColours).map((t) => (
+          {(['all', 'business', 'residential'] as const).map((t) => (
             <button
               key={t}
-              onClick={() =>
-                setTypeFilter((prev) =>
-                  prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]
-                )
-              }
+              onClick={() => setTypeFilter(t)}
               className={cn(
                 'inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border transition-all',
-                typeColours[t],
-                typeFilter.includes(t)
-                  ? 'ring-2 ring-offset-1 ring-foreground/30'
-                  : 'hover:scale-103'
+                t === 'all'
+                  ? typeFilter === 'all'
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
+                  : cn(
+                      typeColours[t],
+                      typeFilter === t
+                        ? 'ring-2 ring-offset-1 ring-foreground/30'
+                        : 'hover:scale-103'
+                    )
               )}
             >
-              {capitalise(t)}
+              {t === 'all' ? 'All' : capitalise(t)}
             </button>
           ))}
         </div>

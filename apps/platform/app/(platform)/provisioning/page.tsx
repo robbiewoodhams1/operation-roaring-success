@@ -25,6 +25,7 @@ export default async function ProvisioningPage() {
       lastName: customers.lastName,
       salesAgent: deals.salesAgent,
       dealDate: deals.dealDate,
+      customerType: customers.type,
     })
     .from(provisioning)
     .leftJoin(deals, eq(provisioning.dealId, deals.id))
@@ -70,6 +71,7 @@ export default async function ProvisioningPage() {
     whcStatus: serviceMap[p.id]?.whcStatus ?? null,
     nfonStatus: serviceMap[p.id]?.nfonStatus ?? null,
     mpfStatus: serviceMap[p.id]?.mpfStatus ?? null,
+    customerType: p.customerType,
   }))
 
   return (
