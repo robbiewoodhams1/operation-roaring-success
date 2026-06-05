@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { ProvisioningTable } from './provisioning-table'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { capitalise } from '@/components/capitalise'
 
 const statusColours: Record<string, string> = {
   not_started: 'bg-gray-100 text-gray-700 border-gray-200',
@@ -266,7 +267,7 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
           {SERVICE_STATUSES.map((s) => (
             <FilterChip
               key={s}
-              label={s.replace('_', ' ')}
+              label={capitalise(s).replace('_', ' ')}
               active={bbStatusFilter.includes(s)}
               onClick={() => toggle(s, bbStatusFilter, setBbStatusFilter)}
               colour={serviceStatusColours[s]}
@@ -284,7 +285,7 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
           {SERVICE_STATUSES.map((s) => (
             <FilterChip
               key={s}
-              label={s.replace('_', ' ')}
+              label={capitalise(s).replace('_', ' ')}
               active={whcStatusFilter.includes(s)}
               onClick={() => toggle(s, whcStatusFilter, setWhcStatusFilter)}
               colour={serviceStatusColours[s]}
@@ -302,7 +303,7 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
           {SERVICE_STATUSES.map((s) => (
             <FilterChip
               key={s}
-              label={s.replace('_', ' ')}
+              label={capitalise(s).replace('_', ' ')}
               active={nfonStatusFilter.includes(s)}
               onClick={() => toggle(s, nfonStatusFilter, setNfonStatusFilter)}
               colour={serviceStatusColours[s]}
@@ -320,7 +321,7 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
           {SERVICE_STATUSES.map((s) => (
             <FilterChip
               key={s}
-              label={s.replace('_', ' ')}
+              label={capitalise(s).replace('_', ' ')}
               active={mpfStatusFilter.includes(s)}
               onClick={() => toggle(s, mpfStatusFilter, setMpfStatusFilter)}
               colour={serviceStatusColours[s]}
@@ -347,7 +348,7 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
           {WC_OUTCOMES.map((o) => (
             <FilterChip
               key={o}
-              label={o.replace('_', ' ')}
+              label={capitalise(o).replace('_', ' ')}
               active={wc1Filter.includes(o)}
               onClick={() => toggle(o, wc1Filter, setWc1Filter)}
               colour={wcColours[o]}

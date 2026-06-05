@@ -39,19 +39,37 @@ export default async function ProvisioningPage() {
     .orderBy(asc(provisioningServices.attempt))
 
   // Map provisioning id → latest bb/whc status
-  const serviceMap: Record<string, { bbStatus: string | null; whcStatus: string | null }> = {}
+  const serviceMap: Record<
+    string,
+    {
+      bbStatus: string | null
+      whcStatus: string | null
+      nfonStatus: string | null
+      mpfStatus: string | null
+    }
+  > = {}
   for (const svc of allServices) {
     if (!serviceMap[svc.provisioningId]) {
-      serviceMap[svc.provisioningId] = { bbStatus: null, whcStatus: null }
+      serviceMap[svc.provisioningId] = {
+        bbStatus: null,
+        whcStatus: null,
+        nfonStatus: null,
+        mpfStatus: null,
+      }
     }
-    if (svc.serviceType === 'bb') serviceMap[svc.provisioningId].bbStatus = svc.status
-    if (svc.serviceType === 'whc') serviceMap[svc.provisioningId].whcStatus = svc.status
+    const entry = serviceMap[svc.provisioningId]!
+    if (svc.serviceType === 'bb') entry.bbStatus = svc.status
+    if (svc.serviceType === 'whc') entry.whcStatus = svc.status
+    if (svc.serviceType === 'nfon') entry.nfonStatus = svc.status
+    if (svc.serviceType === 'mpf') entry.mpfStatus = svc.status
   }
 
   const rows = allProvisioning.map((p) => ({
     ...p,
     bbStatus: serviceMap[p.id]?.bbStatus ?? null,
     whcStatus: serviceMap[p.id]?.whcStatus ?? null,
+    nfonStatus: serviceMap[p.id]?.nfonStatus ?? null,
+    mpfStatus: serviceMap[p.id]?.mpfStatus ?? null,
   }))
 
   return (

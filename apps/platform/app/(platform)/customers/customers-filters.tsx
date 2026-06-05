@@ -7,6 +7,7 @@ import { CustomersTable } from './customers-table'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Customer } from '@roaring/db'
+import { capitalise } from '@/components/capitalise'
 
 const statusColours: Record<string, string> = {
   active: 'bg-green-100 text-green-800 border-green-200',
@@ -95,7 +96,7 @@ export function CustomersFilters({ customers }: { customers: Customer[] }) {
                   : 'hover:scale-103'
               )}
             >
-              {s.replace('_', ' ')}
+              {capitalise(s).replace('_', ' ')}
             </button>
           ))}
         </div>
@@ -120,7 +121,7 @@ export function CustomersFilters({ customers }: { customers: Customer[] }) {
                   : 'hover:scale-103'
               )}
             >
-              {t}
+              {capitalise(t)}
             </button>
           ))}
         </div>

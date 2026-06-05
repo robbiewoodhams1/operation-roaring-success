@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { DealsTable } from './deals-table'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { capitalise } from '@/components/capitalise'
 
 const statusColours: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -207,7 +208,7 @@ export function DealsFilters({ deals }: { deals: DealRow[] }) {
           {Object.keys(statusColours).map((s) => (
             <FilterChip
               key={s}
-              label={s}
+              label={capitalise(s)}
               active={statusFilter.includes(s)}
               onClick={() => toggle(s, statusFilter, setStatusFilter)}
               colour={statusColours[s]}
@@ -225,7 +226,7 @@ export function DealsFilters({ deals }: { deals: DealRow[] }) {
           {['business', 'residential'].map((t) => (
             <FilterChip
               key={t}
-              label={t}
+              label={capitalise(t)}
               active={dealTypeFilter.includes(t)}
               onClick={() => toggle(t, dealTypeFilter, setDealTypeFilter)}
             />
