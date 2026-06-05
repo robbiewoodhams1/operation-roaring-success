@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
 import { Pencil } from 'lucide-react'
 import { updateDeal } from './actions'
 import type { Deal, DealService, DealPricing, DealBilling, Customer } from '@roaring/db'
@@ -28,10 +27,128 @@ const CONTRACT_LENGTHS = ['24_months', '36_months', '48_months', 'other']
 const CUSTOMER_TYPES = ['business', 'residential']
 const CUSTOMER_STATUSES = ['prospect', 'active', 'at_risk', 'churned']
 
-const dealStatusColours: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  live: 'bg-green-100 text-green-800 border-green-200',
-  cancelled: 'bg-red-100 text-red-800 border-red-200',
+function F({
+  value,
+  onChange,
+  isEditing,
+  placeholder,
+  mono,
+}: {
+  value: string
+  onChange: (v: string) => void
+  isEditing: boolean
+  placeholder?: string
+  mono?: boolean
+}) {
+  return isEditing ? (
+    <Input
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={`h-8 w-full max-w-sm ${mono ? 'font-mono' : ''}`}
+      placeholder={placeholder}
+    />
+  ) : (
+    <span className={`text-sm ${mono ? 'font-mono' : ''}`}>{value || '—'}</span>
+  )
+}
+
+function TA({
+  value,
+  onChange,
+  isEditing,
+  placeholder,
+}: {
+  value: string
+  onChange: (v: string) => void
+  isEditing: boolean
+  placeholder?: string
+}) {
+  return isEditing ? (
+    <Textarea
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="text-sm min-h-16"
+      placeholder={placeholder}
+    />
+  ) : (
+    <span className="text-sm">{value || '—'}</span>
+  )
+}
+
+function SL({
+  value,
+  onChange,
+  isEditing,
+  options,
+  placeholder,
+}: {
+  value: string
+  onChange: (v: string) => void
+  isEditing: boolean
+  options: string[]
+  placeholder?: string
+}) {
+  return isEditing ? (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="h-8 w-48">
+        <SelectValue placeholder={placeholder ?? 'Select'} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="">—</SelectItem>
+        {options.map((o) => (
+          <SelectItem key={o} value={o}>
+            {o.replace(/_/g, ' ')}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  ) : (
+    <span className="text-sm capitalize">{(value || '—').replace(/_/g, ' ')}</span>
+  )
+}
+
+function Bool({
+  value,
+  onChange,
+  isEditing,
+}: {
+  value: boolean
+  onChange: (v: boolean) => void
+  isEditing: boolean
+}) {
+  return isEditing ? (
+    <Select value={value ? 'yes' : 'no'} onValueChange={(v) => onChange(v === 'yes')}>
+      <SelectTrigger className="h-8 w-32">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="no">No</SelectItem>
+        <SelectItem value="yes">Yes</SelectItem>
+      </SelectContent>
+    </Select>
+  ) : (
+    <span className="text-sm">{value ? 'Yes' : 'No'}</span>
+  )
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="border rounded-lg overflow-hidden">
+      <div className="px-4 py-3 border-b bg-muted/30">
+        <h2 className="text-sm font-medium">{title}</h2>
+      </div>
+      <div className="divide-y">{children}</div>
+    </section>
+  )
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex px-4 py-3 items-center gap-4">
+      <span className="text-muted-foreground w-40 shrink-0 text-sm">{label}</span>
+      <div className="text-sm flex-1">{children}</div>
+    </div>
+  )
 }
 
 export function DealEdit({
@@ -52,7 +169,6 @@ export function DealEdit({
   const [saving, setSaving] = useState(false)
 
   const [form, setForm] = useState({
-    // Deal
     salesAgent: deal.salesAgent,
     closingAgent: deal.closingAgent,
     dealType: deal.dealType as string,
@@ -60,7 +176,6 @@ export function DealEdit({
     welcomeCall: deal.welcomeCall ?? '',
     tradingAddress: deal.tradingAddress ?? '',
     softFacts: deal.softFacts ?? '',
-    // Services
     lineChecked: services?.lineChecked ?? false,
     connectionFee: services?.connectionFee ?? '',
     broadbandType: services?.broadbandType ?? '',
@@ -79,7 +194,6 @@ export function DealEdit({
     intlPackage: services?.intlPackage ?? '',
     intlLocation: services?.intlLocation ?? '',
     premiumPackage: services?.premiumPackage ?? '',
-    // Pricing
     bundlePrice: pricing?.bundlePrice ?? '',
     wholesaleCost: pricing?.wholesaleCost ?? '',
     monthlyGp: pricing?.monthlyGp ?? '',
@@ -87,7 +201,6 @@ export function DealEdit({
     billAmountLosingSupplier: pricing?.billAmountLosingSupplier ?? '',
     contractLength: pricing?.contractLength ?? '',
     contractLengthOther: pricing?.contractLengthOther ?? '',
-    // Billing
     billingType: billing?.billingType ?? '',
     paymentMethod: billing?.paymentMethod ?? '',
     phoneProvider: billing?.phoneProvider ?? '',
@@ -97,7 +210,6 @@ export function DealEdit({
     sortCode: billing?.sortCode ?? '',
     accountNumberBilling: billing?.accountNumber ?? '',
     bankChecked: billing?.bankChecked ?? false,
-    // Customer
     companyName: customer.companyName ?? '',
     firstName: customer.firstName,
     lastName: customer.lastName,
@@ -242,89 +354,7 @@ export function DealEdit({
     setIsEditing(false)
   }
 
-  const F = ({
-    field,
-    placeholder,
-    mono,
-  }: {
-    field: string
-    placeholder?: string
-    mono?: boolean
-  }) =>
-    isEditing ? (
-      <Input
-        value={form[field as keyof typeof form] as string}
-        onChange={(e) => update(field, e.target.value)}
-        className={`h-8 w-full max-w-sm ${mono ? 'font-mono' : ''}`}
-        placeholder={placeholder}
-      />
-    ) : (
-      <span className={`text-sm ${mono ? 'font-mono' : ''}`}>
-        {(form[field as keyof typeof form] as string) || '—'}
-      </span>
-    )
-
-  const TA = ({ field, placeholder }: { field: string; placeholder?: string }) =>
-    isEditing ? (
-      <Textarea
-        value={form[field as keyof typeof form] as string}
-        onChange={(e) => update(field, e.target.value)}
-        className="text-sm min-h-16"
-        placeholder={placeholder}
-      />
-    ) : (
-      <span className="text-sm">{(form[field as keyof typeof form] as string) || '—'}</span>
-    )
-
-  const SL = ({
-    field,
-    options,
-    placeholder,
-  }: {
-    field: string
-    options: string[]
-    placeholder?: string
-  }) =>
-    isEditing ? (
-      <Select
-        value={form[field as keyof typeof form] as string}
-        onValueChange={(v) => update(field, v)}
-      >
-        <SelectTrigger className="h-8 w-48">
-          <SelectValue placeholder={placeholder ?? 'Select'} />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="">—</SelectItem>
-          {options.map((o) => (
-            <SelectItem key={o} value={o}>
-              {o.replace(/_/g, ' ')}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    ) : (
-      <span className="text-sm capitalize">
-        {((form[field as keyof typeof form] as string) || '—').replace(/_/g, ' ')}
-      </span>
-    )
-
-  const Bool = ({ field }: { field: string }) =>
-    isEditing ? (
-      <Select
-        value={form[field as keyof typeof form] ? 'yes' : 'no'}
-        onValueChange={(v) => update(field, v === 'yes')}
-      >
-        <SelectTrigger className="h-8 w-32">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="no">No</SelectItem>
-          <SelectItem value="yes">Yes</SelectItem>
-        </SelectContent>
-      </Select>
-    ) : (
-      <span className="text-sm">{form[field as keyof typeof form] ? 'Yes' : 'No'}</span>
-    )
+  const e = isEditing
 
   return (
     <div className="space-y-6">
@@ -348,20 +378,25 @@ export function DealEdit({
 
       <Section title="Deal">
         <Row label="Sales agent">
-          <F field="salesAgent" />
+          <F value={form.salesAgent} onChange={(v) => update('salesAgent', v)} isEditing={e} />
         </Row>
         <Row label="Closing agent">
-          <F field="closingAgent" />
+          <F value={form.closingAgent} onChange={(v) => update('closingAgent', v)} isEditing={e} />
         </Row>
         <Row label="Deal type">
-          <SL field="dealType" options={DEAL_TYPES} />
+          <SL
+            value={form.dealType}
+            onChange={(v) => update('dealType', v)}
+            isEditing={e}
+            options={DEAL_TYPES}
+          />
         </Row>
         <Row label="Deal date">
           {isEditing ? (
             <Input
               type="date"
               value={form.dealDate}
-              onChange={(e) => update('dealDate', e.target.value)}
+              onChange={(ev) => update('dealDate', ev.target.value)}
               className="h-8 w-48"
             />
           ) : (
@@ -369,185 +404,291 @@ export function DealEdit({
           )}
         </Row>
         <Row label="Welcome call">
-          <SL field="welcomeCall" options={WELCOME_CALLS} />
+          <SL
+            value={form.welcomeCall}
+            onChange={(v) => update('welcomeCall', v)}
+            isEditing={e}
+            options={WELCOME_CALLS}
+          />
         </Row>
         <Row label="Trading address">
-          <F field="tradingAddress" />
+          <F
+            value={form.tradingAddress}
+            onChange={(v) => update('tradingAddress', v)}
+            isEditing={e}
+          />
         </Row>
         <Row label="Soft facts">
-          <TA field="softFacts" />
+          <TA value={form.softFacts} onChange={(v) => update('softFacts', v)} isEditing={e} />
         </Row>
       </Section>
 
       <Section title="Services">
         <Row label="Line checked">
-          <Bool field="lineChecked" />
+          <Bool value={form.lineChecked} onChange={(v) => update('lineChecked', v)} isEditing={e} />
         </Row>
         <Row label="Connection fee">
-          <F field="connectionFee" placeholder="e.g. 149.99" />
+          <F
+            value={form.connectionFee}
+            onChange={(v) => update('connectionFee', v)}
+            isEditing={e}
+            placeholder="e.g. 149.99"
+          />
         </Row>
         <Row label="Broadband type">
-          <F field="broadbandType" />
+          <F
+            value={form.broadbandType}
+            onChange={(v) => update('broadbandType', v)}
+            isEditing={e}
+          />
         </Row>
         <Row label="Install type">
-          <SL field="installType" options={INSTALL_TYPES} />
+          <SL
+            value={form.installType}
+            onChange={(v) => update('installType', v)}
+            isEditing={e}
+            options={INSTALL_TYPES}
+          />
         </Row>
         <Row label="ONT serial">
-          <F field="ontSerialNumber" mono />
+          <F
+            value={form.ontSerialNumber}
+            onChange={(v) => update('ontSerialNumber', v)}
+            isEditing={e}
+            mono
+          />
         </Row>
         <Row label="Normal speed">
-          <F field="normalSpeed" />
+          <F value={form.normalSpeed} onChange={(v) => update('normalSpeed', v)} isEditing={e} />
         </Row>
         <Row label="Min speed">
-          <F field="minSpeed" />
+          <F value={form.minSpeed} onChange={(v) => update('minSpeed', v)} isEditing={e} />
         </Row>
         <Row label="Max speed">
-          <F field="maxSpeed" />
+          <F value={form.maxSpeed} onChange={(v) => update('maxSpeed', v)} isEditing={e} />
         </Row>
         <Row label="Voice required">
-          <Bool field="voiceRequired" />
+          <Bool
+            value={form.voiceRequired}
+            onChange={(v) => update('voiceRequired', v)}
+            isEditing={e}
+          />
         </Row>
         <Row label="Current voice type">
-          <F field="currentVoiceType" />
+          <F
+            value={form.currentVoiceType}
+            onChange={(v) => update('currentVoiceType', v)}
+            isEditing={e}
+          />
         </Row>
         <Row label="Line configuration">
-          <SL field="lineConfiguration" options={LINE_CONFIGS} />
+          <SL
+            value={form.lineConfiguration}
+            onChange={(v) => update('lineConfiguration', v)}
+            isEditing={e}
+            options={LINE_CONFIGS}
+          />
         </Row>
         <Row label="Num licenses">
-          <F field="numLicenses" />
+          <F value={form.numLicenses} onChange={(v) => update('numLicenses', v)} isEditing={e} />
         </Row>
         <Row label="Voice option">
-          <SL field="voiceOption" options={VOICE_OPTIONS} />
+          <SL
+            value={form.voiceOption}
+            onChange={(v) => update('voiceOption', v)}
+            isEditing={e}
+            options={VOICE_OPTIONS}
+          />
         </Row>
         <Row label="Call tariff">
-          <F field="callTariff" />
+          <F value={form.callTariff} onChange={(v) => update('callTariff', v)} isEditing={e} />
         </Row>
         <Row label="Existing handsets">
-          <F field="existingHandsets" />
+          <F
+            value={form.existingHandsets}
+            onChange={(v) => update('existingHandsets', v)}
+            isEditing={e}
+          />
         </Row>
         <Row label="Intl package">
-          <F field="intlPackage" />
+          <F value={form.intlPackage} onChange={(v) => update('intlPackage', v)} isEditing={e} />
         </Row>
         <Row label="Intl location">
-          <F field="intlLocation" />
+          <F value={form.intlLocation} onChange={(v) => update('intlLocation', v)} isEditing={e} />
         </Row>
         <Row label="Premium package">
-          <F field="premiumPackage" />
+          <F
+            value={form.premiumPackage}
+            onChange={(v) => update('premiumPackage', v)}
+            isEditing={e}
+          />
         </Row>
       </Section>
 
       <Section title="Pricing">
         <Row label="Bundle price">
-          <F field="bundlePrice" placeholder="e.g. 45.00" mono />
+          <F
+            value={form.bundlePrice}
+            onChange={(v) => update('bundlePrice', v)}
+            isEditing={e}
+            placeholder="e.g. 45.00"
+            mono
+          />
         </Row>
         <Row label="Wholesale cost">
-          <F field="wholesaleCost" placeholder="e.g. 31.99" mono />
+          <F
+            value={form.wholesaleCost}
+            onChange={(v) => update('wholesaleCost', v)}
+            isEditing={e}
+            placeholder="e.g. 31.99"
+            mono
+          />
         </Row>
         <Row label="Monthly GP">
-          <F field="monthlyGp" placeholder="e.g. 13.01" mono />
+          <F
+            value={form.monthlyGp}
+            onChange={(v) => update('monthlyGp', v)}
+            isEditing={e}
+            placeholder="e.g. 13.01"
+            mono
+          />
         </Row>
         <Row label="Connection fee">
-          <F field="connectionFeePricing" placeholder="e.g. 149.99" mono />
+          <F
+            value={form.connectionFeePricing}
+            onChange={(v) => update('connectionFeePricing', v)}
+            isEditing={e}
+            placeholder="e.g. 149.99"
+            mono
+          />
         </Row>
         <Row label="Bill losing supplier">
-          <F field="billAmountLosingSupplier" placeholder="e.g. 33.00" mono />
+          <F
+            value={form.billAmountLosingSupplier}
+            onChange={(v) => update('billAmountLosingSupplier', v)}
+            isEditing={e}
+            placeholder="e.g. 33.00"
+            mono
+          />
         </Row>
         <Row label="Contract length">
-          <SL field="contractLength" options={CONTRACT_LENGTHS} />
+          <SL
+            value={form.contractLength}
+            onChange={(v) => update('contractLength', v)}
+            isEditing={e}
+            options={CONTRACT_LENGTHS}
+          />
         </Row>
         <Row label="Contract length other">
-          <F field="contractLengthOther" />
+          <F
+            value={form.contractLengthOther}
+            onChange={(v) => update('contractLengthOther', v)}
+            isEditing={e}
+          />
         </Row>
       </Section>
 
       <Section title="Billing">
         <Row label="Billing type">
-          <SL field="billingType" options={BILLING_TYPES} />
+          <SL
+            value={form.billingType}
+            onChange={(v) => update('billingType', v)}
+            isEditing={e}
+            options={BILLING_TYPES}
+          />
         </Row>
         <Row label="Payment method">
-          <SL field="paymentMethod" options={PAYMENT_METHODS} />
+          <SL
+            value={form.paymentMethod}
+            onChange={(v) => update('paymentMethod', v)}
+            isEditing={e}
+            options={PAYMENT_METHODS}
+          />
         </Row>
         <Row label="Phone provider">
-          <F field="phoneProvider" />
+          <F
+            value={form.phoneProvider}
+            onChange={(v) => update('phoneProvider', v)}
+            isEditing={e}
+          />
         </Row>
         <Row label="Broadband provider">
-          <F field="broadbandProvider" />
+          <F
+            value={form.broadbandProvider}
+            onChange={(v) => update('broadbandProvider', v)}
+            isEditing={e}
+          />
         </Row>
         <Row label="Invoice name">
-          <F field="invoiceName" />
+          <F value={form.invoiceName} onChange={(v) => update('invoiceName', v)} isEditing={e} />
         </Row>
         <Row label="Bank branch">
-          <F field="bankBranch" />
+          <F value={form.bankBranch} onChange={(v) => update('bankBranch', v)} isEditing={e} />
         </Row>
         <Row label="Sort code">
-          <F field="sortCode" mono />
+          <F value={form.sortCode} onChange={(v) => update('sortCode', v)} isEditing={e} mono />
         </Row>
         <Row label="Account number">
-          <F field="accountNumberBilling" mono />
+          <F
+            value={form.accountNumberBilling}
+            onChange={(v) => update('accountNumberBilling', v)}
+            isEditing={e}
+            mono
+          />
         </Row>
         <Row label="Bank checked">
-          <Bool field="bankChecked" />
+          <Bool value={form.bankChecked} onChange={(v) => update('bankChecked', v)} isEditing={e} />
         </Row>
       </Section>
 
       <Section title="Customer">
         <Row label="Company name">
-          <F field="companyName" />
+          <F value={form.companyName} onChange={(v) => update('companyName', v)} isEditing={e} />
         </Row>
         <Row label="First name">
-          <F field="firstName" />
+          <F value={form.firstName} onChange={(v) => update('firstName', v)} isEditing={e} />
         </Row>
         <Row label="Last name">
-          <F field="lastName" />
+          <F value={form.lastName} onChange={(v) => update('lastName', v)} isEditing={e} />
         </Row>
         <Row label="Mobile">
-          <F field="mobile" mono />
+          <F value={form.mobile} onChange={(v) => update('mobile', v)} isEditing={e} mono />
         </Row>
         <Row label="Email">
-          <F field="email" />
+          <F value={form.email} onChange={(v) => update('email', v)} isEditing={e} />
         </Row>
         <Row label="Address line 1">
-          <F field="addressLine1" />
+          <F value={form.addressLine1} onChange={(v) => update('addressLine1', v)} isEditing={e} />
         </Row>
         <Row label="Address line 2">
-          <F field="addressLine2" />
+          <F value={form.addressLine2} onChange={(v) => update('addressLine2', v)} isEditing={e} />
         </Row>
         <Row label="Address line 3">
-          <F field="addressLine3" />
+          <F value={form.addressLine3} onChange={(v) => update('addressLine3', v)} isEditing={e} />
         </Row>
         <Row label="Address line 4">
-          <F field="addressLine4" />
+          <F value={form.addressLine4} onChange={(v) => update('addressLine4', v)} isEditing={e} />
         </Row>
         <Row label="Postcode">
-          <F field="postcode" mono />
+          <F value={form.postcode} onChange={(v) => update('postcode', v)} isEditing={e} mono />
         </Row>
         <Row label="Type">
-          <SL field="customerType" options={CUSTOMER_TYPES} />
+          <SL
+            value={form.customerType}
+            onChange={(v) => update('customerType', v)}
+            isEditing={e}
+            options={CUSTOMER_TYPES}
+          />
         </Row>
         <Row label="Status">
-          <SL field="customerStatus" options={CUSTOMER_STATUSES} />
+          <SL
+            value={form.customerStatus}
+            onChange={(v) => update('customerStatus', v)}
+            isEditing={e}
+            options={CUSTOMER_STATUSES}
+          />
         </Row>
       </Section>
-    </div>
-  )
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="border rounded-lg overflow-hidden">
-      <div className="px-4 py-3 border-b bg-muted/30">
-        <h2 className="text-sm font-medium">{title}</h2>
-      </div>
-      <div className="divide-y">{children}</div>
-    </section>
-  )
-}
-
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex px-4 py-3 items-center gap-4">
-      <span className="text-muted-foreground w-40 shrink-0 text-sm">{label}</span>
-      <div className="text-sm flex-1">{children}</div>
     </div>
   )
 }

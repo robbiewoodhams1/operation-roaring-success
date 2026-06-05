@@ -1,8 +1,9 @@
 'use server'
 
 import { db, customers } from '@roaring/db'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { requireUser } from '@roaring/auth/server'
 
 export async function updateCustomer(
   id: string,
@@ -21,23 +22,29 @@ export async function updateCustomer(
     status: string
   }
 ) {
-  await db
-    .update(customers)
-    .set({
-      companyName: data.companyName || null,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      mobile: data.mobile || null,
-      email: data.email || null,
-      addressLine1: data.addressLine1 || null,
-      addressLine2: data.addressLine2 || null,
-      addressLine3: data.addressLine3 || null,
-      addressLine4: data.addressLine4 || null,
-      postcode: data.postcode || null,
-      type: data.type as any,
-      status: data.status as any,
-    })
-    .where(eq(customers.id, id))
+  const user = await requireUser()
+
+  await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT set_config('app.current_user_id', ${user.id}, true)`)
+
+    await tx
+      .update(customers)
+      .set({
+        companyName: data.companyName || null,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        mobile: data.mobile || null,
+        email: data.email || null,
+        addressLine1: data.addressLine1 || null,
+        addressLine2: data.addressLine2 || null,
+        addressLine3: data.addressLine3 || null,
+        addressLine4: data.addressLine4 || null,
+        postcode: data.postcode || null,
+        type: data.type as any,
+        status: data.status as any,
+      })
+      .where(eq(customers.id, id))
+  })
 
   revalidatePath('/customers')
 }

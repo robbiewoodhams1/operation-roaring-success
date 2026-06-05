@@ -10,8 +10,9 @@ import {
   provisioning,
   provisioningServices,
 } from '@roaring/db'
-import { eq, desc } from 'drizzle-orm'
+import { eq, desc, sql } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
+import { requireUser } from '@roaring/auth/server'
 
 function generateNextAccountNumber(latest: string | null): string {
   if (!latest) return 'DFB11143'
@@ -126,6 +127,10 @@ export async function submitDeal(data: {
   let accountNumber: string = ''
 
   const parsedConnectionFee = parseConnectionFee(data.connectionFee, data.connectionFeeOther)
+
+  const user = await requireUser()
+
+  await db.execute(sql`SELECT set_config('app.current_user_id', ${user.id}, true)`)
 
   await db.transaction(async (tx) => {
     // Step 1 — customer

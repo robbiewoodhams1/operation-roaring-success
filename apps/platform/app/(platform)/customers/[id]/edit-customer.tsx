@@ -18,6 +18,60 @@ import type { Customer } from '@roaring/db'
 const CUSTOMER_TYPES = ['business', 'residential']
 const CUSTOMER_STATUSES = ['prospect', 'active', 'at_risk', 'churned']
 
+function F({
+  value,
+  onChange,
+  isEditing,
+  placeholder,
+  mono,
+}: {
+  value: string
+  onChange: (v: string) => void
+  isEditing: boolean
+  placeholder?: string
+  mono?: boolean
+}) {
+  return isEditing ? (
+    <Input
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={`h-8 w-full max-w-sm ${mono ? 'font-mono' : ''}`}
+      placeholder={placeholder}
+    />
+  ) : (
+    <span className={`text-sm ${mono ? 'font-mono' : ''}`}>{value || '—'}</span>
+  )
+}
+
+function SL({
+  value,
+  onChange,
+  isEditing,
+  options,
+}: {
+  value: string
+  onChange: (v: string) => void
+  isEditing: boolean
+  options: string[]
+}) {
+  return isEditing ? (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="h-8 w-48">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((o) => (
+          <SelectItem key={o} value={o}>
+            {o.replace(/_/g, ' ')}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  ) : (
+    <span className="text-sm capitalize">{(value || '—').replace(/_/g, ' ')}</span>
+  )
+}
+
 export function CustomerEdit({ customer }: { customer: Customer }) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
@@ -81,51 +135,6 @@ export function CustomerEdit({ customer }: { customer: Customer }) {
     setIsEditing(false)
   }
 
-  const F = ({
-    field,
-    placeholder,
-    mono,
-  }: {
-    field: string
-    placeholder?: string
-    mono?: boolean
-  }) =>
-    isEditing ? (
-      <Input
-        value={form[field as keyof typeof form] as string}
-        onChange={(e) => update(field, e.target.value)}
-        className={`h-8 w-full max-w-sm ${mono ? 'font-mono' : ''}`}
-        placeholder={placeholder}
-      />
-    ) : (
-      <span className={`text-sm ${mono ? 'font-mono' : ''}`}>
-        {(form[field as keyof typeof form] as string) || '—'}
-      </span>
-    )
-
-  const SL = ({ field, options }: { field: string; options: string[] }) =>
-    isEditing ? (
-      <Select
-        value={form[field as keyof typeof form] as string}
-        onValueChange={(v) => update(field, v)}
-      >
-        <SelectTrigger className="h-8 w-48">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((o) => (
-            <SelectItem key={o} value={o}>
-              {o.replace(/_/g, ' ')}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    ) : (
-      <span className="text-sm capitalize">
-        {((form[field as keyof typeof form] as string) || '—').replace(/_/g, ' ')}
-      </span>
-    )
-
   return (
     <div className="space-y-6 pb-6">
       <div className="flex justify-end gap-2">
@@ -151,46 +160,85 @@ export function CustomerEdit({ customer }: { customer: Customer }) {
           <span className="text-sm font-mono">{customer.accountNumber}</span>
         </Row>
         <Row label="Type">
-          <SL field="type" options={CUSTOMER_TYPES} />
+          <SL
+            value={form.type}
+            onChange={(v) => update('type', v)}
+            isEditing={isEditing}
+            options={CUSTOMER_TYPES}
+          />
         </Row>
         <Row label="Status">
-          <SL field="status" options={CUSTOMER_STATUSES} />
+          <SL
+            value={form.status}
+            onChange={(v) => update('status', v)}
+            isEditing={isEditing}
+            options={CUSTOMER_STATUSES}
+          />
         </Row>
         <Row label="Company name">
-          <F field="companyName" />
+          <F
+            value={form.companyName}
+            onChange={(v) => update('companyName', v)}
+            isEditing={isEditing}
+          />
         </Row>
       </Section>
 
       <Section title="Contact">
         <Row label="First name">
-          <F field="firstName" />
+          <F
+            value={form.firstName}
+            onChange={(v) => update('firstName', v)}
+            isEditing={isEditing}
+          />
         </Row>
         <Row label="Last name">
-          <F field="lastName" />
+          <F value={form.lastName} onChange={(v) => update('lastName', v)} isEditing={isEditing} />
         </Row>
         <Row label="Mobile">
-          <F field="mobile" mono />
+          <F value={form.mobile} onChange={(v) => update('mobile', v)} isEditing={isEditing} mono />
         </Row>
         <Row label="Email">
-          <F field="email" />
+          <F value={form.email} onChange={(v) => update('email', v)} isEditing={isEditing} />
         </Row>
       </Section>
 
       <Section title="Address">
         <Row label="Line 1">
-          <F field="addressLine1" />
+          <F
+            value={form.addressLine1}
+            onChange={(v) => update('addressLine1', v)}
+            isEditing={isEditing}
+          />
         </Row>
         <Row label="Line 2">
-          <F field="addressLine2" />
+          <F
+            value={form.addressLine2}
+            onChange={(v) => update('addressLine2', v)}
+            isEditing={isEditing}
+          />
         </Row>
         <Row label="Line 3">
-          <F field="addressLine3" />
+          <F
+            value={form.addressLine3}
+            onChange={(v) => update('addressLine3', v)}
+            isEditing={isEditing}
+          />
         </Row>
         <Row label="Line 4">
-          <F field="addressLine4" />
+          <F
+            value={form.addressLine4}
+            onChange={(v) => update('addressLine4', v)}
+            isEditing={isEditing}
+          />
         </Row>
         <Row label="Postcode">
-          <F field="postcode" mono />
+          <F
+            value={form.postcode}
+            onChange={(v) => update('postcode', v)}
+            isEditing={isEditing}
+            mono
+          />
         </Row>
       </Section>
     </div>

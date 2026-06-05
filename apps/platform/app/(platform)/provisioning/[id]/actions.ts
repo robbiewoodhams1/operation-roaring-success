@@ -1,8 +1,9 @@
 'use server'
 
 import { db, provisioning, provisioningServices } from '@roaring/db'
-import { eq, and } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { requireUser } from '@roaring/auth/server'
 
 export async function updateProvisioning(
   id: string,
@@ -24,6 +25,10 @@ export async function updateProvisioning(
     routerTrackingNumber: string | null
   }
 ) {
+  const user = await requireUser()
+
+  await db.execute(sql`SELECT set_config('app.current_user_id', ${user.id}, true)`)
+
   await db
     .update(provisioning)
     .set({
@@ -65,6 +70,10 @@ export async function updateProvisioningService(
     notes: string | null
   }
 ) {
+  const user = await requireUser()
+
+  await db.execute(sql`SELECT set_config('app.current_user_id', ${user.id}, true)`)
+
   await db
     .update(provisioningServices)
     .set({
@@ -91,6 +100,10 @@ export async function addProvisioningServiceAttempt(
   serviceType: 'bb' | 'whc' | 'nfon' | 'mpf',
   currentMaxAttempt: number
 ) {
+  const user = await requireUser()
+
+  await db.execute(sql`SELECT set_config('app.current_user_id', ${user.id}, true)`)
+
   await db.insert(provisioningServices).values({
     provisioningId,
     serviceType,
