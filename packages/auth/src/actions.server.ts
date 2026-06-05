@@ -41,7 +41,7 @@ export async function requireUser(): Promise<AuthUser> {
 
 export async function requireRole(...roles: UserRole[]): Promise<AuthUser> {
   const user = await requireUser()
-  if (!roles.includes(user.role)) redirect('/unauthorized')
+  if (!roles.includes(user.role)) redirect('/unauthorised')
   return user
 }
 

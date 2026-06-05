@@ -95,6 +95,43 @@ export async function search(tenantId: string, query: string): Promise<SearchRes
   }
 
   // Provisioning — search by reference
+  // Provisioning — search by customer name/account
+  const provRows = await db
+    .select({
+      id: provisioning.id,
+      status: provisioning.status,
+      provisioner: provisioning.provisioner,
+      accountNumber: customers.accountNumber,
+      companyName: customers.companyName,
+      firstName: customers.firstName,
+      lastName: customers.lastName,
+    })
+    .from(provisioning)
+    .leftJoin(deals, eq(provisioning.dealId, deals.id))
+    .leftJoin(customers, eq(deals.customerId, customers.id))
+    .where(
+      or(
+        ilike(customers.accountNumber, q),
+        ilike(customers.companyName, q),
+        ilike(customers.firstName, q),
+        ilike(customers.lastName, q)
+      )
+    )
+    .limit(20)
+
+  for (const p of provRows) {
+    results.push({
+      type: 'provisioning',
+      id: p.id,
+      accountNumber: p.accountNumber ?? '',
+      title: p.companyName ?? `${p.firstName} ${p.lastName}`,
+      subtitle: p.provisioner ? `Provisioner: ${p.provisioner}` : '',
+      status: p.status,
+      href: `/provisioning/${p.accountNumber}`,
+    })
+  }
+
+  // Provisioning — also search by BB/WHC/NFON/MPF reference
   const provServiceRows = await db
     .select({
       id: provisioningServices.id,
@@ -109,7 +146,6 @@ export async function search(tenantId: string, query: string): Promise<SearchRes
 
   if (provServiceRows.length > 0) {
     const provIds = [...new Set(provServiceRows.map((r) => r.provisioningId))]
-
     for (const provId of provIds) {
       const prov = await db
         .select({

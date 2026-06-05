@@ -37,7 +37,7 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith('/update-password') &&
     !request.nextUrl.pathname.startsWith('/confirm') &&
     !request.nextUrl.pathname.startsWith('/pending-approval') &&
-    !request.nextUrl.pathname.startsWith('/unauthorized') &&
+    !request.nextUrl.pathname.startsWith('/unauthorised') &&
     !request.nextUrl.pathname.startsWith('/rejected')
   ) {
     const url = request.nextUrl.clone()

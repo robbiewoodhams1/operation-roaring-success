@@ -89,7 +89,7 @@ export function SearchClient({ tenantId }: { tenantId: string }) {
       )}
 
       {results.length > 0 && (
-        <div className="space-y-4">
+        <div className="space-y-4 mt-2">
           <p className="text-xs text-muted-foreground">
             {results.length} result{results.length !== 1 ? 's' : ''}
           </p>
