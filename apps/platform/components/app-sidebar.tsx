@@ -116,6 +116,20 @@ const navItems = [
         roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
         active: true,
       },
+      {
+        title: 'Stats',
+        href: '/stats',
+        icon: FileChartLine,
+        roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
+        active: true,
+      },
+      {
+        title: 'Targets',
+        href: '/targets',
+        icon: Target,
+        roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
+        active: true,
+      },
     ],
   },
   {
