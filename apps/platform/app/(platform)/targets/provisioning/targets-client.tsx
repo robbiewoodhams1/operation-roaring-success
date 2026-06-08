@@ -47,7 +47,7 @@ function ProgressBar({ pct, colour }: { pct: number; colour: string }) {
 }
 
 function ServiceCard({ type, stat }: { type: string; stat: ServiceStat }) {
-  const colours = serviceColours[type]
+  const colours = serviceColours[type] ?? { bar: 'bg-gray-500', badge: 'bg-gray-100 text-gray-800' }
   return (
     <Card>
       <CardHeader className="pb-2">

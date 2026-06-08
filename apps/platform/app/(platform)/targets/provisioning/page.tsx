@@ -25,11 +25,13 @@ export default async function TargetsPage({
 
   const monthStart = new Date(targetYear, targetMonth, 1)
   const monthEnd = new Date(targetYear, targetMonth + 1, 1)
+  const monthStartDate = monthStart.toISOString().split('T')[0] as string
+  const monthEndDate = monthEnd.toISOString().split('T')[0] as string
   const monthLabel = monthStart.toLocaleString('en-GB', { month: 'long', year: 'numeric' })
   const isCurrentMonth = targetMonth === now.getMonth() && targetYear === now.getFullYear()
 
   const currentUser = await db.query.users.findFirst({ where: eq(users.id, user.id) })
-  const userFullName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : ''
+  const userFullName = currentUser?.fullName ?? 'User'
 
   async function getStats(dealFilter: 'team' | 'individual') {
     const whereClause =
@@ -37,13 +39,13 @@ export default async function TargetsPage({
         ? and(
             eq(deals.tenantId, user.tenantId),
             eq(deals.createdBy, user.id),
-            gte(deals.dealDate, monthStart.toISOString().split('T')[0]),
-            lt(deals.dealDate, monthEnd.toISOString().split('T')[0])
+            gte(deals.dealDate, monthStartDate),
+            lt(deals.dealDate, monthEndDate)
           )
         : and(
             eq(deals.tenantId, user.tenantId),
-            gte(deals.dealDate, monthStart.toISOString().split('T')[0]),
-            lt(deals.dealDate, monthEnd.toISOString().split('T')[0])
+            gte(deals.dealDate, monthStartDate),
+            lt(deals.dealDate, monthEndDate)
           )
 
     const dealsResult = await db.select({ id: deals.id }).from(deals).where(whereClause)
