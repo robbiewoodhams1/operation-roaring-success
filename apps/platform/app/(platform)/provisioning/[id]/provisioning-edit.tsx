@@ -42,6 +42,7 @@ const provStatusLabels: Record<string, string> = {
 
 const serviceStatusColours: Record<string, string> = {
   not_applied: 'bg-gray-100 text-gray-700 border-gray-200',
+  cant_provision: 'bg-orange-100 text-orange-800 border-orange-200',
   applied: 'bg-blue-100 text-blue-800 border-blue-200',
   delayed: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   cancelled: 'bg-red-100 text-red-800 border-red-200',
@@ -64,7 +65,14 @@ const PROV_STATUSES = [
   'live',
   'failed',
 ]
-const SERVICE_STATUSES = ['not_applied', 'applied', 'delayed', 'cancelled', 'live']
+const SERVICE_STATUSES = [
+  'not_applied',
+  'cant_provision',
+  'applied',
+  'delayed',
+  'cancelled',
+  'live',
+]
 const CANCELLED_BY_OPTIONS = ['customer', 'bt_wholesale', 'openreach', 'us']
 
 function formatDate(date: string | Date | null | undefined): string {

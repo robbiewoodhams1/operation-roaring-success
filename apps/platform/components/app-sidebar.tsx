@@ -12,7 +12,11 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from '@/components/ui/sidebar'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { UserNav } from '@/components/user-nav'
 import type { AuthUser, UserRole } from '@roaring/auth'
 import {
@@ -29,10 +33,30 @@ import {
   Router,
   TriangleAlert,
   Search,
+  ChevronRight,
 } from 'lucide-react'
 
-// Nav items with role requirements
-const navItems = [
+type NavChild = {
+  title: string
+  href: string
+  active?: boolean
+}
+
+type NavItem = {
+  title: string
+  href?: string
+  icon: React.ElementType
+  roles: string[]
+  active: boolean
+  children?: NavChild[]
+}
+
+type NavGroup = {
+  label: string
+  items: NavItem[]
+}
+
+const navItems: NavGroup[] = [
   {
     label: 'Operations',
     items: [
@@ -40,14 +64,14 @@ const navItems = [
         title: 'Home',
         href: '/home',
         icon: House,
-        roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
+        roles: ['sales', 'agent', 'team_leader', 'manager', 'director', 'admin'],
         active: true,
       },
       {
         title: 'Customers',
         href: '/customers',
         icon: Users,
-        roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
+        roles: ['sales', 'agent', 'team_leader', 'manager', 'director', 'admin'],
         active: true,
       },
       {
@@ -94,14 +118,14 @@ const navItems = [
         title: 'Deal Sheet',
         href: '/deal-sheet',
         icon: FilePlusCorner,
-        roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
+        roles: ['sales', 'agent', 'team_leader', 'manager', 'director', 'admin'],
         active: true,
       },
       {
         title: 'Deals',
         href: '/deals',
         icon: FileChartLine,
-        roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
+        roles: ['sales', 'agent', 'team_leader', 'manager', 'director', 'admin'],
         active: true,
       },
     ],
@@ -113,35 +137,31 @@ const navItems = [
         title: 'Search',
         href: '/search',
         icon: Search,
-        roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
+        roles: ['sales', 'agent', 'team_leader', 'manager', 'director', 'admin'],
         active: true,
       },
       {
         title: 'Stats',
         href: '/stats',
         icon: FileChartLine,
-        roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
+        roles: ['sales', 'agent', 'team_leader', 'manager', 'director', 'admin'],
         active: true,
       },
       {
         title: 'Targets',
-        href: '/targets',
         icon: Target,
-        roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
+        roles: ['sales', 'agent', 'team_leader', 'manager', 'director', 'admin'],
         active: true,
+        children: [
+          { title: 'Provisioning', href: '/targets/provisioning', active: true },
+          { title: 'Sales', href: '/targets/sales', active: true },
+        ],
       },
     ],
   },
   {
     label: 'Intelligence',
     items: [
-      {
-        title: 'Targets',
-        href: '/targets',
-        icon: Target,
-        roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
-        active: false,
-      },
       {
         title: 'Analytics',
         href: '/analytics',
@@ -176,33 +196,85 @@ export function AppSidebar({ user }: { user: AuthUser }) {
       <SidebarContent>
         {navItems.map((group) => {
           const visibleItems = group.items.filter((item) => hasAccess(item.roles, user.role))
-
           if (visibleItems.length === 0) return null
 
           return (
             <SidebarGroup key={group.label}>
               <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
               <SidebarMenu>
-                {visibleItems.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    {item.active ? (
-                      <Link href={item.href}>
-                        <SidebarMenuButton
-                          isActive={pathname === item.href}
-                          className="cursor-pointer"
-                        >
+                {visibleItems.map((item) => {
+                  // Item with children — collapsible
+                  if (item.children) {
+                    const isAnyChildActive = item.children.some((c) => pathname.startsWith(c.href))
+                    return (
+                      <Collapsible
+                        key={item.title}
+                        defaultOpen={isAnyChildActive}
+                        className="group/collapsible"
+                      >
+                        <SidebarMenuItem>
+                          <CollapsibleTrigger asChild className="w-full">
+                            <SidebarMenuButton
+                              isActive={isAnyChildActive}
+                              className="cursor-pointer w-full"
+                            >
+                              <item.icon className="size-4" />
+                              {item.title}
+                              <ChevronRight className="ml-auto size-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                            </SidebarMenuButton>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <SidebarMenuSub>
+                              {item.children.map((child) => (
+                                <SidebarMenuSubItem key={child.href}>
+                                  {child.active !== false ? (
+                                    <Link href={child.href}>
+                                      <SidebarMenuSubButton
+                                        isActive={pathname === child.href}
+                                        className="w-full"
+                                      >
+                                        {child.title}
+                                      </SidebarMenuSubButton>
+                                    </Link>
+                                  ) : (
+                                    <SidebarMenuSubButton
+                                      className="opacity-40 cursor-not-allowed w-full"
+                                      disabled
+                                    >
+                                      {child.title}
+                                    </SidebarMenuSubButton>
+                                  )}
+                                </SidebarMenuSubItem>
+                              ))}
+                            </SidebarMenuSub>
+                          </CollapsibleContent>
+                        </SidebarMenuItem>
+                      </Collapsible>
+                    )
+                  }
+
+                  // Regular item
+                  return (
+                    <SidebarMenuItem key={item.href}>
+                      {item.active ? (
+                        <Link href={item.href!}>
+                          <SidebarMenuButton
+                            isActive={pathname === item.href}
+                            className="cursor-pointer"
+                          >
+                            <item.icon className="size-4" />
+                            {item.title}
+                          </SidebarMenuButton>
+                        </Link>
+                      ) : (
+                        <SidebarMenuButton disabled className="opacity-40 cursor-not-allowed">
                           <item.icon className="size-4" />
                           {item.title}
                         </SidebarMenuButton>
-                      </Link>
-                    ) : (
-                      <SidebarMenuButton disabled className="opacity-40 cursor-not-allowed">
-                        <item.icon className="size-4" />
-                        {item.title}
-                      </SidebarMenuButton>
-                    )}
-                  </SidebarMenuItem>
-                ))}
+                      )}
+                    </SidebarMenuItem>
+                  )
+                })}
               </SidebarMenu>
             </SidebarGroup>
           )

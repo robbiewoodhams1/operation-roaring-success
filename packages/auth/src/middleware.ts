@@ -29,6 +29,13 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // Handle root route
+  if (request.nextUrl.pathname === '/') {
+    const url = request.nextUrl.clone()
+    url.pathname = user ? '/home' : '/login'
+    return NextResponse.redirect(url)
+  }
+
   // Redirect unauthenticated users to login
   if (
     !user &&

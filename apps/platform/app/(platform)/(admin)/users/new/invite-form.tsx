@@ -17,6 +17,7 @@ import type { UserRole } from '@roaring/auth'
 import { Spinner } from '@/components/ui/spinner'
 
 const ROLES = [
+  { value: 'sales', label: 'Sales' },
   { value: 'agent', label: 'Agent' },
   { value: 'team_leader', label: 'Team Leader' },
   { value: 'manager', label: 'Manager' },
