@@ -34,6 +34,7 @@ import {
   TriangleAlert,
   Search,
   ChevronRight,
+  CircleHelp,
 } from 'lucide-react'
 
 type NavChild = {
@@ -156,6 +157,13 @@ const navItems: NavGroup[] = [
           { title: 'Provisioning', href: '/targets/provisioning', active: true },
           { title: 'Sales', href: '/targets/sales', active: true },
         ],
+      },
+      {
+        title: 'Help',
+        href: '/help',
+        icon: CircleHelp,
+        roles: ['sales', 'agent', 'team_leader', 'manager', 'director', 'admin'],
+        active: true,
       },
     ],
   },
