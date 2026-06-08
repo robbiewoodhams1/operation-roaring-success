@@ -8,8 +8,23 @@ if (!process.env.DATABASE_URL) {
 
 const connectionString = process.env.DATABASE_URL
 
-// For serverless/edge environments, disable prefetch
-const client = postgres(connectionString, { prepare: false })
+declare global {
+  var _pgClient: ReturnType<typeof postgres> | undefined
+  var _db: ReturnType<typeof drizzle> | undefined
+}
 
-export const db = drizzle(client, { schema })
+const client =
+  globalThis._pgClient ??
+  postgres(connectionString, {
+    prepare: false,
+    max: 10,
+  })
+
+export const db = globalThis._db ?? drizzle(client, { schema })
+
+if (process.env.NODE_ENV !== 'production') {
+  globalThis._pgClient = client
+  globalThis._db = db
+}
+
 export type Database = typeof db

@@ -9,42 +9,38 @@ export default async function HomePage() {
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
 
-  const [dealsToday, customersTotal, provisioningActive, recentActivity, currentUser] =
+  const [dealsToday, customersTotal, provisioningActive, recentActivity, currentUserResult] =
     await Promise.all([
-      // Deals submitted today
       db
         .select({ id: deals.id })
         .from(deals)
         .where(and(eq(deals.tenantId, user.tenantId), gte(deals.createdAt, todayStart))),
 
-      // Total active customers
       db
         .select({ id: customers.id })
         .from(customers)
-        .where(and(eq(customers.tenantId, user.tenantId), eq(customers.status, 'active'))),
+        .where(and(eq(customers.tenantId, user.tenantId), eq(customers.status, 'active' as any))),
 
-      // Provisioning in progress (not started or applied)
       db
         .select({ id: provisioning.id })
         .from(provisioning)
         .where(
-          and(eq(provisioning.tenantId, user.tenantId), eq(provisioning.status, 'not_started'))
+          and(
+            eq(provisioning.tenantId, user.tenantId),
+            eq(provisioning.status, 'not_started' as any)
+          )
         ),
 
-      // Recent audit activity
       db.select().from(auditLogs).orderBy(desc(auditLogs.changedAt)).limit(8),
 
-      // Current user name
-      db.query.users.findFirst({
-        where: eq(users.id, user.id),
-      }),
+      db.select({ fullName: users.fullName }).from(users).where(eq(users.id, user.id)).limit(1),
     ])
 
-  const firstName = currentUser?.fullName ?? 'there'
+  const fullName = currentUserResult[0] ? currentUserResult[0].fullName : 'there'
 
   return (
     <HomeClient
-      firstName={firstName}
+      fullName={fullName}
       stats={{
         dealsToday: dealsToday.length,
         activeCustomers: customersTotal.length,

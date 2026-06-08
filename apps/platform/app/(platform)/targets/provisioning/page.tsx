@@ -30,8 +30,13 @@ export default async function TargetsPage({
   const monthLabel = monthStart.toLocaleString('en-GB', { month: 'long', year: 'numeric' })
   const isCurrentMonth = targetMonth === now.getMonth() && targetYear === now.getFullYear()
 
-  const currentUser = await db.query.users.findFirst({ where: eq(users.id, user.id) })
-  const userFullName = currentUser?.fullName ?? 'User'
+  const currentUserResult = await db
+    .select({ name: users.fullName })
+    .from(users)
+    .where(eq(users.id, user.id))
+    .limit(1)
+
+  const userFullName = currentUserResult[0] ? currentUserResult[0].name : 'User'
 
   async function getStats(dealFilter: 'team' | 'individual') {
     const whereClause =

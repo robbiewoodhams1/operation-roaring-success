@@ -60,12 +60,12 @@ function formatActivityMessage(log: AuditLog): string {
 }
 
 export function HomeClient({
-  firstName,
+  fullName,
   stats,
   recentActivity,
   userId,
 }: {
-  firstName: string
+  fullName: string
   stats: { dealsToday: number; activeCustomers: number; pendingProvisioning: number }
   recentActivity: AuditLog[]
   userId: string
@@ -120,7 +120,7 @@ export function HomeClient({
     <div className="p-6 max-w-6xl space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-semibold">Welcome back, {firstName}</h1>
+        <h1 className="text-3xl font-semibold">Welcome back, {fullName}</h1>
         <p className="text-muted-foreground mt-1 flex items-center gap-2">
           <Clock className="size-3.5" />
           {today}

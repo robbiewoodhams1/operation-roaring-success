@@ -19,7 +19,6 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { UserNav } from '@/components/user-nav'
 import type { AuthUser, UserRole } from '@roaring/auth'
-import { useState } from 'react'
 import {
   House,
   Users,
@@ -184,17 +183,7 @@ function hasAccess(roles: string[], userRole: UserRole) {
 
 export function AppSidebar({ user }: { user: AuthUser }) {
   const pathname = usePathname()
-  const [openItems, setOpenItems] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {}
-    navItems.forEach((group) => {
-      group.items.forEach((item) => {
-        if (item.children) {
-          initial[item.title] = item.children.some((c) => pathname.startsWith(c.href))
-        }
-      })
-    })
-    return initial
-  })
+
   return (
     <Sidebar variant="inset">
       <SidebarHeader>
@@ -220,10 +209,7 @@ export function AppSidebar({ user }: { user: AuthUser }) {
                     return (
                       <Collapsible
                         key={item.title}
-                        open={openItems[item.title] ?? false}
-                        onOpenChange={(open) =>
-                          setOpenItems((prev) => ({ ...prev, [item.title]: open }))
-                        }
+                        defaultOpen={isAnyChildActive}
                         className="group/collapsible"
                       >
                         <SidebarMenuItem>
@@ -242,20 +228,17 @@ export function AppSidebar({ user }: { user: AuthUser }) {
                               {item.children.map((child) => (
                                 <SidebarMenuSubItem key={child.href}>
                                   {child.active !== false ? (
-                                    <Link href={child.href} className="w-full block">
-                                      <SidebarMenuSubButton
-                                        isActive={pathname === child.href}
-                                        className="w-full"
-                                      >
-                                        {child.title}
-                                      </SidebarMenuSubButton>
-                                    </Link>
+                                    <SidebarMenuSubButton
+                                      isActive={pathname === child.href}
+                                      className="w-full"
+                                      href={child.href}
+                                    >
+                                      {child.title}
+                                    </SidebarMenuSubButton>
                                   ) : (
-                                    <span className="w-full block opacity-40 cursor-not-allowed">
-                                      <SidebarMenuSubButton className="w-full pointer-events-none">
-                                        {child.title}
-                                      </SidebarMenuSubButton>
-                                    </span>
+                                    <SidebarMenuSubButton className="opacity-40 cursor-not-allowed w-full pointer-events-none">
+                                      {child.title}
+                                    </SidebarMenuSubButton>
                                   )}
                                 </SidebarMenuSubItem>
                               ))}
