@@ -49,12 +49,21 @@ function diffData(oldData: any, newData: any): { field: string; from: any; to: a
 function LogRow({ log, userName }: { log: AuditLog; userName: string }) {
   const [open, setOpen] = useState(false)
   const changes = diffData(log.oldData, log.newData)
+
+  // Build a meaningful identifier from the data
+  const data = log.newData ?? log.oldData
+
   const identifier =
-    log.newData?.account_number ??
-    log.newData?.company_name ??
-    log.oldData?.account_number ??
-    log.oldData?.company_name ??
+    data?.account_number ??
+    data?.company_name ??
+    (data?.first_name ? `${data.first_name} ${data.last_name ?? ''}`.trim() : undefined) ??
+    data?.email ??
+    data?.service_type?.toUpperCase() ??
     log.recordId.slice(0, 8)
+
+  // For updates, show a summary of what changed
+  const changeSummary =
+    changes.length > 0 ? changes.map((c) => c.field.replace(/_/g, ' ')).join(', ') : null
 
   return (
     <div className="border rounded-lg overflow-hidden">
@@ -68,11 +77,15 @@ function LogRow({ log, userName }: { log: AuditLog; userName: string }) {
         >
           {log.action}
         </Badge>
-        <span className="text-xs font-medium text-muted-foreground w-28 shrink-0">
+        <span className="text-xs font-medium text-muted-foreground w-24 shrink-0">
           {tableLabels[log.tableName] ?? log.tableName}
         </span>
-        <span className="text-sm flex-1 truncate">{identifier}</span>
-        <span className="text-xs text-muted-foreground shrink-0">{userName}</span>
+        <span className="text-sm font-medium shrink-0">{identifier}</span>
+        {changeSummary && (
+          <span className="text-xs text-muted-foreground truncate flex-1">— {changeSummary}</span>
+        )}
+        {!changeSummary && <span className="flex-1" />}
+        <span className="text-xs font-medium text-muted-foreground shrink-0">{userName}</span>
         <span className="text-xs text-muted-foreground shrink-0 w-36 text-right">
           {new Date(log.changedAt).toLocaleString('en-GB', {
             day: '2-digit',
@@ -91,6 +104,20 @@ function LogRow({ log, userName }: { log: AuditLog; userName: string }) {
 
       {open && (
         <div className="border-t bg-muted/10 px-4 py-3 space-y-3">
+          {/* Meta row */}
+          <div className="flex gap-6 text-xs text-muted-foreground pb-2 border-b">
+            <span>
+              <span className="font-medium text-foreground">Changed by</span> {userName}
+            </span>
+            <span>
+              <span className="font-medium text-foreground">Record ID</span>{' '}
+              <span className="font-mono">{log.recordId}</span>
+            </span>
+            <span>
+              <span className="font-medium text-foreground">Table</span> {log.tableName}
+            </span>
+          </div>
+
           {log.action === 'INSERT' && (
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2">Created with</p>
@@ -99,8 +126,8 @@ function LogRow({ log, userName }: { log: AuditLog; userName: string }) {
                   ([k, v]) =>
                     v !== null && (
                       <div key={k} className="flex gap-2 text-xs">
-                        <span className="font-mono text-muted-foreground w-40 shrink-0">{k}</span>
-                        <span className="text-foreground">{String(v)}</span>
+                        <span className="font-mono text-muted-foreground w-44 shrink-0">{k}</span>
+                        <span className="text-foreground break-all">{String(v)}</span>
                       </div>
                     )
                 )}
@@ -115,17 +142,29 @@ function LogRow({ log, userName }: { log: AuditLog; userName: string }) {
               </p>
               <div className="space-y-2">
                 {changes.map(({ field, from, to }) => (
-                  <div key={field} className="text-xs">
-                    <span className="font-mono text-muted-foreground">{field}</span>
-                    <div className="flex items-center gap-2 mt-0.5 ml-2">
-                      <span className="line-through text-red-600">{String(from ?? '—')}</span>
-                      <span className="text-muted-foreground">→</span>
-                      <span className="text-green-600">{String(to ?? '—')}</span>
+                  <div key={field} className="text-xs bg-muted/20 rounded p-2">
+                    <span className="font-mono font-medium">{field}</span>
+                    <div className="flex items-start gap-2 mt-1 ml-2">
+                      <div className="flex-1">
+                        <span className="text-muted-foreground text-xs">from </span>
+                        <span className="line-through text-red-600 break-all">
+                          {String(from ?? '—')}
+                        </span>
+                      </div>
+                      <span className="text-muted-foreground shrink-0">→</span>
+                      <div className="flex-1">
+                        <span className="text-muted-foreground text-xs">to </span>
+                        <span className="text-green-600 break-all">{String(to ?? '—')}</span>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
+          )}
+
+          {log.action === 'UPDATE' && changes.length === 0 && (
+            <p className="text-xs text-muted-foreground">No field differences detected.</p>
           )}
 
           {log.action === 'DELETE' && (
@@ -136,8 +175,8 @@ function LogRow({ log, userName }: { log: AuditLog; userName: string }) {
                   ([k, v]) =>
                     v !== null && (
                       <div key={k} className="flex gap-2 text-xs">
-                        <span className="font-mono text-muted-foreground w-40 shrink-0">{k}</span>
-                        <span className="line-through text-red-600">{String(v)}</span>
+                        <span className="font-mono text-muted-foreground w-44 shrink-0">{k}</span>
+                        <span className="line-through text-red-600 break-all">{String(v)}</span>
                       </div>
                     )
                 )}
@@ -193,7 +232,7 @@ export function AuditClient({
   }
 
   return (
-    <div className="p-6 max-w-6xl space-y-4">
+    <div className="p-6 w-full space-y-4">
       <div>
         <h1 className="text-2xl font-semibold">Audit Log</h1>
         <p className="text-sm text-muted-foreground mt-1">Last 200 changes across all tables</p>

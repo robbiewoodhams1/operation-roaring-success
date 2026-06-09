@@ -26,7 +26,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
   if (!user || user.tenantId !== currentUser.tenantId) notFound()
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-6 w-full">
       <div className="flex items-center gap-4 mb-8">
         <Link href="/users">
           <ArrowLeft className="size-4" />
