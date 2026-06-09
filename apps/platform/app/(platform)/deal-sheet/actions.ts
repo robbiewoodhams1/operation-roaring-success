@@ -10,15 +10,15 @@ import {
   provisioning,
   provisioningServices,
 } from '@roaring/db'
-import { eq, desc } from 'drizzle-orm'
+import { eq, desc, like, sql, and, gte } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 import { requireUser, setAuditUser } from '@roaring/auth'
 
 function generateNextAccountNumber(latest: string | null): string {
-  if (!latest) return 'DFB11143'
-  const prefix = latest.match(/^[A-Z]+/)?.[0] ?? 'DFB'
-  const num = parseInt(latest.replace(/^[A-Z]+/, '')) + 1
-  return `${prefix}${num}`
+  if (!latest) return 'DFB20001'
+  const num = parseInt(latest.replace(/^[A-Z]+/, ''))
+  if (isNaN(num)) return 'DFB20001'
+  return `DFB${num + 1}`
 }
 
 function parseConnectionFee(fee: string, other: string): string | null {
@@ -138,7 +138,13 @@ export async function submitDeal(data: {
       const latest = await tx
         .select({ accountNumber: customers.accountNumber })
         .from(customers)
-        .orderBy(desc(customers.accountNumber))
+        .where(
+          and(
+            like(customers.accountNumber, 'DFB2%'),
+            gte(sql`CAST(SUBSTRING(${customers.accountNumber} FROM 4) AS INTEGER)`, 20001)
+          )
+        )
+        .orderBy(desc(sql`CAST(SUBSTRING(${customers.accountNumber} FROM 4) AS INTEGER)`))
         .limit(1)
 
       accountNumber = generateNextAccountNumber(latest[0]?.accountNumber ?? null)
