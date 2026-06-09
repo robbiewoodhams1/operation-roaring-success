@@ -12,6 +12,7 @@ export default async function LoginPage({
 
   const params = await searchParams
   const activated = params['activated'] === 'true'
+  const suspended = params['suspended'] === 'true'
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
@@ -24,6 +25,11 @@ export default async function LoginPage({
           <p className="text-sm text-center text-green-600 mb-4">
             Account set up successfully — sign in to continue
           </p>
+        )}
+        {suspended && (
+          <div className="bg-red-50 border border-red-200 text-red-800 text-sm rounded-md px-4 py-3 mb-4">
+            Your account has been suspended. Please contact your administrator.
+          </div>
         )}
         <LoginForm />
       </div>

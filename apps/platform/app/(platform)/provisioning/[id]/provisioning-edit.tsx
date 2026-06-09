@@ -78,7 +78,7 @@ const CANCELLED_BY_OPTIONS = ['customer', 'bt_wholesale', 'openreach', 'us']
 
 function formatDate(date: string | Date | null | undefined): string {
   if (!date) return ''
-  return new Date(date).toISOString().split('T')[0]
+  return new Date(date).toISOString().split('T')[0] ?? ''
 }
 
 function Row({
@@ -245,7 +245,7 @@ function ServicePanel({
         <div className="divide-y">
           <Row label="Status">
             {isEditing ? (
-              <Select value={form.status} onValueChange={(v) => update('status', v)}>
+              <Select value={form.status} onValueChange={(v) => update('status', v ?? '')}>
                 <SelectTrigger className="h-8 w-48">
                   <SelectValue />
                 </SelectTrigger>
@@ -347,7 +347,10 @@ function ServicePanel({
               </Row>
               <Row label="Cancelled by">
                 {isEditing ? (
-                  <Select value={form.cancelledBy} onValueChange={(v) => update('cancelledBy', v)}>
+                  <Select
+                    value={form.cancelledBy}
+                    onValueChange={(v) => update('cancelledBy', v ?? '')}
+                  >
                     <SelectTrigger className="h-8 w-48">
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
@@ -777,7 +780,7 @@ export function ProvisioningEdit({
           <div className="divide-y">
             <Row label="Overall status">
               {isEditing ? (
-                <Select value={form.status} onValueChange={(v) => update('status', v)}>
+                <Select value={form.status} onValueChange={(v) => update('status', v ?? '')}>
                   <SelectTrigger className="h-8 w-56">
                     <SelectValue />
                   </SelectTrigger>
@@ -900,7 +903,10 @@ export function ProvisioningEdit({
           <div className="divide-y">
             <Row label="WC1 outcome">
               {isEditing ? (
-                <Select value={form.wc1Outcome} onValueChange={(v) => update('wc1Outcome', v)}>
+                <Select
+                  value={form.wc1Outcome}
+                  onValueChange={(v) => update('wc1Outcome', v ?? '')}
+                >
                   <SelectTrigger className="h-8 w-48">
                     <SelectValue placeholder="Select outcome" />
                   </SelectTrigger>
@@ -934,7 +940,10 @@ export function ProvisioningEdit({
             </Row>
             <Row label="WC2 outcome">
               {isEditing ? (
-                <Select value={form.wc2Outcome} onValueChange={(v) => update('wc2Outcome', v)}>
+                <Select
+                  value={form.wc2Outcome}
+                  onValueChange={(v) => update('wc2Outcome', v ?? '')}
+                >
                   <SelectTrigger className="h-8 w-48">
                     <SelectValue placeholder="Select outcome" />
                   </SelectTrigger>

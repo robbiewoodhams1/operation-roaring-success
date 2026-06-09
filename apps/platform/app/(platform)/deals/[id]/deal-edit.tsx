@@ -89,7 +89,7 @@ function SL({
   placeholder?: string
 }) {
   return isEditing ? (
-    <Select value={value} onValueChange={onChange}>
+    <Select value={value} onValueChange={(v) => onChange(v ?? '')}>
       <SelectTrigger className="h-8 w-48">
         <SelectValue placeholder={placeholder ?? 'Select'} />
       </SelectTrigger>

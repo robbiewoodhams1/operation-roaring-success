@@ -5,10 +5,9 @@ import { eq } from 'drizzle-orm'
 import type { AuthUser, UserRole } from './types'
 
 async function getAppUser(authId: string): Promise<AuthUser | null> {
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, authId),
-  })
+  const result = await db.select().from(users).where(eq(users.id, authId)).limit(1)
 
+  const user = result[0]
   if (!user) return null
 
   return {
@@ -18,6 +17,7 @@ async function getAppUser(authId: string): Promise<AuthUser | null> {
     role: user.role,
     tenantId: user.tenantId,
     approvalStatus: user.approvalStatus,
+    isActive: user.isActive,
   }
 }
 
@@ -36,6 +36,11 @@ export async function requireUser(): Promise<AuthUser> {
   if (user.approvalStatus === 'pending') redirect('/pending-approval')
   if (user.approvalStatus === 'rejected') redirect('/rejected')
   if (!user) redirect('/login')
+  if (!user.isActive) {
+    const supabase = await createClient()
+    await supabase.auth.signOut()
+    redirect('/login?suspended=true')
+  }
   return user
 }
 
@@ -112,14 +117,11 @@ export async function inviteUser({
 
   // Step 3 — log the invite in audit_logs
   await db.insert(auditLogs).values({
-    tenantId,
-    userId: invitedById,
-    userEmail: invitedByEmail,
-    userName: invitedByName,
-    action: 'create',
     tableName: 'user_invitations',
     recordId: authUser.user.id,
+    action: 'INSERT',
     newData: { email, role, fullName },
+    changedBy: invitedById,
   })
 
   return { success: true, error: null }

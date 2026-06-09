@@ -1,15 +1,16 @@
 import { requireUser } from '@roaring/auth/server'
 import { db, customers } from '@roaring/db'
-import { eq } from 'drizzle-orm'
+import { eq, asc } from 'drizzle-orm'
 import SalesForm from './sales-form'
 
 // page.tsx
 export default async function DealSheetPage() {
   const user = await requireUser()
-  const allCustomers = await db.query.customers.findMany({
-    where: eq(customers.tenantId, user.tenantId),
-    orderBy: (customers, { asc }) => [asc(customers.accountNumber)],
-  })
+  const allCustomers = await db
+    .select()
+    .from(customers)
+    .where(eq(customers.tenantId, user.tenantId))
+    .orderBy(asc(customers.accountNumber))
 
   return (
     <div className="px-6">

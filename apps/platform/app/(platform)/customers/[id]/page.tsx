@@ -10,10 +10,9 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const { id } = await params
   const user = await requireUser()
 
-  const customer = await db.query.customers.findFirst({
-    where: eq(customers.accountNumber, id),
-  })
+  const result = await db.select().from(customers).where(eq(customers.accountNumber, id)).limit(1)
 
+  const customer = result[0]
   if (!customer || customer.tenantId !== user.tenantId) notFound()
 
   return (

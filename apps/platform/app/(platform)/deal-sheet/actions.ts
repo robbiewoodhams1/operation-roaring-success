@@ -130,10 +130,12 @@ export async function submitDeal(data: {
     // Step 1 — customer
     if (data.existingCustomerId) {
       customerId = data.existingCustomerId
-      const existing = await tx.query.customers.findFirst({
-        where: eq(customers.id, data.existingCustomerId),
-      })
-      accountNumber = existing?.accountNumber ?? ''
+      const existing = await tx
+        .select()
+        .from(customers)
+        .where(eq(customers.id, data.existingCustomerId))
+        .limit(1)
+      accountNumber = existing[0]?.accountNumber ?? ''
     } else {
       const latest = await tx
         .select({ accountNumber: customers.accountNumber })

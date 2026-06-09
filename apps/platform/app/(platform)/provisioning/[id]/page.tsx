@@ -43,31 +43,36 @@ export default async function ProvisioningDetailPage({
   const { id } = await params
   const user = await requireUser()
 
-  const customer = await db.query.customers.findFirst({
-    where: eq(customers.accountNumber, id),
-  })
+  const customerResult = await db
+    .select()
+    .from(customers)
+    .where(eq(customers.accountNumber, id))
+    .limit(1)
 
+  const customer = customerResult[0]
   if (!customer || customer.tenantId !== user.tenantId) notFound()
 
-  const deal = await db.query.deals.findFirst({
-    where: eq(deals.customerId, customer.id),
-  })
+  const dealResult = await db.select().from(deals).where(eq(deals.customerId, customer.id)).limit(1)
 
+  const deal = dealResult[0]
   if (!deal) notFound()
 
-  const prov = await db.query.provisioning.findFirst({
-    where: eq(provisioning.dealId, deal.id),
-  })
+  const provResult = await db
+    .select()
+    .from(provisioning)
+    .where(eq(provisioning.dealId, deal.id))
+    .limit(1)
 
+  const prov = provResult[0]
   if (!prov) notFound()
 
-  const services = await db.query.dealServices.findFirst({
-    where: eq(dealServices.dealId, deal.id),
-  })
+  const servicesResult = await db
+    .select()
+    .from(dealServices)
+    .where(eq(dealServices.dealId, deal.id))
+    .limit(1)
 
-  const pricing = await db.query.dealPricing.findFirst({
-    where: eq(dealPricing.dealId, deal.id),
-  })
+  const services = servicesResult[0] ?? null
 
   const provServices = await db
     .select()

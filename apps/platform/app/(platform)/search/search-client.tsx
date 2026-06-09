@@ -57,7 +57,7 @@ export function SearchClient({ tenantId }: { tenantId: string }) {
   const grouped = results.reduce(
     (acc, r) => {
       if (!acc[r.type]) acc[r.type] = []
-      acc[r.type].push(r)
+      acc[r.type]!.push(r)
       return acc
     },
     {} as Record<string, SearchResult[]>

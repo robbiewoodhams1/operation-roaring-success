@@ -9,6 +9,7 @@ export interface AuthUser {
   role: UserRole
   tenantId: string
   approvalStatus: ApprovalStatus
+  isActive: boolean
 }
 
 export interface Session {
