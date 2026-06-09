@@ -14,6 +14,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { ProvisioningEdit } from './provisioning-edit'
+import CopyButton from '@/components/copy-button'
 
 const statusColours: Record<string, string> = {
   not_started: 'bg-gray-100 text-gray-700 border-gray-200',
@@ -115,13 +116,13 @@ export default async function ProvisioningDetailPage({
       <div className="grid grid-cols-1 gap-6 mt-6">
         {services && (
           <Section title="Services (from deal)">
-            <Row label="Broadband type" value={services.broadbandType} />
-            <Row label="ONT serial" value={services.ontSerialNumber} mono />
-            <Row label="Normal speed" value={services.normalSpeed} />
-            <Row label="Min speed" value={services.minSpeed} />
-            <Row label="Max speed" value={services.maxSpeed} />
-            <Row label="Voice option" value={services.voiceOption?.toUpperCase()} />
-            <Row label="Call tariff" value={services.callTariff} />
+            <Row label="Broadband type" value={services.broadbandType} copyable />
+            <Row label="ONT serial" value={services.ontSerialNumber} mono copyable />
+            <Row label="Normal speed" value={services.normalSpeed} copyable />
+            <Row label="Min speed" value={services.minSpeed} copyable />
+            <Row label="Max speed" value={services.maxSpeed} copyable />
+            <Row label="Voice option" value={services.voiceOption?.toUpperCase()} copyable />
+            <Row label="Call tariff" value={services.callTariff} copyable />
             <Row
               label="Equipment"
               value={
@@ -131,36 +132,29 @@ export default async function ProvisioningDetailPage({
                       .join(', ')
                   : null
               }
+              copyable
             />
-          </Section>
-        )}
-
-        {pricing && (
-          <Section title="Pricing (from deal)">
-            <Row label="Bundle price" value={`£${Number(pricing.bundlePrice).toFixed(2)}`} mono />
-            <Row
-              label="Wholesale cost"
-              value={`£${Number(pricing.wholesaleCost).toFixed(2)}`}
-              mono
-            />
-            <Row label="Monthly GP" value={`£${Number(pricing.monthlyGp).toFixed(2)}`} mono />
-            <Row label="Contract length" value={pricing.contractLength?.replace('_', ' ')} />
           </Section>
         )}
 
         <Section title="Customer">
-          <Row label="Account number" value={customer.accountNumber} mono />
-          <Row label="Company" value={customer.companyName} />
-          <Row label="Contact" value={`${customer.firstName} ${customer.lastName}`} />
-          <Row label="Mobile" value={customer.mobile} />
-          <Row label="Email" value={customer.email} />
+          <Row label="Account number" value={customer.accountNumber} mono copyable />
+          <Row label="Company" value={customer.companyName} copyable />
+          <Row label="Contact" value={`${customer.firstName} ${customer.lastName}`} copyable />
+          <Row label="Mobile" value={customer.mobile} copyable />
+          <Row label="Email" value={customer.email} copyable />
+          <Row label="Address Line 1" value={customer.addressLine1} copyable />
+          <Row label="Address Line 2" value={customer.addressLine2} copyable />
+          <Row label="Address Line 3" value={customer.addressLine3} copyable />
+          <Row label="Address Line 4" value={customer.addressLine4} copyable />
+          <Row label="Postcode" value={customer.postcode} copyable />
         </Section>
 
         <Section title="Deal">
-          <Row label="Sales agent" value={deal.salesAgent} />
-          <Row label="Closing agent" value={deal.closingAgent} />
-          <Row label="Deal type" value={deal.dealType} />
-          <Row label="Soft facts" value={deal.softFacts} />
+          <Row label="Sales agent" value={deal.salesAgent} copyable />
+          <Row label="Closing agent" value={deal.closingAgent} copyable />
+          <Row label="Deal type" value={deal.dealType} copyable />
+          <Row label="Soft facts" value={deal.softFacts} copyable />
         </Section>
       </div>
     </div>
@@ -182,15 +176,24 @@ function Row({
   label,
   value,
   mono = false,
+  copyable = false,
 }: {
   label: string
   value: string | null | undefined
   mono?: boolean
+  copyable?: boolean
 }) {
   return (
     <div className="flex px-4 py-3">
       <span className="text-muted-foreground w-40 shrink-0 text-sm">{label}</span>
-      <span className={`text-sm ${mono ? 'font-mono' : ''}`}>{value ?? '—'}</span>
+      <span className={`text-sm flex items-center gap-1 flex-1 ${mono ? 'font-mono' : ''}`}>
+        {value ?? '—'}
+        {copyable && value && (
+          <span className="ml-auto">
+            <CopyButton value={value} />
+          </span>
+        )}
+      </span>
     </div>
   )
 }

@@ -21,6 +21,7 @@ import {
 } from './actions'
 import type { Provisioning, ProvisioningService } from '@roaring/db'
 import { cn } from '@/lib/utils'
+import CopyButton from '@/components/copy-button'
 
 const provStatusColours: Record<string, string> = {
   not_started: 'bg-gray-100 text-gray-700 border-gray-200',
@@ -80,6 +81,30 @@ function formatDate(date: string | Date | null | undefined): string {
   return new Date(date).toISOString().split('T')[0]
 }
 
+function Row({
+  label,
+  children,
+  copyValue,
+}: {
+  label: string
+  children: React.ReactNode
+  copyValue?: string
+}) {
+  return (
+    <div className="flex px-4 py-3 items-start gap-4">
+      <span className="text-muted-foreground w-40 shrink-0 text-sm pt-1">{label}</span>
+      <div className="text-sm flex-1 flex items-center gap-1">
+        <span className="flex-1">{children}</span>
+        {copyValue && (
+          <span className="ml-auto shrink-0">
+            <CopyButton value={copyValue} />
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Service Panel ─────────────────────────────────────────────────────────────
 function ServicePanel({
   service,
@@ -99,7 +124,7 @@ function ServicePanel({
   const [addingAttempt, setAddingAttempt] = useState(false)
 
   const [form, setForm] = useState({
-    status: service.status as string,
+    status: (service.status as string) ?? 'not_applied',
     reference: service.reference ?? '',
     dateOrdered: formatDate(service.dateOrdered),
     liveDate: formatDate(service.liveDate),
@@ -139,7 +164,7 @@ function ServicePanel({
 
   function handleCancel() {
     setForm({
-      status: service.status as string,
+      status: (service.status as string) ?? 'not_applied',
       reference: service.reference ?? '',
       dateOrdered: formatDate(service.dateOrdered),
       liveDate: formatDate(service.liveDate),
@@ -167,11 +192,11 @@ function ServicePanel({
             <span className="text-xs text-muted-foreground">Attempt {service.attempt}</span>
           )}
           <Badge variant="outline" className={serviceStatusColours[service.status]}>
-            {service.status.replace('_', ' ')}
+            {service.status.replace(/_/g, ' ')}
           </Badge>
           {service.status === 'cancelled' && (
             <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200 text-xs">
-              {service.cancelledBy?.replace('_', ' ') ?? 'unknown'}
+              {service.cancelledBy?.replace(/_/g, ' ') ?? 'unknown'}
             </Badge>
           )}
         </div>
@@ -219,19 +244,22 @@ function ServicePanel({
               <SelectContent>
                 {SERVICE_STATUSES.map((s) => (
                   <SelectItem key={s} value={s}>
-                    {s.replace('_', ' ')}
+                    {s.replace(/_/g, ' ')}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           ) : (
             <Badge variant="outline" className={serviceStatusColours[form.status]}>
-              {form.status.replace('_', ' ')}
+              {form.status.replace(/_/g, ' ')}
             </Badge>
           )}
         </Row>
 
-        <Row label="Reference">
+        <Row
+          label="Reference"
+          copyValue={!isEditing && form.reference ? form.reference : undefined}
+        >
           {isEditing ? (
             <Input
               value={form.reference}
@@ -317,14 +345,14 @@ function ServicePanel({
                     <SelectItem value="">—</SelectItem>
                     {CANCELLED_BY_OPTIONS.map((o) => (
                       <SelectItem key={o} value={o}>
-                        {o.replace('_', ' ')}
+                        {o.replace(/_/g, ' ')}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               ) : (
                 <span className="text-sm capitalize">
-                  {form.cancelledBy?.replace('_', ' ') || '—'}
+                  {form.cancelledBy?.replace(/_/g, ' ') || '—'}
                 </span>
               )}
             </Row>
@@ -410,7 +438,7 @@ function ServicePanel({
 // ── Service History ───────────────────────────────────────────────────────────
 function ServiceHistory({ services, label }: { services: ProvisioningService[]; label: string }) {
   const [open, setOpen] = useState(false)
-  const history = services.slice(0, -1) // all but latest
+  const history = services.slice(0, -1)
 
   if (history.length === 0) return null
 
@@ -421,7 +449,8 @@ function ServiceHistory({ services, label }: { services: ProvisioningService[]; 
         onClick={() => setOpen(!open)}
       >
         <span className="text-sm font-medium text-muted-foreground">
-          {label} history ({history.length} previous attempt{history.length !== 1 ? 's' : ''})
+          {label} history ({history.length} previous attempt
+          {history.length !== 1 ? 's' : ''})
         </span>
         {open ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
       </button>
@@ -432,11 +461,11 @@ function ServiceHistory({ services, label }: { services: ProvisioningService[]; 
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium">Attempt {s.attempt}</span>
                 <Badge variant="outline" className={cn(serviceStatusColours[s.status], 'text-xs')}>
-                  {s.status.replace('_', ' ')}
+                  {s.status.replace(/_/g, ' ')}
                 </Badge>
                 {s.cancelledBy && (
                   <span className="text-xs text-muted-foreground">
-                    by {s.cancelledBy.replace('_', ' ')}
+                    by {s.cancelledBy.replace(/_/g, ' ')}
                   </span>
                 )}
               </div>
@@ -697,21 +726,10 @@ export function ProvisioningEdit({
               </span>
             )}
           </Row>
-          <Row label="Date ordered">
-            {isEditing ? (
-              <Input
-                type="date"
-                value={form.dateOrdered}
-                onChange={(e) => update('dateOrdered', e.target.value)}
-                className="h-8 w-48"
-              />
-            ) : (
-              <span className="text-sm">
-                {form.dateOrdered ? new Date(form.dateOrdered).toLocaleDateString('en-GB') : '—'}
-              </span>
-            )}
-          </Row>
-          <Row label="Order fault ref">
+          <Row
+            label="Order fault ref"
+            copyValue={!isEditing && form.orderFaultRef ? form.orderFaultRef : undefined}
+          >
             {isEditing ? (
               <Input
                 value={form.orderFaultRef}
@@ -791,14 +809,14 @@ export function ProvisioningEdit({
                   <SelectItem value="">—</SelectItem>
                   {WC_OUTCOMES.map((o) => (
                     <SelectItem key={o} value={o}>
-                      {o.replace('_', ' ')}
+                      {o.replace(/_/g, ' ')}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             ) : form.wc1Outcome ? (
               <Badge variant="outline" className={wcColours[form.wc1Outcome]}>
-                {form.wc1Outcome.replace('_', ' ')}
+                {form.wc1Outcome.replace(/_/g, ' ')}
               </Badge>
             ) : (
               '—'
@@ -825,14 +843,14 @@ export function ProvisioningEdit({
                   <SelectItem value="">—</SelectItem>
                   {WC_OUTCOMES.map((o) => (
                     <SelectItem key={o} value={o}>
-                      {o.replace('_', ' ')}
+                      {o.replace(/_/g, ' ')}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             ) : form.wc2Outcome ? (
               <Badge variant="outline" className={wcColours[form.wc2Outcome]}>
-                {form.wc2Outcome.replace('_', ' ')}
+                {form.wc2Outcome.replace(/_/g, ' ')}
               </Badge>
             ) : (
               '—'
@@ -880,7 +898,10 @@ export function ProvisioningEdit({
               'No'
             )}
           </Row>
-          <Row label="Dispatch ref">
+          <Row
+            label="Dispatch ref"
+            copyValue={!isEditing && form.routerDispatchRef ? form.routerDispatchRef : undefined}
+          >
             {isEditing ? (
               <Input
                 value={form.routerDispatchRef}
@@ -891,7 +912,12 @@ export function ProvisioningEdit({
               <span className="text-sm font-mono">{form.routerDispatchRef || '—'}</span>
             )}
           </Row>
-          <Row label="Tracking number">
+          <Row
+            label="Tracking number"
+            copyValue={
+              !isEditing && form.routerTrackingNumber ? form.routerTrackingNumber : undefined
+            }
+          >
             {isEditing ? (
               <Input
                 value={form.routerTrackingNumber}
@@ -904,15 +930,6 @@ export function ProvisioningEdit({
           </Row>
         </div>
       </div>
-    </div>
-  )
-}
-
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex px-4 py-3 items-start gap-4">
-      <span className="text-muted-foreground w-40 shrink-0 text-sm pt-1">{label}</span>
-      <div className="text-sm flex-1">{children}</div>
     </div>
   )
 }
