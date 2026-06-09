@@ -36,6 +36,7 @@ import {
   ChevronRight,
   CircleHelp,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 type NavChild = {
   title: string
@@ -222,14 +223,19 @@ export function AppSidebar({ user }: { user: AuthUser }) {
                       >
                         <SidebarMenuItem>
                           <CollapsibleTrigger className="w-full">
-                            <SidebarMenuButton
-                              isActive={isAnyChildActive}
-                              className="cursor-pointer w-full"
+                            <div
+                              className={cn(
+                                'peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md px-2 py-1.5 text-sm outline-none cursor-pointer hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors',
+                                isAnyChildActive &&
+                                  'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+                              )}
                             >
-                              <item.icon className="size-4" />
-                              {item.title}
-                              <ChevronRight className="ml-auto size-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                            </SidebarMenuButton>
+                              <div className="flex items-center gap-2">
+                                <item.icon className="size-4 shrink-0" />
+                                <span className="flex-1 truncate">{item.title}</span>
+                              </div>
+                              <ChevronRight className="ml-auto size-3.5 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                            </div>
                           </CollapsibleTrigger>
                           <CollapsibleContent>
                             <SidebarMenuSub>
