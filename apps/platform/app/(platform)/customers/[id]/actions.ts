@@ -1,9 +1,9 @@
 'use server'
 
 import { db, customers } from '@roaring/db'
-import { eq, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
-import { requireUser } from '@roaring/auth/server'
+import { requireUser, setAuditUser } from '@roaring/auth'
 
 export async function updateCustomer(
   id: string,
@@ -25,7 +25,7 @@ export async function updateCustomer(
   const user = await requireUser()
 
   await db.transaction(async (tx) => {
-    await tx.execute(sql`SELECT set_config('app.current_user_id', ${user.id}, true)`)
+    await setAuditUser(tx, user.id)
 
     await tx
       .update(customers)

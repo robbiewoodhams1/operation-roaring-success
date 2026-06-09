@@ -1,9 +1,9 @@
 'use server'
 
 import { db, provisioning, provisioningServices } from '@roaring/db'
-import { eq, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
-import { requireUser } from '@roaring/auth/server'
+import { requireUser, setAuditUser } from '@roaring/auth'
 
 export async function updateProvisioning(
   id: string,
@@ -27,28 +27,30 @@ export async function updateProvisioning(
 ) {
   const user = await requireUser()
 
-  await db.execute(sql`SELECT set_config('app.current_user_id', ${user.id}, true)`)
+  await db.transaction(async (tx) => {
+    await setAuditUser(tx, user.id)
 
-  await db
-    .update(provisioning)
-    .set({
-      wc1Outcome: (data.wc1Outcome || null) as any,
-      wc1Comments: data.wc1Comments || null,
-      wc2Outcome: (data.wc2Outcome || null) as any,
-      wc2Comments: data.wc2Comments || null,
-      status: data.status as any,
-      proposedLiveDate: data.proposedLiveDate || null,
-      dateOrdered: data.dateOrdered || null,
-      orderFaultRef: data.orderFaultRef || null,
-      orderComments: data.orderComments || null,
-      provisioner: data.provisioner || null,
-      lastCheckedAt: data.lastCheckedAt ? new Date(data.lastCheckedAt) : null,
-      lastCheckedBy: data.lastCheckedBy || null,
-      routerDispatched: data.routerDispatched,
-      routerDispatchRef: data.routerDispatchRef || null,
-      routerTrackingNumber: data.routerTrackingNumber || null,
-    })
-    .where(eq(provisioning.id, id))
+    await tx
+      .update(provisioning)
+      .set({
+        wc1Outcome: (data.wc1Outcome || null) as any,
+        wc1Comments: data.wc1Comments || null,
+        wc2Outcome: (data.wc2Outcome || null) as any,
+        wc2Comments: data.wc2Comments || null,
+        status: data.status as any,
+        proposedLiveDate: data.proposedLiveDate || null,
+        dateOrdered: data.dateOrdered || null,
+        orderFaultRef: data.orderFaultRef || null,
+        orderComments: data.orderComments || null,
+        provisioner: data.provisioner || null,
+        lastCheckedAt: data.lastCheckedAt ? new Date(data.lastCheckedAt) : null,
+        lastCheckedBy: data.lastCheckedBy || null,
+        routerDispatched: data.routerDispatched,
+        routerDispatchRef: data.routerDispatchRef || null,
+        routerTrackingNumber: data.routerTrackingNumber || null,
+      })
+      .where(eq(provisioning.id, id))
+  })
 
   revalidatePath('/provisioning')
 }
@@ -72,25 +74,27 @@ export async function updateProvisioningService(
 ) {
   const user = await requireUser()
 
-  await db.execute(sql`SELECT set_config('app.current_user_id', ${user.id}, true)`)
+  await db.transaction(async (tx) => {
+    await setAuditUser(tx, user.id)
 
-  await db
-    .update(provisioningServices)
-    .set({
-      status: data.status as any,
-      reference: data.reference || null,
-      dateOrdered: data.dateOrdered || null,
-      liveDate: data.liveDate || null,
-      lastCheckedAt: data.lastCheckedAt || null,
-      cancelledDate: data.cancelledDate || null,
-      cancelledBy: (data.cancelledBy || null) as any,
-      cancellationReason: data.cancellationReason || null,
-      delayedDate: data.delayedDate || null,
-      presumedSolveDate: data.presumedSolveDate || null,
-      delayReason: data.delayReason || null,
-      notes: data.notes || null,
-    })
-    .where(eq(provisioningServices.id, id))
+    await tx
+      .update(provisioningServices)
+      .set({
+        status: data.status as any,
+        reference: data.reference || null,
+        dateOrdered: data.dateOrdered || null,
+        liveDate: data.liveDate || null,
+        lastCheckedAt: data.lastCheckedAt || null,
+        cancelledDate: data.cancelledDate || null,
+        cancelledBy: (data.cancelledBy || null) as any,
+        cancellationReason: data.cancellationReason || null,
+        delayedDate: data.delayedDate || null,
+        presumedSolveDate: data.presumedSolveDate || null,
+        delayReason: data.delayReason || null,
+        notes: data.notes || null,
+      })
+      .where(eq(provisioningServices.id, id))
+  })
 
   revalidatePath('/provisioning')
 }
@@ -102,13 +106,15 @@ export async function addProvisioningServiceAttempt(
 ) {
   const user = await requireUser()
 
-  await db.execute(sql`SELECT set_config('app.current_user_id', ${user.id}, true)`)
+  await db.transaction(async (tx) => {
+    await setAuditUser(tx, user.id)
 
-  await db.insert(provisioningServices).values({
-    provisioningId,
-    serviceType,
-    status: 'not_applied',
-    attempt: currentMaxAttempt + 1,
+    await tx.insert(provisioningServices).values({
+      provisioningId,
+      serviceType,
+      status: 'not_applied',
+      attempt: currentMaxAttempt + 1,
+    })
   })
 
   revalidatePath('/provisioning')

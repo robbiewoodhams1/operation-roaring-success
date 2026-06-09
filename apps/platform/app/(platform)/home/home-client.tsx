@@ -117,7 +117,7 @@ export function HomeClient({
   const done = todos.filter((t) => t.done)
 
   return (
-    <div className="p-6 max-w-6xl space-y-6">
+    <div className="p-6 w-full space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-semibold">Welcome back, {fullName}</h1>

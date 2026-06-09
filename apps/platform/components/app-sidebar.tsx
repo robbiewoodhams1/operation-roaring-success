@@ -35,6 +35,7 @@ import {
   Search,
   ChevronRight,
   CircleHelp,
+  Logs,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -182,7 +183,22 @@ const navItems: NavGroup[] = [
   },
   {
     label: 'Admin',
-    items: [{ title: 'Users', href: '/users', icon: UserRoundPen, roles: ['admin'], active: true }],
+    items: [
+      {
+        title: 'Users',
+        href: '/users',
+        icon: UserRoundPen,
+        roles: ['admin'],
+        active: true,
+      },
+      {
+        title: 'Audit Logs',
+        href: '/audit',
+        icon: Logs,
+        roles: ['admin'],
+        active: true,
+      },
+    ],
   },
 ]
 
