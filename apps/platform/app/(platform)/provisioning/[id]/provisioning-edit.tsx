@@ -88,7 +88,7 @@ function Row({
 }: {
   label: string
   children: React.ReactNode
-  copyValue?: string
+  copyValue?: string | undefined
 }) {
   return (
     <div className="flex px-4 py-3 items-start gap-4">
@@ -112,12 +112,16 @@ function ServicePanel({
   onSave,
   onAddAttempt,
   isLatest,
+  collapsed,
+  onToggleCollapse,
 }: {
   service: ProvisioningService
   label: string
   onSave: (id: string, data: any) => Promise<void>
   onAddAttempt: () => Promise<void>
   isLatest: boolean
+  collapsed: boolean
+  onToggleCollapse: () => void
 }) {
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -231,206 +235,215 @@ function ServicePanel({
               Edit
             </Button>
           )}
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={onToggleCollapse}>
+            {collapsed ? <ChevronDown className="size-4" /> : <ChevronUp className="size-4" />}
+          </Button>
         </div>
       </div>
 
-      <div className="divide-y">
-        <Row label="Status">
-          {isEditing ? (
-            <Select value={form.status} onValueChange={(v) => update('status', v)}>
-              <SelectTrigger className="h-8 w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SERVICE_STATUSES.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s.replace(/_/g, ' ')}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <Badge variant="outline" className={serviceStatusColours[form.status]}>
-              {form.status.replace(/_/g, ' ')}
-            </Badge>
+      {!collapsed && (
+        <div className="divide-y">
+          <Row label="Status">
+            {isEditing ? (
+              <Select value={form.status} onValueChange={(v) => update('status', v)}>
+                <SelectTrigger className="h-8 w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SERVICE_STATUSES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s.replace(/_/g, ' ')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Badge variant="outline" className={serviceStatusColours[form.status]}>
+                {form.status.replace(/_/g, ' ')}
+              </Badge>
+            )}
+          </Row>
+
+          <Row
+            label="Reference"
+            copyValue={!isEditing && form.reference ? form.reference : undefined}
+          >
+            {isEditing ? (
+              <Input
+                value={form.reference}
+                onChange={(e) => update('reference', e.target.value)}
+                className="h-8 w-48 font-mono"
+                placeholder="e.g. BTWYPT690"
+              />
+            ) : (
+              <span className="font-mono text-sm">{form.reference || '—'}</span>
+            )}
+          </Row>
+
+          <Row label="Date ordered">
+            {isEditing ? (
+              <Input
+                type="date"
+                value={form.dateOrdered}
+                onChange={(e) => update('dateOrdered', e.target.value)}
+                className="h-8 w-48"
+              />
+            ) : (
+              <span className="text-sm">
+                {form.dateOrdered ? new Date(form.dateOrdered).toLocaleDateString('en-GB') : '—'}
+              </span>
+            )}
+          </Row>
+
+          <Row label="Live date">
+            {isEditing ? (
+              <Input
+                type="date"
+                value={form.liveDate}
+                onChange={(e) => update('liveDate', e.target.value)}
+                className="h-8 w-48"
+              />
+            ) : (
+              <span className="text-sm">
+                {form.liveDate ? new Date(form.liveDate).toLocaleDateString('en-GB') : '—'}
+              </span>
+            )}
+          </Row>
+
+          <Row label="Last checked">
+            {isEditing ? (
+              <Input
+                type="date"
+                value={form.lastCheckedAt}
+                onChange={(e) => update('lastCheckedAt', e.target.value)}
+                className="h-8 w-48"
+              />
+            ) : (
+              <span className="text-sm">
+                {form.lastCheckedAt
+                  ? new Date(form.lastCheckedAt).toLocaleDateString('en-GB')
+                  : '—'}
+              </span>
+            )}
+          </Row>
+
+          {(showCancelled || isEditing) && (
+            <>
+              <Row label="Cancelled date">
+                {isEditing ? (
+                  <Input
+                    type="date"
+                    value={form.cancelledDate}
+                    onChange={(e) => update('cancelledDate', e.target.value)}
+                    className="h-8 w-48"
+                  />
+                ) : (
+                  <span className="text-sm">
+                    {form.cancelledDate
+                      ? new Date(form.cancelledDate).toLocaleDateString('en-GB')
+                      : '—'}
+                  </span>
+                )}
+              </Row>
+              <Row label="Cancelled by">
+                {isEditing ? (
+                  <Select value={form.cancelledBy} onValueChange={(v) => update('cancelledBy', v)}>
+                    <SelectTrigger className="h-8 w-48">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">—</SelectItem>
+                      {CANCELLED_BY_OPTIONS.map((o) => (
+                        <SelectItem key={o} value={o}>
+                          {o.replace(/_/g, ' ')}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <span className="text-sm capitalize">
+                    {form.cancelledBy?.replace(/_/g, ' ') || '—'}
+                  </span>
+                )}
+              </Row>
+              <Row label="Cancellation reason">
+                {isEditing ? (
+                  <Textarea
+                    value={form.cancellationReason}
+                    onChange={(e) => update('cancellationReason', e.target.value)}
+                    className="min-h-16 text-sm"
+                    placeholder="Reason..."
+                  />
+                ) : (
+                  <span className="text-sm">{form.cancellationReason || '—'}</span>
+                )}
+              </Row>
+            </>
           )}
-        </Row>
 
-        <Row
-          label="Reference"
-          copyValue={!isEditing && form.reference ? form.reference : undefined}
-        >
-          {isEditing ? (
-            <Input
-              value={form.reference}
-              onChange={(e) => update('reference', e.target.value)}
-              className="h-8 w-48 font-mono"
-              placeholder="e.g. BTWYPT690"
-            />
-          ) : (
-            <span className="font-mono text-sm">{form.reference || '—'}</span>
+          {(showDelayed || isEditing) && (
+            <>
+              <Row label="Delayed date">
+                {isEditing ? (
+                  <Input
+                    type="date"
+                    value={form.delayedDate}
+                    onChange={(e) => update('delayedDate', e.target.value)}
+                    className="h-8 w-48"
+                  />
+                ) : (
+                  <span className="text-sm">
+                    {form.delayedDate
+                      ? new Date(form.delayedDate).toLocaleDateString('en-GB')
+                      : '—'}
+                  </span>
+                )}
+              </Row>
+              <Row label="Presumed solve">
+                {isEditing ? (
+                  <Input
+                    type="date"
+                    value={form.presumedSolveDate}
+                    onChange={(e) => update('presumedSolveDate', e.target.value)}
+                    className="h-8 w-48"
+                  />
+                ) : (
+                  <span className="text-sm">
+                    {form.presumedSolveDate
+                      ? new Date(form.presumedSolveDate).toLocaleDateString('en-GB')
+                      : '—'}
+                  </span>
+                )}
+              </Row>
+              <Row label="Delay reason">
+                {isEditing ? (
+                  <Textarea
+                    value={form.delayReason}
+                    onChange={(e) => update('delayReason', e.target.value)}
+                    className="min-h-16 text-sm"
+                    placeholder="Reason..."
+                  />
+                ) : (
+                  <span className="text-sm">{form.delayReason || '—'}</span>
+                )}
+              </Row>
+            </>
           )}
-        </Row>
 
-        <Row label="Date ordered">
-          {isEditing ? (
-            <Input
-              type="date"
-              value={form.dateOrdered}
-              onChange={(e) => update('dateOrdered', e.target.value)}
-              className="h-8 w-48"
-            />
-          ) : (
-            <span className="text-sm">
-              {form.dateOrdered ? new Date(form.dateOrdered).toLocaleDateString('en-GB') : '—'}
-            </span>
-          )}
-        </Row>
-
-        <Row label="Live date">
-          {isEditing ? (
-            <Input
-              type="date"
-              value={form.liveDate}
-              onChange={(e) => update('liveDate', e.target.value)}
-              className="h-8 w-48"
-            />
-          ) : (
-            <span className="text-sm">
-              {form.liveDate ? new Date(form.liveDate).toLocaleDateString('en-GB') : '—'}
-            </span>
-          )}
-        </Row>
-
-        <Row label="Last checked">
-          {isEditing ? (
-            <Input
-              type="date"
-              value={form.lastCheckedAt}
-              onChange={(e) => update('lastCheckedAt', e.target.value)}
-              className="h-8 w-48"
-            />
-          ) : (
-            <span className="text-sm">
-              {form.lastCheckedAt ? new Date(form.lastCheckedAt).toLocaleDateString('en-GB') : '—'}
-            </span>
-          )}
-        </Row>
-
-        {(showCancelled || isEditing) && (
-          <>
-            <Row label="Cancelled date">
-              {isEditing ? (
-                <Input
-                  type="date"
-                  value={form.cancelledDate}
-                  onChange={(e) => update('cancelledDate', e.target.value)}
-                  className="h-8 w-48"
-                />
-              ) : (
-                <span className="text-sm">
-                  {form.cancelledDate
-                    ? new Date(form.cancelledDate).toLocaleDateString('en-GB')
-                    : '—'}
-                </span>
-              )}
-            </Row>
-            <Row label="Cancelled by">
-              {isEditing ? (
-                <Select value={form.cancelledBy} onValueChange={(v) => update('cancelledBy', v)}>
-                  <SelectTrigger className="h-8 w-48">
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">—</SelectItem>
-                    {CANCELLED_BY_OPTIONS.map((o) => (
-                      <SelectItem key={o} value={o}>
-                        {o.replace(/_/g, ' ')}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <span className="text-sm capitalize">
-                  {form.cancelledBy?.replace(/_/g, ' ') || '—'}
-                </span>
-              )}
-            </Row>
-            <Row label="Cancellation reason">
-              {isEditing ? (
-                <Textarea
-                  value={form.cancellationReason}
-                  onChange={(e) => update('cancellationReason', e.target.value)}
-                  className="min-h-16 text-sm"
-                  placeholder="Reason..."
-                />
-              ) : (
-                <span className="text-sm">{form.cancellationReason || '—'}</span>
-              )}
-            </Row>
-          </>
-        )}
-
-        {(showDelayed || isEditing) && (
-          <>
-            <Row label="Delayed date">
-              {isEditing ? (
-                <Input
-                  type="date"
-                  value={form.delayedDate}
-                  onChange={(e) => update('delayedDate', e.target.value)}
-                  className="h-8 w-48"
-                />
-              ) : (
-                <span className="text-sm">
-                  {form.delayedDate ? new Date(form.delayedDate).toLocaleDateString('en-GB') : '—'}
-                </span>
-              )}
-            </Row>
-            <Row label="Presumed solve">
-              {isEditing ? (
-                <Input
-                  type="date"
-                  value={form.presumedSolveDate}
-                  onChange={(e) => update('presumedSolveDate', e.target.value)}
-                  className="h-8 w-48"
-                />
-              ) : (
-                <span className="text-sm">
-                  {form.presumedSolveDate
-                    ? new Date(form.presumedSolveDate).toLocaleDateString('en-GB')
-                    : '—'}
-                </span>
-              )}
-            </Row>
-            <Row label="Delay reason">
-              {isEditing ? (
-                <Textarea
-                  value={form.delayReason}
-                  onChange={(e) => update('delayReason', e.target.value)}
-                  className="min-h-16 text-sm"
-                  placeholder="Reason..."
-                />
-              ) : (
-                <span className="text-sm">{form.delayReason || '—'}</span>
-              )}
-            </Row>
-          </>
-        )}
-
-        <Row label="Notes">
-          {isEditing ? (
-            <Textarea
-              value={form.notes}
-              onChange={(e) => update('notes', e.target.value)}
-              className="min-h-16 text-sm"
-              placeholder="Any notes..."
-            />
-          ) : (
-            <span className="text-sm">{form.notes || '—'}</span>
-          )}
-        </Row>
-      </div>
+          <Row label="Notes">
+            {isEditing ? (
+              <Textarea
+                value={form.notes}
+                onChange={(e) => update('notes', e.target.value)}
+                className="min-h-16 text-sm"
+                placeholder="Any notes..."
+              />
+            ) : (
+              <span className="text-sm">{form.notes || '—'}</span>
+            )}
+          </Row>
+        </div>
+      )}
     </div>
   )
 }
@@ -439,9 +452,7 @@ function ServicePanel({
 function ServiceHistory({ services, label }: { services: ProvisioningService[]; label: string }) {
   const [open, setOpen] = useState(false)
   const history = services.slice(0, -1)
-
   if (history.length === 0) return null
-
   return (
     <div className="border rounded-lg overflow-hidden">
       <button
@@ -449,8 +460,7 @@ function ServiceHistory({ services, label }: { services: ProvisioningService[]; 
         onClick={() => setOpen(!open)}
       >
         <span className="text-sm font-medium text-muted-foreground">
-          {label} history ({history.length} previous attempt
-          {history.length !== 1 ? 's' : ''})
+          {label} history ({history.length} previous attempt{history.length !== 1 ? 's' : ''})
         </span>
         {open ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
       </button>
@@ -514,6 +524,36 @@ export function ProvisioningEdit({
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  // Collapse state for each panel
+  const [collapsed, setCollapsed] = useState({
+    bb: false,
+    whc: false,
+    nfon: false,
+    mpf: false,
+    order: false,
+    welcomeCalls: false,
+    router: false,
+  })
+
+  const allCollapsed = Object.values(collapsed).every(Boolean)
+
+  function toggleAll() {
+    const next = !allCollapsed
+    setCollapsed({
+      bb: next,
+      whc: next,
+      nfon: next,
+      mpf: next,
+      order: next,
+      welcomeCalls: next,
+      router: next,
+    })
+  }
+
+  function toggle(key: keyof typeof collapsed) {
+    setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
 
   const latestBb = bbServices[bbServices?.length - 1]
   const latestWhc = whcServices[whcServices?.length - 1]
@@ -589,6 +629,28 @@ export function ProvisioningEdit({
 
   return (
     <div className="space-y-6 pb-6">
+      {/* Global toggle */}
+      <div className="flex justify-end">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleAll}
+          className="text-xs text-muted-foreground"
+        >
+          {allCollapsed ? (
+            <>
+              <ChevronDown className="size-3 mr-1" />
+              Expand all
+            </>
+          ) : (
+            <>
+              <ChevronUp className="size-3 mr-1" />
+              Collapse all
+            </>
+          )}
+        </Button>
+      </div>
+
       {/* BB Service */}
       {latestBb && (
         <>
@@ -596,6 +658,8 @@ export function ProvisioningEdit({
             service={latestBb}
             label="Broadband"
             isLatest
+            collapsed={collapsed.bb}
+            onToggleCollapse={() => toggle('bb')}
             onSave={async (id, data) => {
               await updateProvisioningService(id, data)
               router.refresh()
@@ -616,6 +680,8 @@ export function ProvisioningEdit({
             service={latestWhc}
             label="WHC"
             isLatest
+            collapsed={collapsed.whc}
+            onToggleCollapse={() => toggle('whc')}
             onSave={async (id, data) => {
               await updateProvisioningService(id, data)
               router.refresh()
@@ -636,6 +702,8 @@ export function ProvisioningEdit({
             service={latestNfon}
             label="NFON"
             isLatest
+            collapsed={collapsed.nfon}
+            onToggleCollapse={() => toggle('nfon')}
             onSave={async (id, data) => {
               await updateProvisioningService(id, data)
               router.refresh()
@@ -656,6 +724,8 @@ export function ProvisioningEdit({
             service={latestMpf}
             label="MPF"
             isLatest
+            collapsed={collapsed.mpf}
+            onToggleCollapse={() => toggle('mpf')}
             onSave={async (id, data) => {
               await updateProvisioningService(id, data)
               router.refresh()
@@ -673,262 +743,306 @@ export function ProvisioningEdit({
       <div className="border rounded-lg overflow-hidden">
         <div className="px-4 py-3 border-b bg-muted/30 flex items-center justify-between">
           <h2 className="text-sm font-medium">Order</h2>
-          {isEditing ? (
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleCancel} disabled={saving}>
-                Cancel
+          <div className="flex items-center gap-2">
+            {isEditing ? (
+              <>
+                <Button variant="outline" size="sm" onClick={handleCancel} disabled={saving}>
+                  Cancel
+                </Button>
+                <Button size="sm" onClick={handleSave} disabled={saving}>
+                  {saving ? 'Saving...' : 'Save'}
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                <Pencil className="size-3 mr-1" />
+                Edit
               </Button>
-              <Button size="sm" onClick={handleSave} disabled={saving}>
-                {saving ? 'Saving...' : 'Save'}
-              </Button>
-            </div>
-          ) : (
-            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-              <Pencil className="size-3 mr-1" />
-              Edit
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => toggle('order')}
+            >
+              {collapsed.order ? (
+                <ChevronDown className="size-4" />
+              ) : (
+                <ChevronUp className="size-4" />
+              )}
             </Button>
-          )}
+          </div>
         </div>
-        <div className="divide-y">
-          <Row label="Overall status">
-            {isEditing ? (
-              <Select value={form.status} onValueChange={(v) => update('status', v)}>
-                <SelectTrigger className="h-8 w-56">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROV_STATUSES.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {provStatusLabels[s]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <Badge variant="outline" className={provStatusColours[form.status]}>
-                {provStatusLabels[form.status]}
-              </Badge>
-            )}
-          </Row>
-          <Row label="Proposed live date">
-            {isEditing ? (
-              <Input
-                type="date"
-                value={form.proposedLiveDate}
-                onChange={(e) => update('proposedLiveDate', e.target.value)}
-                className="h-8 w-48"
-              />
-            ) : (
-              <span className="text-sm">
-                {form.proposedLiveDate
-                  ? new Date(form.proposedLiveDate).toLocaleDateString('en-GB')
-                  : '—'}
-              </span>
-            )}
-          </Row>
-          <Row
-            label="Order fault ref"
-            copyValue={!isEditing && form.orderFaultRef ? form.orderFaultRef : undefined}
-          >
-            {isEditing ? (
-              <Input
-                value={form.orderFaultRef}
-                onChange={(e) => update('orderFaultRef', e.target.value)}
-                className="h-8 w-48 font-mono"
-                placeholder="Fault ref"
-              />
-            ) : (
-              <span className="text-sm font-mono">{form.orderFaultRef || '—'}</span>
-            )}
-          </Row>
-          <Row label="Order comments">
-            {isEditing ? (
-              <Textarea
-                value={form.orderComments}
-                onChange={(e) => update('orderComments', e.target.value)}
-                className="min-h-16 text-sm"
-              />
-            ) : (
-              <span className="text-sm">{form.orderComments || '—'}</span>
-            )}
-          </Row>
-          <Row label="Provisioner">
-            {isEditing ? (
-              <Input
-                value={form.provisioner}
-                onChange={(e) => update('provisioner', e.target.value)}
-                className="h-8 w-48"
-              />
-            ) : (
-              <span className="text-sm">{form.provisioner || '—'}</span>
-            )}
-          </Row>
-          <Row label="Last checked at">
-            {isEditing ? (
-              <Input
-                type="date"
-                value={form.lastCheckedAt}
-                onChange={(e) => update('lastCheckedAt', e.target.value)}
-                className="h-8 w-48"
-              />
-            ) : (
-              <span className="text-sm">
-                {form.lastCheckedAt
-                  ? new Date(form.lastCheckedAt).toLocaleDateString('en-GB')
-                  : '—'}
-              </span>
-            )}
-          </Row>
-          <Row label="Last checked by">
-            {isEditing ? (
-              <Input
-                value={form.lastCheckedBy}
-                onChange={(e) => update('lastCheckedBy', e.target.value)}
-                className="h-8 w-48"
-              />
-            ) : (
-              <span className="text-sm">{form.lastCheckedBy || '—'}</span>
-            )}
-          </Row>
-        </div>
+        {!collapsed.order && (
+          <div className="divide-y">
+            <Row label="Overall status">
+              {isEditing ? (
+                <Select value={form.status} onValueChange={(v) => update('status', v)}>
+                  <SelectTrigger className="h-8 w-56">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PROV_STATUSES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {provStatusLabels[s]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Badge variant="outline" className={provStatusColours[form.status]}>
+                  {provStatusLabels[form.status]}
+                </Badge>
+              )}
+            </Row>
+            <Row label="Proposed live date">
+              {isEditing ? (
+                <Input
+                  type="date"
+                  value={form.proposedLiveDate}
+                  onChange={(e) => update('proposedLiveDate', e.target.value)}
+                  className="h-8 w-48"
+                />
+              ) : (
+                <span className="text-sm">
+                  {form.proposedLiveDate
+                    ? new Date(form.proposedLiveDate).toLocaleDateString('en-GB')
+                    : '—'}
+                </span>
+              )}
+            </Row>
+            <Row
+              label="Order fault ref"
+              copyValue={!isEditing && form.orderFaultRef ? form.orderFaultRef : undefined}
+            >
+              {isEditing ? (
+                <Input
+                  value={form.orderFaultRef}
+                  onChange={(e) => update('orderFaultRef', e.target.value)}
+                  className="h-8 w-48 font-mono"
+                  placeholder="Fault ref"
+                />
+              ) : (
+                <span className="text-sm font-mono">{form.orderFaultRef || '—'}</span>
+              )}
+            </Row>
+            <Row label="Order comments">
+              {isEditing ? (
+                <Textarea
+                  value={form.orderComments}
+                  onChange={(e) => update('orderComments', e.target.value)}
+                  className="min-h-16 text-sm"
+                />
+              ) : (
+                <span className="text-sm">{form.orderComments || '—'}</span>
+              )}
+            </Row>
+            <Row label="Provisioner">
+              {isEditing ? (
+                <Input
+                  value={form.provisioner}
+                  onChange={(e) => update('provisioner', e.target.value)}
+                  className="h-8 w-48"
+                />
+              ) : (
+                <span className="text-sm">{form.provisioner || '—'}</span>
+              )}
+            </Row>
+            <Row label="Last checked at">
+              {isEditing ? (
+                <Input
+                  type="date"
+                  value={form.lastCheckedAt}
+                  onChange={(e) => update('lastCheckedAt', e.target.value)}
+                  className="h-8 w-48"
+                />
+              ) : (
+                <span className="text-sm">
+                  {form.lastCheckedAt
+                    ? new Date(form.lastCheckedAt).toLocaleDateString('en-GB')
+                    : '—'}
+                </span>
+              )}
+            </Row>
+            <Row label="Last checked by">
+              {isEditing ? (
+                <Input
+                  value={form.lastCheckedBy}
+                  onChange={(e) => update('lastCheckedBy', e.target.value)}
+                  className="h-8 w-48"
+                />
+              ) : (
+                <span className="text-sm">{form.lastCheckedBy || '—'}</span>
+              )}
+            </Row>
+          </div>
+        )}
       </div>
 
       {/* Welcome Calls */}
       <div className="border rounded-lg overflow-hidden">
-        <div className="px-4 py-3 border-b bg-muted/30">
+        <div className="px-4 py-3 border-b bg-muted/30 flex items-center justify-between">
           <h2 className="text-sm font-medium">Welcome Calls</h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => toggle('welcomeCalls')}
+          >
+            {collapsed.welcomeCalls ? (
+              <ChevronDown className="size-4" />
+            ) : (
+              <ChevronUp className="size-4" />
+            )}
+          </Button>
         </div>
-        <div className="divide-y">
-          <Row label="WC1 outcome">
-            {isEditing ? (
-              <Select value={form.wc1Outcome} onValueChange={(v) => update('wc1Outcome', v)}>
-                <SelectTrigger className="h-8 w-48">
-                  <SelectValue placeholder="Select outcome" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">—</SelectItem>
-                  {WC_OUTCOMES.map((o) => (
-                    <SelectItem key={o} value={o}>
-                      {o.replace(/_/g, ' ')}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : form.wc1Outcome ? (
-              <Badge variant="outline" className={wcColours[form.wc1Outcome]}>
-                {form.wc1Outcome.replace(/_/g, ' ')}
-              </Badge>
-            ) : (
-              '—'
-            )}
-          </Row>
-          <Row label="WC1 comments">
-            {isEditing ? (
-              <Textarea
-                value={form.wc1Comments}
-                onChange={(e) => update('wc1Comments', e.target.value)}
-                className="min-h-16 text-sm"
-              />
-            ) : (
-              <span className="text-sm">{form.wc1Comments || '—'}</span>
-            )}
-          </Row>
-          <Row label="WC2 outcome">
-            {isEditing ? (
-              <Select value={form.wc2Outcome} onValueChange={(v) => update('wc2Outcome', v)}>
-                <SelectTrigger className="h-8 w-48">
-                  <SelectValue placeholder="Select outcome" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">—</SelectItem>
-                  {WC_OUTCOMES.map((o) => (
-                    <SelectItem key={o} value={o}>
-                      {o.replace(/_/g, ' ')}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : form.wc2Outcome ? (
-              <Badge variant="outline" className={wcColours[form.wc2Outcome]}>
-                {form.wc2Outcome.replace(/_/g, ' ')}
-              </Badge>
-            ) : (
-              '—'
-            )}
-          </Row>
-          <Row label="WC2 comments">
-            {isEditing ? (
-              <Textarea
-                value={form.wc2Comments}
-                onChange={(e) => update('wc2Comments', e.target.value)}
-                className="min-h-16 text-sm"
-              />
-            ) : (
-              <span className="text-sm">{form.wc2Comments || '—'}</span>
-            )}
-          </Row>
-        </div>
+        {!collapsed.welcomeCalls && (
+          <div className="divide-y">
+            <Row label="WC1 outcome">
+              {isEditing ? (
+                <Select value={form.wc1Outcome} onValueChange={(v) => update('wc1Outcome', v)}>
+                  <SelectTrigger className="h-8 w-48">
+                    <SelectValue placeholder="Select outcome" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">—</SelectItem>
+                    {WC_OUTCOMES.map((o) => (
+                      <SelectItem key={o} value={o}>
+                        {o.replace(/_/g, ' ')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : form.wc1Outcome ? (
+                <Badge variant="outline" className={wcColours[form.wc1Outcome]}>
+                  {form.wc1Outcome.replace(/_/g, ' ')}
+                </Badge>
+              ) : (
+                '—'
+              )}
+            </Row>
+            <Row label="WC1 comments">
+              {isEditing ? (
+                <Textarea
+                  value={form.wc1Comments}
+                  onChange={(e) => update('wc1Comments', e.target.value)}
+                  className="min-h-16 text-sm"
+                />
+              ) : (
+                <span className="text-sm">{form.wc1Comments || '—'}</span>
+              )}
+            </Row>
+            <Row label="WC2 outcome">
+              {isEditing ? (
+                <Select value={form.wc2Outcome} onValueChange={(v) => update('wc2Outcome', v)}>
+                  <SelectTrigger className="h-8 w-48">
+                    <SelectValue placeholder="Select outcome" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">—</SelectItem>
+                    {WC_OUTCOMES.map((o) => (
+                      <SelectItem key={o} value={o}>
+                        {o.replace(/_/g, ' ')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : form.wc2Outcome ? (
+                <Badge variant="outline" className={wcColours[form.wc2Outcome]}>
+                  {form.wc2Outcome.replace(/_/g, ' ')}
+                </Badge>
+              ) : (
+                '—'
+              )}
+            </Row>
+            <Row label="WC2 comments">
+              {isEditing ? (
+                <Textarea
+                  value={form.wc2Comments}
+                  onChange={(e) => update('wc2Comments', e.target.value)}
+                  className="min-h-16 text-sm"
+                />
+              ) : (
+                <span className="text-sm">{form.wc2Comments || '—'}</span>
+              )}
+            </Row>
+          </div>
+        )}
       </div>
 
       {/* Router */}
       <div className="border rounded-lg overflow-hidden">
-        <div className="px-4 py-3 border-b bg-muted/30">
+        <div className="px-4 py-3 border-b bg-muted/30 flex items-center justify-between">
           <h2 className="text-sm font-medium">Router</h2>
-        </div>
-        <div className="divide-y">
-          <Row label="Dispatched">
-            {isEditing ? (
-              <Select
-                value={form.routerDispatched ? 'yes' : 'no'}
-                onValueChange={(v) => update('routerDispatched', v === 'yes')}
-              >
-                <SelectTrigger className="h-8 w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="no">No</SelectItem>
-                  <SelectItem value="yes">Yes</SelectItem>
-                </SelectContent>
-              </Select>
-            ) : form.routerDispatched ? (
-              <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
-                Dispatched
-              </Badge>
-            ) : (
-              'No'
-            )}
-          </Row>
-          <Row
-            label="Dispatch ref"
-            copyValue={!isEditing && form.routerDispatchRef ? form.routerDispatchRef : undefined}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => toggle('router')}
           >
-            {isEditing ? (
-              <Input
-                value={form.routerDispatchRef}
-                onChange={(e) => update('routerDispatchRef', e.target.value)}
-                className="h-8 w-48 font-mono"
-              />
+            {collapsed.router ? (
+              <ChevronDown className="size-4" />
             ) : (
-              <span className="text-sm font-mono">{form.routerDispatchRef || '—'}</span>
+              <ChevronUp className="size-4" />
             )}
-          </Row>
-          <Row
-            label="Tracking number"
-            copyValue={
-              !isEditing && form.routerTrackingNumber ? form.routerTrackingNumber : undefined
-            }
-          >
-            {isEditing ? (
-              <Input
-                value={form.routerTrackingNumber}
-                onChange={(e) => update('routerTrackingNumber', e.target.value)}
-                className="h-8 w-48 font-mono"
-              />
-            ) : (
-              <span className="text-sm font-mono">{form.routerTrackingNumber || '—'}</span>
-            )}
-          </Row>
+          </Button>
         </div>
+        {!collapsed.router && (
+          <div className="divide-y">
+            <Row label="Dispatched">
+              {isEditing ? (
+                <Select
+                  value={form.routerDispatched ? 'yes' : 'no'}
+                  onValueChange={(v) => update('routerDispatched', v === 'yes')}
+                >
+                  <SelectTrigger className="h-8 w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no">No</SelectItem>
+                    <SelectItem value="yes">Yes</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : form.routerDispatched ? (
+                <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
+                  Dispatched
+                </Badge>
+              ) : (
+                'No'
+              )}
+            </Row>
+            <Row
+              label="Dispatch ref"
+              copyValue={!isEditing && form.routerDispatchRef ? form.routerDispatchRef : undefined}
+            >
+              {isEditing ? (
+                <Input
+                  value={form.routerDispatchRef}
+                  onChange={(e) => update('routerDispatchRef', e.target.value)}
+                  className="h-8 w-48 font-mono"
+                />
+              ) : (
+                <span className="text-sm font-mono">{form.routerDispatchRef || '—'}</span>
+              )}
+            </Row>
+            <Row
+              label="Tracking number"
+              copyValue={
+                !isEditing && form.routerTrackingNumber ? form.routerTrackingNumber : undefined
+              }
+            >
+              {isEditing ? (
+                <Input
+                  value={form.routerTrackingNumber}
+                  onChange={(e) => update('routerTrackingNumber', e.target.value)}
+                  className="h-8 w-48 font-mono"
+                />
+              ) : (
+                <span className="text-sm font-mono">{form.routerTrackingNumber || '—'}</span>
+              )}
+            </Row>
+          </div>
+        )}
       </div>
     </div>
   )

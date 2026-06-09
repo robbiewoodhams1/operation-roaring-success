@@ -12,6 +12,7 @@ export async function updateCustomer(
     firstName: string
     lastName: string
     mobile: string | null
+    landline: string | null
     email: string | null
     addressLine1: string | null
     addressLine2: string | null
@@ -34,6 +35,7 @@ export async function updateCustomer(
         firstName: data.firstName,
         lastName: data.lastName,
         mobile: data.mobile || null,
+        landline: data.landline || null,
         email: data.email || null,
         addressLine1: data.addressLine1 || null,
         addressLine2: data.addressLine2 || null,

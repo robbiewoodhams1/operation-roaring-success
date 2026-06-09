@@ -15,6 +15,7 @@ import { ArrowLeft } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { ProvisioningEdit } from './provisioning-edit'
 import CopyButton from '@/components/copy-button'
+import ProvisioningDetail from './provision-details'
 
 const statusColours: Record<string, string> = {
   not_started: 'bg-gray-100 text-gray-700 border-gray-200',
@@ -114,48 +115,29 @@ export default async function ProvisioningDetailPage({
       />
 
       <div className="grid grid-cols-1 gap-6 mt-6">
-        {services && (
-          <Section title="Services (from deal)">
-            <Row label="Broadband type" value={services.broadbandType} copyable />
-            <Row label="ONT serial" value={services.ontSerialNumber} mono copyable />
-            <Row label="Normal speed" value={services.normalSpeed} copyable />
-            <Row label="Min speed" value={services.minSpeed} copyable />
-            <Row label="Max speed" value={services.maxSpeed} copyable />
-            <Row label="Voice option" value={services.voiceOption?.toUpperCase()} copyable />
-            <Row label="Call tariff" value={services.callTariff} copyable />
-            <Row
-              label="Equipment"
-              value={
-                services.equipment
-                  ? (services.equipment as { item: string; qty: number }[])
-                      .map((e) => `${e.item} × ${e.qty}`)
-                      .join(', ')
-                  : null
-              }
-              copyable
-            />
-          </Section>
-        )}
-
-        <Section title="Customer">
-          <Row label="Account number" value={customer.accountNumber} mono copyable />
-          <Row label="Company" value={customer.companyName} copyable />
-          <Row label="Contact" value={`${customer.firstName} ${customer.lastName}`} copyable />
-          <Row label="Mobile" value={customer.mobile} copyable />
-          <Row label="Email" value={customer.email} copyable />
-          <Row label="Address Line 1" value={customer.addressLine1} copyable />
-          <Row label="Address Line 2" value={customer.addressLine2} copyable />
-          <Row label="Address Line 3" value={customer.addressLine3} copyable />
-          <Row label="Address Line 4" value={customer.addressLine4} copyable />
-          <Row label="Postcode" value={customer.postcode} copyable />
-        </Section>
-
-        <Section title="Deal">
-          <Row label="Sales agent" value={deal.salesAgent} copyable />
-          <Row label="Closing agent" value={deal.closingAgent} copyable />
-          <Row label="Deal type" value={deal.dealType} copyable />
-          <Row label="Soft facts" value={deal.softFacts} copyable />
-        </Section>
+        <ProvisioningDetail
+          services={
+            services
+              ? {
+                  broadbandType: services.broadbandType,
+                  ontSerialNumber: services.ontSerialNumber,
+                  normalSpeed: services.normalSpeed,
+                  minSpeed: services.minSpeed,
+                  maxSpeed: services.maxSpeed,
+                  voiceOption: services.voiceOption,
+                  callTariff: services.callTariff,
+                  equipment: services.equipment as { item: string; qty: number }[] | null,
+                }
+              : null
+          }
+          customer={customer}
+          deal={{
+            salesAgent: deal.salesAgent,
+            closingAgent: deal.closingAgent,
+            dealType: deal.dealType,
+            softFacts: deal.softFacts,
+          }}
+        />
       </div>
     </div>
   )

@@ -55,7 +55,7 @@ function SL({
   options: string[]
 }) {
   return isEditing ? (
-    <Select value={value} onValueChange={onChange}>
+    <Select value={value} onValueChange={(v) => onChange(v ?? '')}>
       <SelectTrigger className="h-8 w-48">
         <SelectValue />
       </SelectTrigger>
@@ -83,6 +83,7 @@ export function CustomerEdit({ customer }: { customer: Customer }) {
     lastName: customer.lastName,
     mobile: customer.mobile ?? '',
     email: customer.email ?? '',
+    landline: customer.landline ?? '',
     addressLine1: customer.addressLine1 ?? '',
     addressLine2: customer.addressLine2 ?? '',
     addressLine3: customer.addressLine3 ?? '',
@@ -103,6 +104,7 @@ export function CustomerEdit({ customer }: { customer: Customer }) {
       firstName: form.firstName,
       lastName: form.lastName,
       mobile: form.mobile || null,
+      landline: form.landline || null,
       email: form.email || null,
       addressLine1: form.addressLine1 || null,
       addressLine2: form.addressLine2 || null,
@@ -123,6 +125,7 @@ export function CustomerEdit({ customer }: { customer: Customer }) {
       firstName: customer.firstName,
       lastName: customer.lastName,
       mobile: customer.mobile ?? '',
+      landline: customer.landline ?? '',
       email: customer.email ?? '',
       addressLine1: customer.addressLine1 ?? '',
       addressLine2: customer.addressLine2 ?? '',
@@ -197,6 +200,14 @@ export function CustomerEdit({ customer }: { customer: Customer }) {
         </Row>
         <Row label="Mobile">
           <F value={form.mobile} onChange={(v) => update('mobile', v)} isEditing={isEditing} mono />
+        </Row>
+        <Row label="Landline">
+          <F
+            value={form.landline}
+            onChange={(v) => update('landline', v)}
+            isEditing={isEditing}
+            mono
+          />
         </Row>
         <Row label="Email">
           <F value={form.email} onChange={(v) => update('email', v)} isEditing={isEditing} />

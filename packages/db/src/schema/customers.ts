@@ -22,6 +22,7 @@ export const customers = appSchema.table('customers', {
   firstName: text('first_name').notNull(),
   lastName: text('last_name').notNull(),
   mobile: text('mobile'),
+  landline: text('landline'),
   email: text('email'),
   addressLine1: text('address_line_1'),
   addressLine2: text('address_line_2'),
