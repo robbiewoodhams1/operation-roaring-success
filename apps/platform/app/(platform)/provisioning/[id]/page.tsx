@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge'
 import { ProvisioningEdit } from './provisioning-edit'
 import CopyButton from '@/components/copy-button'
 import ProvisioningDetail from './provision-details'
+import { ProvisionModal } from './provision-modal'
 
 const statusColours: Record<string, string> = {
   not_started: 'bg-gray-100 text-gray-700 border-gray-200',
@@ -93,7 +94,7 @@ export default async function ProvisioningDetailPage({
         <Link href="/provisioning">
           <ArrowLeft className="size-4" />
         </Link>
-        <div>
+        <div className="flex-1">
           <div className="flex items-center gap-3">
             <Link href={`/customers/${customer.accountNumber}`}>
               <h1 className="text-2xl font-semibold">{customerName}</h1>
@@ -109,6 +110,25 @@ export default async function ProvisioningDetailPage({
             </p>
           </div>
         </div>
+        <ProvisionModal
+          data={{
+            accountNumber: customer.accountNumber,
+            customerName,
+            companyName: customer.companyName,
+            title: customer.title,
+            firstName: customer.firstName,
+            lastName: customer.lastName,
+            mobile: customer.mobile,
+            landline: customer.landline,
+            email: customer.email,
+            addressLine1: customer.addressLine1,
+            addressLine2: customer.addressLine2,
+            addressLine3: customer.addressLine3,
+            postcode: customer.postcode,
+            broadbandType: services?.broadbandType ?? null,
+            ontSerialNumber: services?.ontSerialNumber ?? null,
+          }}
+        />
       </div>
 
       <ProvisioningEdit
@@ -144,43 +164,6 @@ export default async function ProvisioningDetailPage({
           }}
         />
       </div>
-    </div>
-  )
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="border rounded-lg overflow-hidden">
-      <div className="px-4 py-3 border-b bg-muted/30">
-        <h2 className="text-sm font-medium">{title}</h2>
-      </div>
-      <div className="divide-y">{children}</div>
-    </section>
-  )
-}
-
-function Row({
-  label,
-  value,
-  mono = false,
-  copyable = false,
-}: {
-  label: string
-  value: string | null | undefined
-  mono?: boolean
-  copyable?: boolean
-}) {
-  return (
-    <div className="flex px-4 py-3">
-      <span className="text-muted-foreground w-40 shrink-0 text-sm">{label}</span>
-      <span className={`text-sm flex items-center gap-1 flex-1 ${mono ? 'font-mono' : ''}`}>
-        {value ?? '—'}
-        {copyable && value && (
-          <span className="ml-auto">
-            <CopyButton value={value} />
-          </span>
-        )}
-      </span>
     </div>
   )
 }
