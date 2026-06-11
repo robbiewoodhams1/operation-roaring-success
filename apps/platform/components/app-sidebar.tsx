@@ -214,7 +214,7 @@ export function AppSidebar({ user }: { user: AuthUser }) {
       <SidebarHeader>
         <div className="px-2 py-2">
           <p className="text-sm font-semibold">Roaring Success</p>
-          <p className="text-xs text-muted-foreground capitalize">{user.role.replace('_', ' ')}</p>
+          <p className="text-xs text-muted-foreground">v1.0.0</p>
         </div>
       </SidebarHeader>
 

@@ -199,11 +199,14 @@ export function AuditClient({
   const [search, setSearch] = useState('')
   const [actionFilter, setActionFilter] = useState<string[]>([])
   const [tableFilter, setTableFilter] = useState<string[]>([])
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'mtd' | 'custom'>('all')
+  const [customDate, setCustomDate] = useState('')
 
   const tables = [...new Set(logs.map((l) => l.tableName))]
 
   const filtered = useMemo(() => {
     let result = [...logs]
+
     if (search.trim()) {
       const q = search.toLowerCase()
       result = result.filter(
@@ -218,14 +221,35 @@ export function AuditClient({
           (l.changedBy && userNames[l.changedBy]?.toLowerCase().includes(q))
       )
     }
+
     if (actionFilter.length > 0) {
       result = result.filter((l) => actionFilter.includes(l.action))
     }
+
     if (tableFilter.length > 0) {
       result = result.filter((l) => tableFilter.includes(l.tableName))
     }
+
+    const now = new Date()
+
+    if (dateFilter === 'today') {
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      result = result.filter((l) => new Date(l.changedAt) >= todayStart)
+    } else if (dateFilter === 'mtd') {
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+      result = result.filter((l) => new Date(l.changedAt) >= monthStart)
+    } else if (dateFilter === 'custom' && customDate) {
+      const selected = new Date(customDate)
+      const selectedEnd = new Date(customDate)
+      selectedEnd.setDate(selectedEnd.getDate() + 1)
+      result = result.filter((l) => {
+        const d = new Date(l.changedAt)
+        return d >= selected && d < selectedEnd
+      })
+    }
+
     return result
-  }, [logs, search, actionFilter, tableFilter, userNames])
+  }, [logs, search, actionFilter, tableFilter, userNames, dateFilter, customDate])
 
   function toggleFilter(value: string, state: string[], setter: (v: string[]) => void) {
     setter(state.includes(value) ? state.filter((x) => x !== value) : [...state, value])
@@ -238,7 +262,6 @@ export function AuditClient({
         <p className="text-sm text-muted-foreground mt-1">Last 200 changes across all tables</p>
       </div>
 
-      {/* Filters */}
       <div className="space-y-3">
         <Input
           value={search}
@@ -246,6 +269,8 @@ export function AuditClient({
           placeholder="Search by table, value, or user..."
           className="max-w-sm"
         />
+
+        {/* Action filters */}
         <div className="flex flex-wrap gap-2">
           {(['INSERT', 'UPDATE', 'DELETE'] as const).map((a) => (
             <button
@@ -278,12 +303,51 @@ export function AuditClient({
             </button>
           ))}
         </div>
+
+        {/* Date filters */}
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Date</p>
+          {(['all', 'today', 'mtd'] as const).map((d) => (
+            <button
+              key={d}
+              onClick={() => setDateFilter(d)}
+              className={cn(
+                'px-2.5 py-1 rounded-md text-xs font-medium border transition-all',
+                dateFilter === d
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
+              )}
+            >
+              {d === 'all' ? 'All' : d === 'today' ? 'Today' : 'Month to date'}
+            </button>
+          ))}
+          <input
+            type="date"
+            value={customDate}
+            onChange={(e) => {
+              setCustomDate(e.target.value)
+              setDateFilter('custom')
+            }}
+            className="h-7 px-2 rounded-md text-xs border bg-background text-foreground"
+          />
+          {dateFilter !== 'all' && (
+            <button
+              onClick={() => {
+                setDateFilter('all')
+                setCustomDate('')
+              }}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
         <p className="text-xs text-muted-foreground">
           {filtered.length} of {logs.length} entries
         </p>
       </div>
 
-      {/* Log entries */}
       <div className="space-y-2">
         {filtered.map((log) => (
           <LogRow
