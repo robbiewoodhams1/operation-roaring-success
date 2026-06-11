@@ -61,6 +61,7 @@ export async function submitDeal(data: {
   tenantId: string
   createdBy: string
   businessName: string
+  customerTitle: string
   customerFirstName: string
   customerLastName: string
   mobile: string
@@ -158,8 +159,10 @@ export async function submitDeal(data: {
           accountNumber,
           type: data.dealType.toLowerCase() as any,
           companyName: data.businessName || null,
+          title: data.customerTitle || null,
           firstName: data.customerFirstName,
           lastName: data.customerLastName,
+          landline: data.landline || null,
           mobile: data.mobile || null,
           email: data.email || null,
           addressLine1: data.address1 || null,

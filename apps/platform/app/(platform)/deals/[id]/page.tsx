@@ -58,7 +58,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
   const customerName = customer.companyName ?? `${customer.firstName} ${customer.lastName}`
 
   return (
-    <div className="p-6 max-w-4xl">
+    <div className="p-6 w-full">
       <div className="flex items-center gap-4 mb-8">
         <Link href="/deals">
           <ArrowLeft className="size-4" />

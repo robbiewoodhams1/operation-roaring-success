@@ -16,7 +16,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   if (!customer || customer.tenantId !== user.tenantId) notFound()
 
   return (
-    <div className="px-6 max-w-3xl">
+    <div className="px-6 w-full">
       <div className="flex items-center gap-4 mb-8">
         <Link href="/customers">
           <ArrowLeft className="size-4" />

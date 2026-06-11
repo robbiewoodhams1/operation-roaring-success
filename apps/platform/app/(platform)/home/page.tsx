@@ -31,7 +31,12 @@ export default async function HomePage() {
           )
         ),
 
-      db.select().from(auditLogs).orderBy(desc(auditLogs.changedAt)).limit(8),
+      db
+        .select()
+        .from(auditLogs)
+        .where(eq(auditLogs.changedBy, user.id))
+        .orderBy(desc(auditLogs.changedAt))
+        .limit(8),
 
       db.select({ fullName: users.fullName }).from(users).where(eq(users.id, user.id)).limit(1),
     ])

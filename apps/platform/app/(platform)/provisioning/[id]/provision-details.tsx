@@ -73,6 +73,7 @@ type CustomerData = {
   companyName: string | null
   firstName: string
   lastName: string
+  title: string | null
   mobile: string | null
   landline: string | null
   email: string | null
@@ -165,7 +166,9 @@ export default function ProvisioningDetail({
       <Section title="Customer" collapsed={collapsed.customer} onToggle={() => toggle('customer')}>
         <Row label="Account number" value={customer.accountNumber} mono copyable />
         <Row label="Company" value={customer.companyName} copyable />
-        <Row label="Contact" value={`${customer.firstName} ${customer.lastName}`} copyable />
+        <Row label="Title" value={customer.title} copyable />
+        <Row label="First Name" value={customer.firstName} copyable />
+        <Row label="Last Name" value={customer.lastName} copyable />
         <Row label="Mobile" value={customer.mobile} copyable />
         <Row label="Landline" value={customer.landline} copyable />
         <Row label="Email" value={customer.email} copyable />

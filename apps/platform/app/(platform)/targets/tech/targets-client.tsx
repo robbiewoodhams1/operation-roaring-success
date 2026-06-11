@@ -11,7 +11,7 @@ export function TechTargetsClient({ userId }: { userId: string }) {
   const [view, setView] = useState<ViewMode>('team')
 
   return (
-    <div className="p-6 max-w-5xl space-y-6">
+    <div className="p-6 w-full space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Tech Targets</h1>
         <div className="flex items-center gap-1 border rounded-lg p-1">

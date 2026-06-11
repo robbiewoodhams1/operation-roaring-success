@@ -197,7 +197,7 @@ export function TargetsClient({
   const activeStats = view === 'team' ? teamStats : individualStats
 
   return (
-    <div className="p-6 max-w-5xl space-y-6">
+    <div className="p-6 w-full space-y-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold">Provisioning Targets</h1>

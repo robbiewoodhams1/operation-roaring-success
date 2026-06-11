@@ -14,6 +14,7 @@ import {
 import { Pencil } from 'lucide-react'
 import { updateCustomer } from './actions'
 import type { Customer } from '@roaring/db'
+import CopyButton from '@/components/copy-button'
 
 const CUSTOMER_TYPES = ['business', 'residential']
 const CUSTOMER_STATUSES = ['prospect', 'active', 'at_risk', 'churned']
@@ -72,6 +73,41 @@ function SL({
   )
 }
 
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="border rounded-lg overflow-hidden">
+      <div className="px-4 py-3 border-b bg-muted/30">
+        <h2 className="text-sm font-medium">{title}</h2>
+      </div>
+      <div className="divide-y">{children}</div>
+    </section>
+  )
+}
+
+function Row({
+  label,
+  children,
+  copyValue,
+}: {
+  label: string
+  children: React.ReactNode
+  copyValue?: string
+}) {
+  return (
+    <div className="flex px-4 py-3">
+      <span className="text-muted-foreground w-40 shrink-0 text-sm">{label}</span>
+      <span className="text-sm flex items-center gap-1 flex-1">
+        {children}
+        {copyValue && (
+          <span className="ml-auto">
+            <CopyButton value={copyValue} />
+          </span>
+        )}
+      </span>
+    </div>
+  )
+}
+
 export function CustomerEdit({ customer }: { customer: Customer }) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
@@ -79,6 +115,7 @@ export function CustomerEdit({ customer }: { customer: Customer }) {
 
   const [form, setForm] = useState({
     companyName: customer.companyName ?? '',
+    title: customer.title ?? '',
     firstName: customer.firstName,
     lastName: customer.lastName,
     mobile: customer.mobile ?? '',
@@ -122,6 +159,7 @@ export function CustomerEdit({ customer }: { customer: Customer }) {
   function handleCancel() {
     setForm({
       companyName: customer.companyName ?? '',
+      title: customer.title ?? '',
       firstName: customer.firstName,
       lastName: customer.lastName,
       mobile: customer.mobile ?? '',
@@ -159,7 +197,7 @@ export function CustomerEdit({ customer }: { customer: Customer }) {
       </div>
 
       <Section title="Account">
-        <Row label="Account number">
+        <Row label="Account number" copyValue={customer.accountNumber}>
           <span className="text-sm font-mono">{customer.accountNumber}</span>
         </Row>
         <Row label="Type">
@@ -178,7 +216,7 @@ export function CustomerEdit({ customer }: { customer: Customer }) {
             options={CUSTOMER_STATUSES}
           />
         </Row>
-        <Row label="Company name">
+        <Row label="Company name" copyValue={form.companyName}>
           <F
             value={form.companyName}
             onChange={(v) => update('companyName', v)}
@@ -188,20 +226,23 @@ export function CustomerEdit({ customer }: { customer: Customer }) {
       </Section>
 
       <Section title="Contact">
-        <Row label="First name">
+        <Row label="Title">
+          <F value={form.title} onChange={(v) => update('title', v)} isEditing={isEditing} />
+        </Row>
+        <Row label="First name" copyValue={form.firstName}>
           <F
             value={form.firstName}
             onChange={(v) => update('firstName', v)}
             isEditing={isEditing}
           />
         </Row>
-        <Row label="Last name">
+        <Row label="Last name" copyValue={form.lastName}>
           <F value={form.lastName} onChange={(v) => update('lastName', v)} isEditing={isEditing} />
         </Row>
-        <Row label="Mobile">
+        <Row label="Mobile" copyValue={form.mobile}>
           <F value={form.mobile} onChange={(v) => update('mobile', v)} isEditing={isEditing} mono />
         </Row>
-        <Row label="Landline">
+        <Row label="Landline" copyValue={form.landline}>
           <F
             value={form.landline}
             onChange={(v) => update('landline', v)}
@@ -209,41 +250,41 @@ export function CustomerEdit({ customer }: { customer: Customer }) {
             mono
           />
         </Row>
-        <Row label="Email">
+        <Row label="Email" copyValue={form.email}>
           <F value={form.email} onChange={(v) => update('email', v)} isEditing={isEditing} />
         </Row>
       </Section>
 
       <Section title="Address">
-        <Row label="Line 1">
+        <Row label="Line 1" copyValue={form.addressLine1}>
           <F
             value={form.addressLine1}
             onChange={(v) => update('addressLine1', v)}
             isEditing={isEditing}
           />
         </Row>
-        <Row label="Line 2">
+        <Row label="Line 2" copyValue={form.addressLine2}>
           <F
             value={form.addressLine2}
             onChange={(v) => update('addressLine2', v)}
             isEditing={isEditing}
           />
         </Row>
-        <Row label="Line 3">
+        <Row label="Line 3" copyValue={form.addressLine3}>
           <F
             value={form.addressLine3}
             onChange={(v) => update('addressLine3', v)}
             isEditing={isEditing}
           />
         </Row>
-        <Row label="Line 4">
+        <Row label="Line 4" copyValue={form.addressLine4}>
           <F
             value={form.addressLine4}
             onChange={(v) => update('addressLine4', v)}
             isEditing={isEditing}
           />
         </Row>
-        <Row label="Postcode">
+        <Row label="Postcode" copyValue={form.postcode}>
           <F
             value={form.postcode}
             onChange={(v) => update('postcode', v)}
@@ -252,26 +293,6 @@ export function CustomerEdit({ customer }: { customer: Customer }) {
           />
         </Row>
       </Section>
-    </div>
-  )
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="border rounded-lg overflow-hidden">
-      <div className="px-4 py-3 border-b bg-muted/30">
-        <h2 className="text-sm font-medium">{title}</h2>
-      </div>
-      <div className="divide-y">{children}</div>
-    </section>
-  )
-}
-
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex px-4 py-3 items-center gap-4">
-      <span className="text-muted-foreground w-40 shrink-0 text-sm">{label}</span>
-      <div className="text-sm flex-1">{children}</div>
     </div>
   )
 }

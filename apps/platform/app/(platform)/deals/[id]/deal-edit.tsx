@@ -211,6 +211,7 @@ export function DealEdit({
     accountNumberBilling: billing?.accountNumber ?? '',
     bankChecked: billing?.bankChecked ?? false,
     companyName: customer.companyName ?? '',
+    title: customer.title ?? '',
     firstName: customer.firstName,
     lastName: customer.lastName,
     mobile: customer.mobile ?? '',
@@ -278,6 +279,7 @@ export function DealEdit({
       accountNumberBilling: form.accountNumberBilling || null,
       bankChecked: form.bankChecked,
       companyName: form.companyName || null,
+      title: form.title || null,
       firstName: form.firstName,
       lastName: form.lastName,
       mobile: form.mobile || null,
@@ -339,6 +341,7 @@ export function DealEdit({
       accountNumberBilling: billing?.accountNumber ?? '',
       bankChecked: billing?.bankChecked ?? false,
       companyName: customer.companyName ?? '',
+      title: customer.title ?? '',
       firstName: customer.firstName,
       lastName: customer.lastName,
       mobile: customer.mobile ?? '',
@@ -644,6 +647,9 @@ export function DealEdit({
       <Section title="Customer">
         <Row label="Company name">
           <F value={form.companyName} onChange={(v) => update('companyName', v)} isEditing={e} />
+        </Row>
+        <Row label="Title">
+          <F value={form.title} onChange={(v) => update('title', v)} isEditing={e} />
         </Row>
         <Row label="First name">
           <F value={form.firstName} onChange={(v) => update('firstName', v)} isEditing={e} />

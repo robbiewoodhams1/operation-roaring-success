@@ -31,7 +31,6 @@ export function CustomersTable({ customers }: { customers: Customer[] }) {
             <TableHead>Contact</TableHead>
             <TableHead>Postcode</TableHead>
             <TableHead>Mobile</TableHead>
-            <TableHead>Email</TableHead>
             <TableHead>Status</TableHead>
           </TableRow>
         </TableHeader>
@@ -51,7 +50,6 @@ export function CustomersTable({ customers }: { customers: Customer[] }) {
               </TableCell>
               <TableCell className="font-mono text-sm">{customer.postcode ?? '—'}</TableCell>
               <TableCell>{customer.mobile ?? '—'}</TableCell>
-              <TableCell className="text-muted-foreground">{customer.email ?? '—'}</TableCell>
               <TableCell>
                 <span
                   className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusColours[customer.status]}`}

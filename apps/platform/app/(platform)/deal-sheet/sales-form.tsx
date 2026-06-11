@@ -435,6 +435,7 @@ export default function SalesForm({
       tenantId,
       createdBy,
       businessName,
+      customerTitle,
       customerFirstName,
       customerLastName,
       mobile,

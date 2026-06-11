@@ -19,6 +19,7 @@ export const customers = appSchema.table('customers', {
   accountNumber: text('account_number').notNull().unique(),
   type: customerTypeEnum('type').notNull().default('business'),
   companyName: text('company_name'),
+  title: text('title'),
   firstName: text('first_name').notNull(),
   lastName: text('last_name').notNull(),
   mobile: text('mobile'),
