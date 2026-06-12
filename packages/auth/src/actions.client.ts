@@ -30,6 +30,7 @@ export async function signIn(
       role: data.user.user_metadata?.role ?? 'agent',
       tenantId: data.user.user_metadata?.tenant_id ?? '',
       approvalStatus: data.user.user_metadata?.approval_status ?? 'pending',
+      isActive: true,
     },
     error: null,
   }
