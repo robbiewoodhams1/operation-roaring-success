@@ -5,8 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Users, FileText, Wifi, Plus, X, Check, Clock } from 'lucide-react'
+import { Users, FileText, Wifi, Plus, X, Check, Clock, TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import {
+  STAT_DEFINITIONS,
+  DEFAULT_STATS,
+  type StatKey,
+  type StatCategory,
+} from './stat-definitions'
 
 type AuditLog = {
   id: string
@@ -43,12 +49,23 @@ const tableLabels: Record<string, string> = {
   users: 'User',
 }
 
+const categoryLabels: Record<StatCategory, string> = {
+  sales: 'Sales',
+  provisioning: 'Provisioning',
+  customers: 'Customers',
+}
+
+const categoryIcons: Record<StatCategory, React.ComponentType<{ className?: string }>> = {
+  sales: FileText,
+  provisioning: Wifi,
+  customers: Users,
+}
+
 function formatActivityMessage(log: AuditLog): string {
   const table = tableLabels[log.tableName] ?? log.tableName
   const action =
     log.action === 'INSERT' ? 'created' : log.action === 'UPDATE' ? 'updated' : 'deleted'
 
-  // Try to extract a meaningful identifier from the data
   const data = log.newData ?? log.oldData
   if (data) {
     if (data.account_number) return `${table} ${data.account_number} ${action}`
@@ -59,14 +76,126 @@ function formatActivityMessage(log: AuditLog): string {
   return `${table} ${action}`
 }
 
+// ── Add Stat Modal ──────────────────────────────────────────────────────────
+function AddStatModal({
+  currentStats,
+  onAdd,
+  onClose,
+}: {
+  currentStats: StatKey[]
+  onAdd: (key: StatKey) => void
+  onClose: () => void
+}) {
+  const categories: StatCategory[] = ['sales', 'provisioning', 'customers']
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative bg-background rounded-xl shadow-2xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <h2 className="text-sm font-semibold">Add a stat</h2>
+          <button
+            onClick={onClose}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+        <div className="overflow-y-auto px-4 py-3 space-y-4">
+          {categories.map((cat) => {
+            const Icon = categoryIcons[cat]
+            const items = (
+              Object.entries(STAT_DEFINITIONS) as [StatKey, (typeof STAT_DEFINITIONS)[StatKey]][]
+            ).filter(([, def]) => def.category === cat)
+
+            return (
+              <div key={cat}>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                  <Icon className="size-3.5" />
+                  {categoryLabels[cat]}
+                </p>
+                <div className="space-y-1">
+                  {items.map(([key, def]) => {
+                    const added = currentStats.includes(key)
+                    return (
+                      <button
+                        key={key}
+                        disabled={added}
+                        onClick={() => onAdd(key)}
+                        className={cn(
+                          'w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm text-left transition-colors',
+                          added
+                            ? 'bg-muted/40 text-muted-foreground cursor-not-allowed'
+                            : 'hover:bg-muted/60 cursor-pointer'
+                        )}
+                      >
+                        {def.label}
+                        {added ? <Check className="size-3.5" /> : <Plus className="size-3.5" />}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Stat Card ───────────────────────────────────────────────────────────────
+function StatCard({
+  statKey,
+  value,
+  onRemove,
+}: {
+  statKey: StatKey
+  value: string
+  onRemove: () => void
+}) {
+  const def = STAT_DEFINITIONS[statKey]
+  const Icon = categoryIcons[def.category]
+
+  const iconColours: Record<StatCategory, string> = {
+    sales: 'bg-purple-100 text-purple-600',
+    provisioning: 'bg-orange-100 text-orange-600',
+    customers: 'bg-blue-100 text-blue-600',
+  }
+
+  return (
+    <Card className="group relative">
+      <button
+        onClick={onRemove}
+        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+      >
+        <X className="size-3.5" />
+      </button>
+      <CardContent className="pt-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              {def.label}
+            </p>
+            <p className="text-3xl font-bold mt-1">{value}</p>
+          </div>
+          <div className={cn('p-3 rounded-full', iconColours[def.category])}>
+            <Icon className="size-5" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export function HomeClient({
   fullName,
-  stats,
+  statValues,
   recentActivity,
   userId,
 }: {
   fullName: string
-  stats: { dealsToday: number; activeCustomers: number; pendingProvisioning: number }
+  statValues: Record<string, { value: string; sub?: string }>
   recentActivity: AuditLog[]
   userId: string
 }) {
@@ -76,6 +205,34 @@ export function HomeClient({
     month: 'long',
     year: 'numeric',
   })
+
+  // Stats — persisted in localStorage
+  const statsKey = `home-stats-${userId}`
+  const [activeStats, setActiveStats] = useState<StatKey[]>(DEFAULT_STATS)
+  const [showAddStat, setShowAddStat] = useState(false)
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(statsKey)
+      if (stored) setActiveStats(JSON.parse(stored))
+    } catch {}
+  }, [statsKey])
+
+  function saveStats(updated: StatKey[]) {
+    setActiveStats(updated)
+    try {
+      localStorage.setItem(statsKey, JSON.stringify(updated))
+    } catch {}
+  }
+
+  function addStat(key: StatKey) {
+    if (!activeStats.includes(key)) saveStats([...activeStats, key])
+    setShowAddStat(false)
+  }
+
+  function removeStat(key: StatKey) {
+    saveStats(activeStats.filter((k) => k !== key))
+  }
 
   // Todo list — persisted in localStorage
   const storageKey = `todos-${userId}`
@@ -128,58 +285,36 @@ export function HomeClient({
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Deals today
-                </p>
-                <p className="text-3xl font-bold mt-1">{stats.dealsToday}</p>
-              </div>
-              <div className="p-3 rounded-full bg-purple-100">
-                <FileText className="size-5 text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Active customers
-                </p>
-                <p className="text-3xl font-bold mt-1">{stats.activeCustomers}</p>
-              </div>
-              <div className="p-3 rounded-full bg-blue-100">
-                <Users className="size-5 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Pending provisioning
-                </p>
-                <p className="text-3xl font-bold mt-1">{stats.pendingProvisioning}</p>
-              </div>
-              <div className="p-3 rounded-full bg-orange-100">
-                <Wifi className="size-5 text-orange-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {activeStats.map((key) => (
+            <StatCard
+              key={key}
+              statKey={key}
+              value={statValues[key]?.value ?? '—'}
+              onRemove={() => removeStat(key)}
+            />
+          ))}
+          <button
+            onClick={() => setShowAddStat(true)}
+            className="border border-dashed rounded-lg flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors min-h-[104px]"
+          >
+            <Plus className="size-4" />
+            Add stat
+          </button>
+        </div>
       </div>
 
+      {showAddStat && (
+        <AddStatModal
+          currentStats={activeStats}
+          onAdd={addStat}
+          onClose={() => setShowAddStat(false)}
+        />
+      )}
+
       {/* Activity + Todo */}
-      <div className="grid grid-cols-[1fr_360px] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
         {/* Recent activity */}
         <Card>
           <CardHeader className="pb-3">
@@ -225,7 +360,6 @@ export function HomeClient({
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0 space-y-3">
-            {/* Add todo */}
             <div className="flex gap-2">
               <Input
                 value={newTodo}
@@ -239,7 +373,6 @@ export function HomeClient({
               </Button>
             </div>
 
-            {/* Pending todos */}
             {pending.length === 0 && done.length === 0 && (
               <p className="text-xs text-muted-foreground text-center py-3">No tasks yet</p>
             )}
@@ -261,7 +394,6 @@ export function HomeClient({
               ))}
             </div>
 
-            {/* Done todos */}
             {done.length > 0 && (
               <div className="space-y-1 pt-2 border-t">
                 <p className="text-xs text-muted-foreground mb-1">Completed</p>

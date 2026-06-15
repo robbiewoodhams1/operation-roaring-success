@@ -10,6 +10,7 @@ import { capitalise } from '@/components/capitalise'
 
 const statusColours: Record<string, string> = {
   not_started: 'bg-gray-100 text-gray-700 border-gray-200',
+  in_progress: 'bg-orange-100 text-orange-800 border-orange-200',
   broadband_applied: 'bg-blue-100 text-blue-800 border-blue-200',
   whc_applied: 'bg-purple-100 text-purple-800 border-purple-200',
   broadband_and_whc_applied: 'bg-indigo-100 text-indigo-800 border-indigo-200',
@@ -19,6 +20,7 @@ const statusColours: Record<string, string> = {
 
 const statusLabels: Record<string, string> = {
   not_started: 'Not started',
+  in_progress: 'In progress',
   broadband_applied: 'BB applied',
   whc_applied: 'WHC applied',
   broadband_and_whc_applied: 'BB & WHC applied',
@@ -31,6 +33,7 @@ const serviceStatusColours: Record<string, string> = {
   applied: 'bg-blue-100 text-blue-800 border-blue-200',
   delayed: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   cancelled: 'bg-red-100 text-red-800 border-red-200',
+  cant_provision: 'bg-orange-100 text-orange-800 border-orange-200',
   live: 'bg-green-100 text-green-800 border-green-200',
 }
 
@@ -68,7 +71,14 @@ type ProvisioningRow = {
 
 type SortOption = 'newest' | 'oldest'
 
-const SERVICE_STATUSES = ['not_applied', 'applied', 'delayed', 'cancelled', 'live']
+const SERVICE_STATUSES = [
+  'not_applied',
+  'cant_provision',
+  'applied',
+  'delayed',
+  'cancelled',
+  'live',
+]
 const WC_OUTCOMES = ['answered', 'call_back', 'no_answer', 'cancelled']
 
 export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {

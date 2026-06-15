@@ -25,6 +25,7 @@ import CopyButton from '@/components/copy-button'
 
 const provStatusColours: Record<string, string> = {
   not_started: 'bg-gray-100 text-gray-700 border-gray-200',
+  in_progress: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   broadband_applied: 'bg-blue-100 text-blue-800 border-blue-200',
   whc_applied: 'bg-purple-100 text-purple-800 border-purple-200',
   broadband_and_whc_applied: 'bg-indigo-100 text-indigo-800 border-indigo-200',
@@ -34,6 +35,7 @@ const provStatusColours: Record<string, string> = {
 
 const provStatusLabels: Record<string, string> = {
   not_started: 'Not started',
+  in_progress: 'In progress',
   broadband_applied: 'BB applied',
   whc_applied: 'WHC applied',
   broadband_and_whc_applied: 'BB & WHC applied',
@@ -60,6 +62,7 @@ const wcColours: Record<string, string> = {
 const WC_OUTCOMES = ['call_back', 'answered', 'no_answer', 'cancelled']
 const PROV_STATUSES = [
   'not_started',
+  'in_progress',
   'broadband_applied',
   'whc_applied',
   'broadband_and_whc_applied',

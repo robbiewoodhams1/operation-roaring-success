@@ -11,6 +11,7 @@ export const wcOutcomeEnum = appSchema.enum('wc_outcome', [
 
 export const provisioningStatusEnum = appSchema.enum('provisioning_status', [
   'not_started',
+  'in_progress',
   'broadband_applied',
   'whc_applied',
   'broadband_and_whc_applied',
