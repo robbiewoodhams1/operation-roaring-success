@@ -13,18 +13,9 @@ import {
 import { Pencil } from 'lucide-react'
 import { updateUser, toggleUserSuspension } from './actions'
 import { useRouter } from 'next/navigation'
+import { type User } from '@/lib/types'
 
 const ROLES = ['admin', 'manager', 'director', 'team_leader', 'agent', 'sales']
-
-type User = {
-  id: string
-  fullName: string
-  email: string
-  role: string
-  isActive: boolean
-  approvalStatus: string
-  createdAt: Date | string
-}
 
 export function UserEdit({ user, currentUserId }: { user: User; currentUserId: string }) {
   const router = useRouter()

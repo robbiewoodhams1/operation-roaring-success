@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, User, ChevronLeft, ChevronRight, Trophy } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { type ViewMode } from '@/lib/types'
 
-type ViewMode = 'team' | 'individual'
 type TypeFilter = 'all' | 'business' | 'residential'
 
 type DealRow = {

@@ -5,34 +5,8 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { ChevronDown, ChevronUp } from 'lucide-react'
-
-type AuditLog = {
-  id: string
-  tableName: string
-  recordId: string
-  action: string
-  oldData: any
-  newData: any
-  changedBy: string | null
-  changedAt: Date | string
-}
-
-const actionColours: Record<string, string> = {
-  INSERT: 'bg-green-100 text-green-800 border-green-200',
-  UPDATE: 'bg-blue-100 text-blue-800 border-blue-200',
-  DELETE: 'bg-red-100 text-red-800 border-red-200',
-}
-
-const tableLabels: Record<string, string> = {
-  customers: 'Customer',
-  deals: 'Deal',
-  provisioning: 'Provisioning',
-  provisioning_services: 'Service',
-  deal_services: 'Deal services',
-  deal_pricing: 'Deal pricing',
-  deal_billing: 'Deal billing',
-  users: 'User',
-}
+import { type AuditLog } from '@/lib/types'
+import { AUDIT_ACTION_COLOURS, AUDIT_TABLE_LABELS } from '@/lib/constants'
 
 function diffData(oldData: any, newData: any): { field: string; from: any; to: any }[] {
   if (!oldData || !newData) return []
@@ -73,12 +47,12 @@ function LogRow({ log, userName }: { log: AuditLog; userName: string }) {
       >
         <Badge
           variant="outline"
-          className={cn('text-xs shrink-0 w-16 justify-center', actionColours[log.action])}
+          className={cn('text-xs shrink-0 w-16 justify-center', AUDIT_ACTION_COLOURS[log.action])}
         >
           {log.action}
         </Badge>
         <span className="text-xs font-medium text-muted-foreground w-24 shrink-0">
-          {tableLabels[log.tableName] ?? log.tableName}
+          {AUDIT_TABLE_LABELS[log.tableName] ?? log.tableName}
         </span>
         <span className="text-sm font-medium shrink-0">{identifier}</span>
         {changeSummary && (
@@ -278,7 +252,7 @@ export function AuditClient({
               onClick={() => toggleFilter(a, actionFilter, setActionFilter)}
               className={cn(
                 'px-2.5 py-1 rounded-md text-xs font-medium border transition-all',
-                actionColours[a],
+                AUDIT_ACTION_COLOURS[a],
                 actionFilter.includes(a)
                   ? 'ring-2 ring-offset-1 ring-foreground/30'
                   : 'hover:scale-103'
@@ -299,7 +273,7 @@ export function AuditClient({
                   : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
               )}
             >
-              {tableLabels[t] ?? t}
+              {AUDIT_TABLE_LABELS[t] ?? t}
             </button>
           ))}
         </div>

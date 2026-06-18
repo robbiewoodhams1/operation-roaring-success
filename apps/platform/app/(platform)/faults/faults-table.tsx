@@ -11,35 +11,8 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-
-const statusColours: Record<string, string> = {
-  outstanding: 'bg-red-100 text-red-800 border-red-200',
-  in_progress: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  resolved: 'bg-green-100 text-green-800 border-green-200',
-}
-
-const typeColours: Record<string, string> = {
-  bb: 'bg-blue-100 text-blue-800 border-blue-200',
-  line: 'bg-purple-100 text-purple-800 border-purple-200',
-  upgrade: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-  dfb: 'bg-orange-100 text-orange-800 border-orange-200',
-  provisioning: 'bg-cyan-100 text-cyan-800 border-cyan-200',
-  mobile: 'bg-pink-100 text-pink-800 border-pink-200',
-  ticket: 'bg-gray-100 text-gray-700 border-gray-200',
-}
-
-type FaultRow = {
-  id: string
-  title: string
-  type: string
-  status: string
-  ticketRef: string | null
-  openedAt: Date | string
-  resolvedAt: Date | string | null
-  assignedTo: string | null
-  provisioningId: string | null
-  createdAt: Date | string
-}
+import { type FaultRow } from '@/lib/types'
+import { FAULT_STATUS_COLOURS, FAULT_TYPE_COLOURS } from '@/lib/constants'
 
 export function FaultsTable({
   faults,
@@ -75,12 +48,12 @@ export function FaultsTable({
             >
               <TableCell className="font-medium">{fault.title}</TableCell>
               <TableCell>
-                <Badge variant="outline" className={typeColours[fault.type]}>
+                <Badge variant="outline" className={FAULT_TYPE_COLOURS[fault.type]}>
                   {fault.type.toUpperCase()}
                 </Badge>
               </TableCell>
               <TableCell>
-                <Badge variant="outline" className={statusColours[fault.status]}>
+                <Badge variant="outline" className={FAULT_STATUS_COLOURS[fault.status]}>
                   {fault.status.replace('_', ' ')}
                 </Badge>
               </TableCell>

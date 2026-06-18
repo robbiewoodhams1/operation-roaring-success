@@ -7,79 +7,15 @@ import { ProvisioningTable } from './provisioning-table'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { capitalise } from '@/components/capitalise'
-
-const statusColours: Record<string, string> = {
-  not_started: 'bg-gray-100 text-gray-700 border-gray-200',
-  in_progress: 'bg-orange-100 text-orange-800 border-orange-200',
-  broadband_applied: 'bg-blue-100 text-blue-800 border-blue-200',
-  whc_applied: 'bg-purple-100 text-purple-800 border-purple-200',
-  broadband_and_whc_applied: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-  live: 'bg-green-100 text-green-800 border-green-200',
-  failed: 'bg-red-100 text-red-800 border-red-200',
-}
-
-const statusLabels: Record<string, string> = {
-  not_started: 'Not started',
-  in_progress: 'In progress',
-  broadband_applied: 'BB applied',
-  whc_applied: 'WHC applied',
-  broadband_and_whc_applied: 'BB & WHC applied',
-  live: 'Live',
-  failed: 'Failed',
-}
-
-const serviceStatusColours: Record<string, string> = {
-  not_applied: 'bg-gray-100 text-gray-600 border-gray-200',
-  applied: 'bg-blue-100 text-blue-800 border-blue-200',
-  delayed: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  cancelled: 'bg-red-100 text-red-800 border-red-200',
-  cant_provision: 'bg-orange-100 text-orange-800 border-orange-200',
-  live: 'bg-green-100 text-green-800 border-green-200',
-}
-
-const wcColours: Record<string, string> = {
-  answered: 'bg-green-100 text-green-800 border-green-200',
-  call_back: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  no_answer: 'bg-gray-100 text-gray-700 border-gray-200',
-  cancelled: 'bg-red-100 text-red-800 border-red-200',
-}
-
-type ProvisioningRow = {
-  id: string
-  status: string
-  dealId: string | null
-  provisioner: string | null
-  proposedLiveDate: string | null
-  dateOrdered: string | null
-  lastCheckedAt: Date | null
-  lastCheckedBy: string | null
-  wc1Outcome: string | null
-  wc2Outcome: string | null
-  routerDispatched: boolean
-  accountNumber: string | null
-  companyName: string | null
-  firstName: string | null
-  lastName: string | null
-  salesAgent: string | null
-  dealDate: string | null
-  bbStatus: string | null
-  whcStatus: string | null
-  nfonStatus: string | null
-  mpfStatus: string | null
-  customerType: string | null
-}
-
-type SortOption = 'newest' | 'oldest'
-
-const SERVICE_STATUSES = [
-  'not_applied',
-  'cant_provision',
-  'applied',
-  'delayed',
-  'cancelled',
-  'live',
-]
-const WC_OUTCOMES = ['answered', 'call_back', 'no_answer', 'cancelled']
+import { type ProvisioningRow, type SortOption } from '@/lib/types'
+import {
+  PROV_STATUS_COLOURS,
+  PROV_STATUS_LABELS,
+  SERVICE_STATUS_COLOURS,
+  SERVICE_STATUSES,
+  WC_COLOURS,
+  WC_OUTCOMES,
+} from '@/lib/constants'
 
 export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
   const [search, setSearch] = useState('')
@@ -267,13 +203,13 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
           Overall status
         </p>
         <div className="flex flex-wrap gap-2">
-          {Object.keys(statusLabels).map((s) => (
+          {Object.keys(PROV_STATUS_LABELS).map((s) => (
             <FilterChip
               key={s}
-              label={statusLabels[s]}
+              label={PROV_STATUS_LABELS[s]}
               active={statusFilter.includes(s)}
               onClick={() => toggle(s, statusFilter, setStatusFilter)}
-              colour={statusColours[s]}
+              colour={PROV_STATUS_COLOURS[s]}
             />
           ))}
         </div>
@@ -291,7 +227,7 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
               label={capitalise(s).replace('_', ' ')}
               active={bbStatusFilter.includes(s)}
               onClick={() => toggle(s, bbStatusFilter, setBbStatusFilter)}
-              colour={serviceStatusColours[s]}
+              colour={SERVICE_STATUS_COLOURS[s]}
             />
           ))}
         </div>
@@ -309,7 +245,7 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
               label={capitalise(s).replace('_', ' ')}
               active={whcStatusFilter.includes(s)}
               onClick={() => toggle(s, whcStatusFilter, setWhcStatusFilter)}
-              colour={serviceStatusColours[s]}
+              colour={SERVICE_STATUS_COLOURS[s]}
             />
           ))}
         </div>
@@ -327,7 +263,7 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
               label={capitalise(s).replace('_', ' ')}
               active={nfonStatusFilter.includes(s)}
               onClick={() => toggle(s, nfonStatusFilter, setNfonStatusFilter)}
-              colour={serviceStatusColours[s]}
+              colour={SERVICE_STATUS_COLOURS[s]}
             />
           ))}
         </div>
@@ -345,7 +281,7 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
               label={capitalise(s).replace('_', ' ')}
               active={mpfStatusFilter.includes(s)}
               onClick={() => toggle(s, mpfStatusFilter, setMpfStatusFilter)}
-              colour={serviceStatusColours[s]}
+              colour={SERVICE_STATUS_COLOURS[s]}
             />
           ))}
         </div>
@@ -372,7 +308,7 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
               label={capitalise(o).replace('_', ' ')}
               active={wc1Filter.includes(o)}
               onClick={() => toggle(o, wc1Filter, setWc1Filter)}
-              colour={wcColours[o]}
+              colour={WC_COLOURS[o]}
             />
           ))}
         </div>

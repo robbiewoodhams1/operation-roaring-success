@@ -2,16 +2,7 @@
 
 import { db, customers, deals, provisioning, provisioningServices } from '@roaring/db'
 import { eq, or, ilike, and } from 'drizzle-orm'
-
-type SearchResult = {
-  type: 'customer' | 'deal' | 'provisioning'
-  id: string
-  accountNumber: string
-  title: string
-  subtitle: string
-  status: string | null
-  href: string
-}
+import { type SearchResult } from '@/lib/types'
 
 export async function search(tenantId: string, query: string): Promise<SearchResult[]> {
   const q = `%${query}%`

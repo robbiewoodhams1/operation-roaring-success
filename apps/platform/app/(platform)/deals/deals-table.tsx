@@ -10,36 +10,8 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-
-const statusColours: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  live: 'bg-green-100 text-green-800 border-green-200',
-  cancelled: 'bg-red-100 text-red-800 border-red-200',
-}
-
-const contractLabels: Record<string, string> = {
-  '24_months': '24m',
-  '36_months': '36m',
-  '48_months': '48m',
-  other: 'Other',
-}
-
-type DealRow = {
-  id: string
-  dealDate: string
-  status: string
-  dealType: string
-  salesAgent: string
-  closingAgent: string
-  accountNumber: string | null
-  companyName: string | null
-  firstName: string | null
-  lastName: string | null
-  bundlePrice: string | null
-  wholesaleCost: string | null
-  monthlyGp: string | null
-  contractLength: string | null
-}
+import { type DealRow } from '@/lib/types'
+import { DEAL_STATUS_COLOURS, DEAL_CONTRACT_LABELS } from '@/lib/constants'
 
 export function DealsTable({ deals }: { deals: DealRow[] }) {
   const router = useRouter()
@@ -94,11 +66,11 @@ export function DealsTable({ deals }: { deals: DealRow[] }) {
               </TableCell>
               <TableCell>
                 {deal.contractLength
-                  ? (contractLabels[deal.contractLength] ?? deal.contractLength)
+                  ? (DEAL_CONTRACT_LABELS[deal.contractLength] ?? deal.contractLength)
                   : '—'}
               </TableCell>
               <TableCell>
-                <Badge variant="outline" className={statusColours[deal.status]}>
+                <Badge variant="outline" className={DEAL_STATUS_COLOURS[deal.status]}>
                   {deal.status}
                 </Badge>
               </TableCell>

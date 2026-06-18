@@ -6,12 +6,7 @@ import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { ArrowLeft } from 'lucide-react'
 import { DealEdit } from './deal-edit'
-
-const statusColours: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  live: 'bg-green-100 text-green-800 border-green-200',
-  cancelled: 'bg-red-100 text-red-800 border-red-200',
-}
+import { DEAL_STATUS_COLOURS } from '@/lib/constants'
 
 export default async function DealPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -68,7 +63,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
             <Link href={`/customers/${customer.accountNumber}`}>
               <h1 className="text-2xl font-semibold">{customerName}</h1>
             </Link>
-            <Badge variant="outline" className={statusColours[deal.status]}>
+            <Badge variant="outline" className={DEAL_STATUS_COLOURS[deal.status]}>
               {deal.status}
             </Badge>
           </div>

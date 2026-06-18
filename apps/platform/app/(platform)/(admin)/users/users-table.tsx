@@ -10,16 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-
-type User = {
-  id: string
-  fullName: string
-  email: string
-  role: string
-  isActive: boolean
-  approvalStatus: string
-  createdAt: Date | string
-}
+import { type User } from '@/lib/types'
 
 function StatusBadge({ approvalStatus, isActive }: { approvalStatus: string; isActive: boolean }) {
   if (!isActive && approvalStatus === 'pending') {

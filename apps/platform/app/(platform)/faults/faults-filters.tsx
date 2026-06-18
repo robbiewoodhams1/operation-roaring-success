@@ -6,38 +6,13 @@ import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { FaultsTable } from './faults-table'
-
-const STATUS_OPTIONS = ['outstanding', 'in_progress', 'resolved']
-const TYPE_OPTIONS = ['bb', 'line', 'upgrade', 'dfb', 'provisioning', 'mobile', 'ticket']
-
-const statusColours: Record<string, string> = {
-  outstanding: 'bg-red-100 text-red-800 border-red-200',
-  in_progress: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  resolved: 'bg-green-100 text-green-800 border-green-200',
-}
-
-const typeColours: Record<string, string> = {
-  bb: 'bg-blue-100 text-blue-800 border-blue-200',
-  line: 'bg-purple-100 text-purple-800 border-purple-200',
-  upgrade: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-  dfb: 'bg-orange-100 text-orange-800 border-orange-200',
-  provisioning: 'bg-cyan-100 text-cyan-800 border-cyan-200',
-  mobile: 'bg-pink-100 text-pink-800 border-pink-200',
-  ticket: 'bg-gray-100 text-gray-700 border-gray-200',
-}
-
-type FaultRow = {
-  id: string
-  title: string
-  type: string
-  status: string
-  ticketRef: string | null
-  openedAt: Date | string
-  resolvedAt: Date | string | null
-  assignedTo: string | null
-  provisioningId: string | null
-  createdAt: Date | string
-}
+import { type FaultRow } from '@/lib/types'
+import {
+  FAULT_STATUSES,
+  FAULT_TYPES,
+  FAULT_STATUS_COLOURS,
+  FAULT_TYPE_COLOURS,
+} from '@/lib/constants'
 
 export function FaultsFilters({
   faults,
@@ -117,13 +92,13 @@ export function FaultsFilters({
       <div className="space-y-2">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Status</p>
         <div className="flex flex-wrap gap-2">
-          {STATUS_OPTIONS.map((s) => (
+          {FAULT_STATUSES.map((s) => (
             <button
               key={s}
               onClick={() => toggleStatus(s)}
               className={cn(
                 'px-2.5 py-1 rounded-md text-xs font-medium border transition-all',
-                statusColours[s],
+                FAULT_STATUS_COLOURS[s],
                 statusFilter.includes(s)
                   ? 'ring-2 ring-offset-1 ring-foreground/30'
                   : 'hover:opacity-80'
@@ -138,13 +113,13 @@ export function FaultsFilters({
       <div className="space-y-2">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Type</p>
         <div className="flex flex-wrap gap-2">
-          {TYPE_OPTIONS.map((t) => (
+          {FAULT_TYPES.map((t) => (
             <button
               key={t}
               onClick={() => toggleType(t)}
               className={cn(
                 'px-2.5 py-1 rounded-md text-xs font-medium border transition-all',
-                typeColours[t],
+                FAULT_TYPE_COLOURS[t],
                 typeFilter.includes(t)
                   ? 'ring-2 ring-offset-1 ring-foreground/30'
                   : 'hover:opacity-80'

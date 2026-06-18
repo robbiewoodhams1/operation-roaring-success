@@ -7,16 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Search, Building2, FileText, Wifi, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { search } from './actions'
-
-type SearchResult = {
-  type: 'customer' | 'deal' | 'provisioning'
-  id: string
-  accountNumber: string
-  title: string
-  subtitle: string
-  status: string | null
-  href: string
-}
+import { type SearchResult } from '@/lib/types'
 
 const typeColours = {
   customer: 'bg-blue-100 text-blue-800 border-blue-200',

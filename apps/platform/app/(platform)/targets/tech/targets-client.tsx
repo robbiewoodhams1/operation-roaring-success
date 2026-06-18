@@ -4,8 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Users, User } from 'lucide-react'
-
-type ViewMode = 'team' | 'individual'
+import { type ViewMode } from '@/lib/types'
 
 export function TechTargetsClient({ userId }: { userId: string }) {
   const [view, setView] = useState<ViewMode>('team')

@@ -18,15 +18,7 @@ import { addFaultComment, deleteFaultComment } from './actions'
 import { updateFault, updateFaultStatus } from '../actions'
 import type { Fault, FaultComment } from '@roaring/db'
 import { cn } from '@/lib/utils'
-
-const STATUS_OPTIONS = ['outstanding', 'in_progress', 'resolved']
-const TYPE_OPTIONS = ['bb', 'line', 'upgrade', 'dfb', 'provisioning', 'mobile', 'ticket']
-
-const statusColours: Record<string, string> = {
-  outstanding: 'bg-red-100 text-red-800 border-red-200',
-  in_progress: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  resolved: 'bg-green-100 text-green-800 border-green-200',
-}
+import { FAULT_STATUSES, FAULT_TYPES, FAULT_STATUS_COLOURS } from '@/lib/constants'
 
 export function FaultDetail({
   fault,
@@ -127,7 +119,7 @@ export function FaultDetail({
         <div className="divide-y">
           <Row label="Status">
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className={statusColours[fault.status]}>
+              <Badge variant="outline" className={FAULT_STATUS_COLOURS[fault.status]}>
                 {fault.status.replace('_', ' ')}
               </Badge>
               <Select value={fault.status} onValueChange={handleStatusChange}>
@@ -135,7 +127,7 @@ export function FaultDetail({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {STATUS_OPTIONS.map((s) => (
+                  {FAULT_STATUSES.map((s) => (
                     <SelectItem key={s} value={s}>
                       {s.replace('_', ' ')}
                     </SelectItem>
@@ -165,7 +157,7 @@ export function FaultDetail({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {TYPE_OPTIONS.map((t) => (
+                  {FAULT_TYPES.map((t) => (
                     <SelectItem key={t} value={t}>
                       {t.toUpperCase()}
                     </SelectItem>

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChevronLeft, ChevronRight, Users, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { type ViewMode } from '@/lib/types'
 
 type ServiceStat = {
   total: number
@@ -25,8 +26,6 @@ type StatsBlock = {
   totalDeals: number
   serviceStats: ServiceStats
 }
-
-type ViewMode = 'team' | 'individual'
 
 const serviceColours: Record<string, { bar: string; badge: string }> = {
   bb: { bar: 'bg-blue-500', badge: 'bg-blue-100 text-blue-800' },

@@ -10,13 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import type { Customer } from '@roaring/db'
-
-const statusColours: Record<string, string> = {
-  active: 'bg-green-100 text-green-800',
-  prospect: 'bg-blue-100 text-blue-800',
-  at_risk: 'bg-yellow-100 text-yellow-800',
-  churned: 'bg-red-100 text-red-800',
-}
+import { CUSTOMER_STATUS_COLOURS } from '@/lib/constants'
 
 export function CustomersTable({ customers }: { customers: Customer[] }) {
   const router = useRouter()
@@ -52,7 +46,7 @@ export function CustomersTable({ customers }: { customers: Customer[] }) {
               <TableCell>{customer.mobile ?? '—'}</TableCell>
               <TableCell>
                 <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusColours[customer.status]}`}
+                  className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${CUSTOMER_STATUS_COLOURS[customer.status]}`}
                 >
                   {customer.status.replace('_', ' ')}
                 </span>

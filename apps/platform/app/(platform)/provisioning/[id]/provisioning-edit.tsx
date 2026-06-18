@@ -22,62 +22,16 @@ import {
 import type { Provisioning, ProvisioningService } from '@roaring/db'
 import { cn } from '@/lib/utils'
 import CopyButton from '@/components/copy-button'
-
-const provStatusColours: Record<string, string> = {
-  not_started: 'bg-gray-100 text-gray-700 border-gray-200',
-  in_progress: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  broadband_applied: 'bg-blue-100 text-blue-800 border-blue-200',
-  whc_applied: 'bg-purple-100 text-purple-800 border-purple-200',
-  broadband_and_whc_applied: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-  live: 'bg-green-100 text-green-800 border-green-200',
-  failed: 'bg-red-100 text-red-800 border-red-200',
-}
-
-const provStatusLabels: Record<string, string> = {
-  not_started: 'Not started',
-  in_progress: 'In progress',
-  broadband_applied: 'BB applied',
-  whc_applied: 'WHC applied',
-  broadband_and_whc_applied: 'BB & WHC applied',
-  live: 'Live',
-  failed: 'Failed',
-}
-
-const serviceStatusColours: Record<string, string> = {
-  not_applied: 'bg-gray-100 text-gray-700 border-gray-200',
-  cant_provision: 'bg-orange-100 text-orange-800 border-orange-200',
-  applied: 'bg-blue-100 text-blue-800 border-blue-200',
-  delayed: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  cancelled: 'bg-red-100 text-red-800 border-red-200',
-  live: 'bg-green-100 text-green-800 border-green-200',
-}
-
-const wcColours: Record<string, string> = {
-  answered: 'bg-green-100 text-green-800 border-green-200',
-  call_back: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  no_answer: 'bg-gray-100 text-gray-700 border-gray-200',
-  cancelled: 'bg-red-100 text-red-800 border-red-200',
-}
-
-const WC_OUTCOMES = ['call_back', 'answered', 'no_answer', 'cancelled']
-const PROV_STATUSES = [
-  'not_started',
-  'in_progress',
-  'broadband_applied',
-  'whc_applied',
-  'broadband_and_whc_applied',
-  'live',
-  'failed',
-]
-const SERVICE_STATUSES = [
-  'not_applied',
-  'cant_provision',
-  'applied',
-  'delayed',
-  'cancelled',
-  'live',
-]
-const CANCELLED_BY_OPTIONS = ['customer', 'bt_wholesale', 'openreach', 'us']
+import {
+  PROV_STATUS_COLOURS,
+  PROV_STATUS_LABELS,
+  PROV_STATUSES,
+  SERVICE_STATUS_COLOURS,
+  SERVICE_STATUSES,
+  WC_COLOURS,
+  WC_OUTCOMES,
+  CANCELLED_BY_OPTIONS,
+} from '@/lib/constants'
 
 function formatDate(date: string | Date | null | undefined): string {
   if (!date) return ''
@@ -198,7 +152,7 @@ function ServicePanel({
           {service.attempt > 1 && (
             <span className="text-xs text-muted-foreground">Attempt {service.attempt}</span>
           )}
-          <Badge variant="outline" className={serviceStatusColours[service.status]}>
+          <Badge variant="outline" className={SERVICE_STATUS_COLOURS[service.status]}>
             {service.status.replace(/_/g, ' ')}
           </Badge>
           {service.status === 'cancelled' && (
@@ -261,7 +215,7 @@ function ServicePanel({
                 </SelectContent>
               </Select>
             ) : (
-              <Badge variant="outline" className={serviceStatusColours[form.status]}>
+              <Badge variant="outline" className={SERVICE_STATUS_COLOURS[form.status]}>
                 {form.status.replace(/_/g, ' ')}
               </Badge>
             )}
@@ -476,7 +430,10 @@ function ServiceHistory({ services, label }: { services: ProvisioningService[]; 
             <div key={s.id} className="px-4 py-3 space-y-1 bg-muted/10">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium">Attempt {s.attempt}</span>
-                <Badge variant="outline" className={cn(serviceStatusColours[s.status], 'text-xs')}>
+                <Badge
+                  variant="outline"
+                  className={cn(SERVICE_STATUS_COLOURS[s.status], 'text-xs')}
+                >
                   {s.status.replace(/_/g, ' ')}
                 </Badge>
                 {s.cancelledBy && (
@@ -790,14 +747,14 @@ export function ProvisioningEdit({
                   <SelectContent>
                     {PROV_STATUSES.map((s) => (
                       <SelectItem key={s} value={s}>
-                        {provStatusLabels[s]}
+                        {PROV_STATUS_LABELS[s]}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               ) : (
-                <Badge variant="outline" className={provStatusColours[form.status]}>
-                  {provStatusLabels[form.status]}
+                <Badge variant="outline" className={PROV_STATUS_COLOURS[form.status]}>
+                  {PROV_STATUS_LABELS[form.status]}
                 </Badge>
               )}
             </Row>
@@ -923,7 +880,7 @@ export function ProvisioningEdit({
                   </SelectContent>
                 </Select>
               ) : form.wc1Outcome ? (
-                <Badge variant="outline" className={wcColours[form.wc1Outcome]}>
+                <Badge variant="outline" className={WC_COLOURS[form.wc1Outcome]}>
                   {form.wc1Outcome.replace(/_/g, ' ')}
                 </Badge>
               ) : (
@@ -960,7 +917,7 @@ export function ProvisioningEdit({
                   </SelectContent>
                 </Select>
               ) : form.wc2Outcome ? (
-                <Badge variant="outline" className={wcColours[form.wc2Outcome]}>
+                <Badge variant="outline" className={WC_COLOURS[form.wc2Outcome]}>
                   {form.wc2Outcome.replace(/_/g, ' ')}
                 </Badge>
               ) : (

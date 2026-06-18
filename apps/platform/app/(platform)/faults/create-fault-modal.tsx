@@ -13,8 +13,7 @@ import {
 import { Plus, X } from 'lucide-react'
 import { createFault } from './actions'
 import { useRouter } from 'next/navigation'
-
-const FAULT_TYPES = ['bb', 'line', 'upgrade', 'dfb', 'provisioning', 'mobile', 'ticket']
+import { FAULT_TYPES } from '@/lib/constants'
 
 export function CreateFaultModal({
   users,

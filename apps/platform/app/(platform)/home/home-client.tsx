@@ -13,40 +13,14 @@ import {
   type StatKey,
   type StatCategory,
 } from './stat-definitions'
-
-type AuditLog = {
-  id: string
-  tableName: string
-  recordId: string
-  action: string
-  changedBy: string | null
-  changedAt: Date | string
-  oldData: any
-  newData: any
-}
+import { type AuditLog } from '@/lib/types'
+import { AUDIT_ACTION_COLOURS, AUDIT_TABLE_LABELS } from '@/lib/constants'
 
 type Todo = {
   id: string
   text: string
   done: boolean
   createdAt: number
-}
-
-const actionColours: Record<string, string> = {
-  INSERT: 'bg-green-100 text-green-800 border-green-200',
-  UPDATE: 'bg-blue-100 text-blue-800 border-blue-200',
-  DELETE: 'bg-red-100 text-red-800 border-red-200',
-}
-
-const tableLabels: Record<string, string> = {
-  customers: 'Customer',
-  deals: 'Deal',
-  provisioning: 'Provisioning',
-  provisioning_services: 'Service',
-  deal_services: 'Deal services',
-  deal_pricing: 'Deal pricing',
-  deal_billing: 'Deal billing',
-  users: 'User',
 }
 
 const categoryLabels: Record<StatCategory, string> = {
@@ -62,7 +36,7 @@ const categoryIcons: Record<StatCategory, React.ComponentType<{ className?: stri
 }
 
 function formatActivityMessage(log: AuditLog): string {
-  const table = tableLabels[log.tableName] ?? log.tableName
+  const table = AUDIT_TABLE_LABELS[log.tableName] ?? log.tableName
   const action =
     log.action === 'INSERT' ? 'created' : log.action === 'UPDATE' ? 'updated' : 'deleted'
 
@@ -329,7 +303,7 @@ export function HomeClient({
                   <div key={log.id} className="flex items-center gap-3 py-2 border-b last:border-0">
                     <Badge
                       variant="outline"
-                      className={cn('text-xs shrink-0', actionColours[log.action])}
+                      className={cn('text-xs shrink-0', AUDIT_ACTION_COLOURS[log.action])}
                     >
                       {log.action}
                     </Badge>

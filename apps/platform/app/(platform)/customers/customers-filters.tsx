@@ -8,18 +8,7 @@ import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Customer } from '@roaring/db'
 import { capitalise } from '@/components/capitalise'
-
-const statusColours: Record<string, string> = {
-  active: 'bg-green-100 text-green-800 border-green-200',
-  prospect: 'bg-blue-100 text-blue-800 border-blue-200',
-  at_risk: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  churned: 'bg-red-100 text-red-800 border-red-200',
-}
-
-const typeColours: Record<string, string> = {
-  business: 'bg-purple-100 text-purple-800 border-purple-200',
-  residential: 'bg-orange-100 text-orange-800 border-orange-200',
-}
+import { CUSTOMER_STATUS_COLOURS, CUSTOMER_TYPE_COLOURS } from '@/lib/constants'
 
 export function CustomersFilters({ customers }: { customers: Customer[] }) {
   const [search, setSearch] = useState('')
@@ -84,13 +73,13 @@ export function CustomersFilters({ customers }: { customers: Customer[] }) {
       <div className="space-y-2">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Status</p>
         <div className="flex flex-wrap gap-2">
-          {Object.keys(statusColours).map((s) => (
+          {Object.keys(CUSTOMER_STATUS_COLOURS).map((s) => (
             <button
               key={s}
               onClick={() => toggleStatus(s)}
               className={cn(
                 'inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border transition-all',
-                statusColours[s],
+                CUSTOMER_STATUS_COLOURS[s],
                 statusFilter.includes(s)
                   ? 'ring-2 ring-offset-1 ring-foreground/30'
                   : 'hover:scale-103'
@@ -116,7 +105,7 @@ export function CustomersFilters({ customers }: { customers: Customer[] }) {
                     ? 'bg-primary text-primary-foreground border-primary'
                     : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
                   : cn(
-                      typeColours[t],
+                      CUSTOMER_TYPE_COLOURS[t],
                       typeFilter === t
                         ? 'ring-2 ring-offset-1 ring-foreground/30'
                         : 'hover:scale-103'

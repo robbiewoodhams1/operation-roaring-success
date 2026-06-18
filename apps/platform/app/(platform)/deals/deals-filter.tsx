@@ -7,38 +7,8 @@ import { DealsTable } from './deals-table'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { capitalise } from '@/components/capitalise'
-
-const statusColours: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  live: 'bg-green-100 text-green-800 border-green-200',
-  cancelled: 'bg-red-100 text-red-800 border-red-200',
-}
-
-const contractLabels: Record<string, string> = {
-  '24_months': '24m',
-  '36_months': '36m',
-  '48_months': '48m',
-  other: 'Other',
-}
-
-type DealRow = {
-  id: string
-  dealDate: string
-  status: string
-  dealType: string
-  salesAgent: string
-  closingAgent: string
-  accountNumber: string | null
-  companyName: string | null
-  firstName: string | null
-  lastName: string | null
-  bundlePrice: string | null
-  wholesaleCost: string | null
-  monthlyGp: string | null
-  contractLength: string | null
-}
-
-type SortOption = 'newest' | 'oldest'
+import { type DealRow, type SortOption } from '@/lib/types'
+import { DEAL_STATUS_COLOURS, DEAL_CONTRACT_LABELS } from '@/lib/constants'
 
 export function DealsFilters({ deals }: { deals: DealRow[] }) {
   const [search, setSearch] = useState('')
@@ -205,13 +175,13 @@ export function DealsFilters({ deals }: { deals: DealRow[] }) {
       <div className="space-y-2">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Status</p>
         <div className="flex flex-wrap gap-2">
-          {Object.keys(statusColours).map((s) => (
+          {Object.keys(DEAL_STATUS_COLOURS).map((s) => (
             <FilterChip
               key={s}
               label={capitalise(s)}
               active={statusFilter.includes(s)}
               onClick={() => toggle(s, statusFilter, setStatusFilter)}
-              colour={statusColours[s]}
+              colour={DEAL_STATUS_COLOURS[s]}
             />
           ))}
         </div>
@@ -240,7 +210,7 @@ export function DealsFilters({ deals }: { deals: DealRow[] }) {
           Contract
         </p>
         <div className="flex gap-2">
-          {Object.entries(contractLabels).map(([value, label]) => (
+          {Object.entries(DEAL_CONTRACT_LABELS).map(([value, label]) => (
             <FilterChip
               key={value}
               label={label}

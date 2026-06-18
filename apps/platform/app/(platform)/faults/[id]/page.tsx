@@ -6,12 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { FaultDetail } from './fault-detail'
-
-const statusColours: Record<string, string> = {
-  outstanding: 'bg-red-100 text-red-800 border-red-200',
-  in_progress: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  resolved: 'bg-green-100 text-green-800 border-green-200',
-}
+import { FAULT_STATUS_COLOURS } from '@/lib/constants'
 
 export default async function FaultDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -61,7 +56,7 @@ export default async function FaultDetailPage({ params }: { params: Promise<{ id
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-semibold">{fault.title}</h1>
-            <Badge variant="outline" className={statusColours[fault.status]}>
+            <Badge variant="outline" className={FAULT_STATUS_COLOURS[fault.status]}>
               {fault.status.replace('_', ' ')}
             </Badge>
           </div>
