@@ -36,6 +36,7 @@ import {
   ChevronRight,
   CircleHelp,
   Logs,
+  Unplug,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -109,6 +110,13 @@ const navItems: NavGroup[] = [
         title: 'Faults',
         href: '/faults',
         icon: TriangleAlert,
+        roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
+        active: true,
+      },
+      {
+        title: 'Transfers & Ceases',
+        href: '/transfers-ceases',
+        icon: Unplug,
         roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
         active: true,
       },

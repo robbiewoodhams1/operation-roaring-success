@@ -24,6 +24,7 @@ const routeLabels: Record<string, string> = {
   admin: 'Admin',
   new: 'New',
   'deal-sheet': 'Deal Sheet',
+  'transfers-ceases': 'Transfers & Ceases',
 }
 
 function getLabel(segment: string): string {
