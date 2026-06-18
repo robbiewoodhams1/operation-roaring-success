@@ -21,8 +21,24 @@ export const AUDIT_TABLE_LABELS: Record<string, string> = {
 
 // ── Faults ────────────────────────────────────────────────────────────────────
 
-export const FAULT_STATUSES = ['outstanding', 'in_progress', 'resolved']
-export const FAULT_TYPES = ['bb', 'line', 'upgrade', 'dfb', 'provisioning', 'mobile', 'ticket']
+export const FAULT_STATUS_LABELS: Record<string, string> = {
+  outstanding: 'Outstanding',
+  in_progress: 'In progress',
+  resolved: 'Resolved',
+}
+
+export const FAULT_TYPE_LABELS: Record<string, string> = {
+  bb: 'Broadband',
+  line: 'Line',
+  upgrade: 'Upgrade',
+  dfb: 'DFB',
+  provisioning: 'Provisioning',
+  mobile: 'Mobile',
+}
+
+export const FAULT_STATUSES = Object.keys(FAULT_STATUS_LABELS)
+export const FAULT_TYPES = Object.keys(FAULT_TYPE_LABELS)
+
 export const FAULT_STATUS_COLOURS: Record<string, string> = {
   outstanding: 'bg-red-100 text-red-800 border-red-200',
   in_progress: 'bg-yellow-100 text-yellow-800 border-yellow-200',

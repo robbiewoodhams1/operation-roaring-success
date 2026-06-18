@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Pencil, Send, Trash2, X } from 'lucide-react'
+import { Pencil, Send, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import { addFaultComment, deleteFaultComment } from './actions'
 import { updateFault, updateFaultStatus } from '../actions'
 import type { Fault, FaultComment } from '@roaring/db'
@@ -36,10 +36,19 @@ export function FaultDetail({
     companyName: string | null
     firstName: string
     lastName: string
+    mobile: string | null
+    landline: string | null
+    email: string | null
+    addressLine1: string | null
+    addressLine2: string | null
+    addressLine3: string | null
+    addressLine4: string | null
+    postcode: string | null
   } | null
   currentUserId: string
   allUsers: { id: string; fullName: string }[]
 }) {
+  const [customerOpen, setCustomerOpen] = useState(false)
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -192,14 +201,7 @@ export function FaultDetail({
               </span>
             )}
           </Row>
-          {provCustomer && (
-            <Row label="Account">
-              <span className="text-sm font-mono">{provCustomer.accountNumber}</span>
-              <span className="text-sm text-muted-foreground ml-2">
-                {provCustomer.companyName ?? `${provCustomer.firstName} ${provCustomer.lastName}`}
-              </span>
-            </Row>
-          )}
+
           <Row label="Ticket ref">
             {isEditing ? (
               <Input
@@ -238,6 +240,65 @@ export function FaultDetail({
           )}
         </div>
       </div>
+
+      {provCustomer && (
+        <div className="border rounded-lg overflow-hidden">
+          <button
+            className="w-full px-4 py-3 flex items-center justify-between bg-muted/30 hover:bg-muted/50 transition-colors"
+            onClick={() => setCustomerOpen(!customerOpen)}
+          >
+            <div className="flex items-center gap-3">
+              <h2 className="text-sm font-medium">Customer</h2>
+              <span className="text-xs font-mono text-muted-foreground">
+                {provCustomer.accountNumber}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {provCustomer.companyName ?? `${provCustomer.firstName} ${provCustomer.lastName}`}
+              </span>
+            </div>
+            {customerOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+          </button>
+          {customerOpen && (
+            <div className="divide-y">
+              <Row label="Account number">
+                <span className="text-sm font-mono">{provCustomer.accountNumber}</span>
+              </Row>
+              <Row label="Company">
+                <span className="text-sm">{provCustomer.companyName ?? '—'}</span>
+              </Row>
+              <Row label="Name">
+                <span className="text-sm">
+                  {provCustomer.firstName} {provCustomer.lastName}
+                </span>
+              </Row>
+              <Row label="Mobile">
+                <span className="text-sm font-mono">{provCustomer.mobile ?? '—'}</span>
+              </Row>
+              <Row label="Landline">
+                <span className="text-sm font-mono">{provCustomer.landline ?? '—'}</span>
+              </Row>
+              <Row label="Email">
+                <span className="text-sm">{provCustomer.email ?? '—'}</span>
+              </Row>
+              <Row label="Address">
+                <span className="text-sm">
+                  {[
+                    provCustomer.addressLine1,
+                    provCustomer.addressLine2,
+                    provCustomer.addressLine3,
+                    provCustomer.addressLine4,
+                  ]
+                    .filter(Boolean)
+                    .join(', ') || '—'}
+                </span>
+              </Row>
+              <Row label="Postcode">
+                <span className="text-sm font-mono">{provCustomer.postcode ?? '—'}</span>
+              </Row>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Comments thread */}
       <div className="border rounded-lg overflow-hidden">

@@ -10,20 +10,32 @@ export async function createFault(data: {
   assignedTo: string | null
   title: string
   type: string
+  description: string | null
 }) {
   const user = await requireUser()
 
   await db.transaction(async (tx) => {
     await setAuditUser(tx, user.id)
-    await tx.insert(faults).values({
-      tenantId: user.tenantId,
-      provisioningId: data.provisioningId || null,
-      assignedTo: data.assignedTo || null,
-      title: data.title,
-      type: data.type as any,
-      status: 'outstanding',
-      createdBy: user.id,
-    })
+    const [newFault] = await tx
+      .insert(faults)
+      .values({
+        tenantId: user.tenantId,
+        provisioningId: data.provisioningId || null,
+        assignedTo: data.assignedTo || null,
+        title: data.title,
+        type: data.type as any,
+        status: 'outstanding',
+        createdBy: user.id,
+      })
+      .returning({ id: faults.id })
+
+    if (data.description && newFault) {
+      await tx.insert(faultComments).values({
+        faultId: newFault.id,
+        authorId: user.id,
+        body: data.description,
+      })
+    }
   })
 
   revalidatePath('/faults')

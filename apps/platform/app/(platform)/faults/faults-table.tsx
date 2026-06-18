@@ -12,7 +12,12 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { type FaultRow } from '@/lib/types'
-import { FAULT_STATUS_COLOURS, FAULT_TYPE_COLOURS } from '@/lib/constants'
+import {
+  FAULT_STATUS_COLOURS,
+  FAULT_TYPE_COLOURS,
+  FAULT_STATUS_LABELS,
+  FAULT_TYPE_LABELS,
+} from '@/lib/constants'
 
 export function FaultsTable({
   faults,
@@ -35,7 +40,6 @@ export function FaultsTable({
             <TableHead>Status</TableHead>
             <TableHead>Account</TableHead>
             <TableHead>Assigned to</TableHead>
-            <TableHead>Ticket ref</TableHead>
             <TableHead>Opened</TableHead>
           </TableRow>
         </TableHeader>
@@ -49,12 +53,12 @@ export function FaultsTable({
               <TableCell className="font-medium">{fault.title}</TableCell>
               <TableCell>
                 <Badge variant="outline" className={FAULT_TYPE_COLOURS[fault.type]}>
-                  {fault.type.toUpperCase()}
+                  {FAULT_TYPE_LABELS[fault.type] ?? fault.type}
                 </Badge>
               </TableCell>
               <TableCell>
                 <Badge variant="outline" className={FAULT_STATUS_COLOURS[fault.status]}>
-                  {fault.status.replace('_', ' ')}
+                  {FAULT_STATUS_LABELS[fault.status] ?? fault.status}
                 </Badge>
               </TableCell>
               <TableCell className="font-mono text-sm">
@@ -63,7 +67,6 @@ export function FaultsTable({
                   : '—'}
               </TableCell>
               <TableCell>{fault.assignedTo ? (userMap[fault.assignedTo] ?? '—') : '—'}</TableCell>
-              <TableCell className="font-mono text-sm">{fault.ticketRef ?? '—'}</TableCell>
               <TableCell className="text-muted-foreground text-sm">
                 {new Date(fault.openedAt).toLocaleDateString('en-GB')}
               </TableCell>

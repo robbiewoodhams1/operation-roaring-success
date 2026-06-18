@@ -12,6 +12,8 @@ import {
   FAULT_TYPES,
   FAULT_STATUS_COLOURS,
   FAULT_TYPE_COLOURS,
+  FAULT_STATUS_LABELS,
+  FAULT_TYPE_LABELS,
 } from '@/lib/constants'
 
 export function FaultsFilters({
@@ -104,7 +106,7 @@ export function FaultsFilters({
                   : 'hover:opacity-80'
               )}
             >
-              {s.replace('_', ' ')}
+              {FAULT_STATUS_LABELS[s] ?? s}
             </button>
           ))}
         </div>
@@ -125,7 +127,7 @@ export function FaultsFilters({
                   : 'hover:opacity-80'
               )}
             >
-              {t.toUpperCase()}
+              {FAULT_TYPE_LABELS[t] ?? t}
             </button>
           ))}
         </div>

@@ -8,6 +8,21 @@ import { Badge } from '@/components/ui/badge'
 import { FaultDetail } from './fault-detail'
 import { FAULT_STATUS_COLOURS } from '@/lib/constants'
 
+type ProvCustomer = {
+  accountNumber: string
+  companyName: string | null
+  firstName: string
+  lastName: string
+  mobile: string | null
+  landline: string | null
+  email: string | null
+  addressLine1: string | null
+  addressLine2: string | null
+  addressLine3: string | null
+  addressLine4: string | null
+  postcode: string | null
+}
+
 export default async function FaultDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const user = await requireUser()
@@ -35,13 +50,21 @@ export default async function FaultDetailPage({ params }: { params: Promise<{ id
             companyName: customers.companyName,
             firstName: customers.firstName,
             lastName: customers.lastName,
+            mobile: customers.mobile,
+            landline: customers.landline,
+            email: customers.email,
+            addressLine1: customers.addressLine1,
+            addressLine2: customers.addressLine2,
+            addressLine3: customers.addressLine3,
+            addressLine4: customers.addressLine4,
+            postcode: customers.postcode,
           })
           .from(provisioning)
           .innerJoin(deals, eq(deals.id, provisioning.dealId))
           .innerJoin(customers, eq(customers.id, deals.customerId))
           .where(eq(provisioning.id, fault.provisioningId))
           .limit(1)
-      : Promise.resolve([]),
+      : Promise.resolve([] as ProvCustomer[]),
   ])
 
   const userMap = Object.fromEntries(allUsers.map((u) => [u.id, u.fullName]))
