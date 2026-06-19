@@ -136,7 +136,7 @@ export function ComplaintDetail({
               <Badge variant="outline" className={COMPLAINT_STATUS_COLOURS[complaint.status]}>
                 {COMPLAINT_STATUS_LABELS[complaint.status] ?? complaint.status}
               </Badge>
-              <Select value={complaint.status} onValueChange={handleStatusChange}>
+              <Select value={complaint.status} onValueChange={(v) => v && handleStatusChange(v)}>
                 <SelectTrigger className="h-7 w-48 text-xs">
                   <SelectValue />
                 </SelectTrigger>

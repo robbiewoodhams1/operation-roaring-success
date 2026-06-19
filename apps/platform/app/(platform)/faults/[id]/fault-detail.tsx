@@ -131,7 +131,7 @@ export function FaultDetail({
               <Badge variant="outline" className={FAULT_STATUS_COLOURS[fault.status]}>
                 {fault.status.replace('_', ' ')}
               </Badge>
-              <Select value={fault.status} onValueChange={handleStatusChange}>
+              <Select value={fault.status} onValueChange={(v) => v && handleStatusChange(v)}>
                 <SelectTrigger className="h-7 w-36 text-xs">
                   <SelectValue />
                 </SelectTrigger>
