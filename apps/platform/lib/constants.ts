@@ -195,3 +195,56 @@ export const COMPLAINT_TYPE_COLOURS: Record<string, string> = {
   service: 'bg-gray-100 text-gray-700 border-gray-200',
   other: 'bg-muted text-muted-foreground border-border',
 }
+
+// ── Debts ─────────────────────────────────────────────────────────────────
+
+export const DEBT_OUTCOME_LABELS: Record<string, string> = {
+  payment: 'Payment',
+  payment_plan: 'Payment plan',
+  no_answer: 'No answer',
+  invalid_contact_details: 'Invalid contact details',
+  refused: 'Refused',
+  call_back: 'Call back',
+  left: 'Left',
+  promised_payment: 'Promised payment',
+  free_bill: 'Free bill',
+  taken_by_dd_already: 'Taken by DD already',
+  deceased: 'Deceased',
+  not_in_live_list: 'Not in live list',
+  needs_investigating: 'Needs investigating',
+  active_dd: 'Active DD',
+  part_payment: 'Part payment',
+  take_on_dd: 'Take on DD',
+  uncollectable: 'Uncollectable',
+}
+
+export const DEBT_PAYMENT_TYPE_LABELS: Record<string, string> = {
+  bacs: 'BACS',
+  card: 'Card',
+  dd: 'DD',
+  cheque: 'Cheque',
+  eft: 'EFT',
+}
+
+export const DEBT_OUTCOMES = Object.keys(DEBT_OUTCOME_LABELS)
+export const DEBT_PAYMENT_TYPES = Object.keys(DEBT_PAYMENT_TYPE_LABELS)
+
+export const DEBT_OUTCOME_COLOURS: Record<string, string> = {
+  payment: 'bg-green-100 text-green-800 border-green-200',
+  payment_plan: 'bg-teal-100 text-teal-800 border-teal-200',
+  no_answer: 'bg-gray-100 text-gray-700 border-gray-200',
+  invalid_contact_details: 'bg-orange-100 text-orange-800 border-orange-200',
+  refused: 'bg-red-100 text-red-800 border-red-200',
+  call_back: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  left: 'bg-gray-100 text-gray-700 border-gray-200',
+  promised_payment: 'bg-blue-100 text-blue-800 border-blue-200',
+  free_bill: 'bg-purple-100 text-purple-800 border-purple-200',
+  taken_by_dd_already: 'bg-green-100 text-green-800 border-green-200',
+  deceased: 'bg-zinc-100 text-zinc-800 border-zinc-200',
+  not_in_live_list: 'bg-zinc-100 text-zinc-700 border-zinc-200',
+  needs_investigating: 'bg-amber-100 text-amber-800 border-amber-200',
+  active_dd: 'bg-green-100 text-green-800 border-green-200',
+  part_payment: 'bg-cyan-100 text-cyan-800 border-cyan-200',
+  take_on_dd: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  uncollectable: 'bg-red-100 text-red-800 border-red-200',
+}

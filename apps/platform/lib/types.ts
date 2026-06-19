@@ -31,6 +31,21 @@ export type ComplaintRow = IssueRow & {
   closedAt: Date | string | null
 }
 
+export type DebtRow = {
+  id: string
+  title: string
+  outcome: string | null
+  totalOwed: string
+  paymentTried: boolean
+  paymentType: string | null
+  dateOfPayment: string | null
+  openedAt: Date | string
+  closedAt: Date | string | null
+  assignedTo: string | null
+  provisioningId: string | null
+  createdAt: Date | string
+}
+
 export type DealRow = {
   id: string
   dealDate: string
