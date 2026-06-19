@@ -140,3 +140,58 @@ export const CUSTOMER_TYPE_COLOURS: Record<string, string> = {
   business: 'bg-purple-100 text-purple-800 border-purple-200',
   residential: 'bg-orange-100 text-orange-800 border-orange-200',
 }
+
+// ── Complaints ─────────────────────────────────────────────────────────────────
+
+export const COMPLAINT_STATUS_LABELS: Record<string, string> = {
+  open: 'Open',
+  investigating: 'Investigating',
+  pending_customer: 'Pending customer',
+  pending_chess: 'Pending Chess',
+  pending_tech: 'Pending tech',
+  pending_recorded_call: 'Pending recorded call',
+  ofcom: 'Ofcom',
+  cisas: 'CISAS',
+  scheduled_call_back: 'Scheduled call back',
+  closed: 'Closed',
+}
+
+export const COMPLAINT_TYPE_LABELS: Record<string, string> = {
+  bb: 'Broadband',
+  line: 'Line',
+  upgrade: 'Upgrade',
+  dfb: 'DFB',
+  provisioning: 'Provisioning',
+  mobile: 'Mobile',
+  billing: 'Billing',
+  service: 'Service',
+  other: 'Other',
+}
+
+export const COMPLAINT_STATUSES = Object.keys(COMPLAINT_STATUS_LABELS)
+export const COMPLAINT_TYPES = Object.keys(COMPLAINT_TYPE_LABELS)
+
+export const COMPLAINT_STATUS_COLOURS: Record<string, string> = {
+  open: 'bg-red-100 text-red-800 border-red-200',
+  investigating: 'bg-blue-100 text-blue-800 border-blue-200',
+  pending_customer: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  pending_chess: 'bg-orange-100 text-orange-800 border-orange-200',
+  pending_tech: 'bg-purple-100 text-purple-800 border-purple-200',
+  pending_recorded_call: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  ofcom: 'bg-pink-100 text-pink-800 border-pink-200',
+  cisas: 'bg-rose-100 text-rose-800 border-rose-200',
+  scheduled_call_back: 'bg-cyan-100 text-cyan-800 border-cyan-200',
+  closed: 'bg-green-100 text-green-800 border-green-200',
+}
+
+export const COMPLAINT_TYPE_COLOURS: Record<string, string> = {
+  bb: 'bg-blue-100 text-blue-800 border-blue-200',
+  line: 'bg-purple-100 text-purple-800 border-purple-200',
+  upgrade: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  dfb: 'bg-orange-100 text-orange-800 border-orange-200',
+  provisioning: 'bg-cyan-100 text-cyan-800 border-cyan-200',
+  mobile: 'bg-pink-100 text-pink-800 border-pink-200',
+  billing: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  service: 'bg-gray-100 text-gray-700 border-gray-200',
+  other: 'bg-muted text-muted-foreground border-border',
+}

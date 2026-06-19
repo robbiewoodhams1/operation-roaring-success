@@ -1,12 +1,24 @@
 import { requireUser } from '@roaring/auth/server'
-import { db, faults, faultComments, users, provisioning, customers, deals } from '@roaring/db'
+import {
+  db,
+  complaints,
+  complaintComments,
+  users,
+  provisioning,
+  customers,
+  deals,
+} from '@roaring/db'
 import { eq, asc } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { FaultDetail } from './fault-detail'
-import { FAULT_STATUS_COLOURS } from '@/lib/constants'
+import { ComplaintDetail } from './complaint-detail'
+import {
+  COMPLAINT_STATUS_COLOURS,
+  COMPLAINT_STATUS_LABELS,
+  COMPLAINT_TYPE_LABELS,
+} from '@/lib/constants'
 
 type ProvCustomer = {
   accountNumber: string
@@ -23,27 +35,27 @@ type ProvCustomer = {
   postcode: string | null
 }
 
-export default async function FaultDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ComplaintDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const user = await requireUser()
 
-  const faultResult = await db.select().from(faults).where(eq(faults.id, id)).limit(1)
-  const fault = faultResult[0]
-  if (!fault || fault.tenantId !== user.tenantId) notFound()
+  const complaintResult = await db.select().from(complaints).where(eq(complaints.id, id)).limit(1)
+  const complaint = complaintResult[0]
+  if (!complaint || complaint.tenantId !== user.tenantId) notFound()
 
   const [comments, allUsers, provResult] = await Promise.all([
     db
       .select()
-      .from(faultComments)
-      .where(eq(faultComments.faultId, id))
-      .orderBy(asc(faultComments.createdAt)),
+      .from(complaintComments)
+      .where(eq(complaintComments.complaintId, id))
+      .orderBy(asc(complaintComments.createdAt)),
 
     db
       .select({ id: users.id, fullName: users.fullName })
       .from(users)
       .where(eq(users.tenantId, user.tenantId)),
 
-    fault.provisioningId
+    complaint.provisioningId
       ? db
           .select({
             accountNumber: customers.accountNumber,
@@ -62,7 +74,7 @@ export default async function FaultDetailPage({ params }: { params: Promise<{ id
           .from(provisioning)
           .innerJoin(deals, eq(deals.id, provisioning.dealId))
           .innerJoin(customers, eq(customers.id, deals.customerId))
-          .where(eq(provisioning.id, fault.provisioningId))
+          .where(eq(provisioning.id, complaint.provisioningId))
           .limit(1)
       : Promise.resolve([] as ProvCustomer[]),
   ])
@@ -73,26 +85,26 @@ export default async function FaultDetailPage({ params }: { params: Promise<{ id
   return (
     <div className="p-6 w-full">
       <div className="flex items-center gap-4 mb-8">
-        <Link href="/faults">
+        <Link href="/complaints">
           <ArrowLeft className="size-4" />
         </Link>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold">{fault.title}</h1>
-            <Badge variant="outline" className={FAULT_STATUS_COLOURS[fault.status]}>
-              {fault.status.replace('_', ' ')}
+            <h1 className="text-2xl font-semibold">{complaint.title}</h1>
+            <Badge variant="outline" className={COMPLAINT_STATUS_COLOURS[complaint.status]}>
+              {COMPLAINT_STATUS_LABELS[complaint.status] ?? complaint.status}
             </Badge>
           </div>
           <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-            <span>{fault.type.toUpperCase()}</span>
-            {fault.ticketRef && <span className="font-mono">{fault.ticketRef}</span>}
-            <span>Opened {new Date(fault.openedAt).toLocaleDateString('en-GB')}</span>
+            <span>{COMPLAINT_TYPE_LABELS[complaint.type] ?? complaint.type}</span>
+            {complaint.ticketRef && <span className="font-mono">{complaint.ticketRef}</span>}
+            <span>Opened {new Date(complaint.openedAt).toLocaleDateString('en-GB')}</span>
           </div>
         </div>
       </div>
 
-      <FaultDetail
-        fault={fault}
+      <ComplaintDetail
+        complaint={complaint}
         comments={comments}
         userMap={userMap}
         provCustomer={provCustomer}

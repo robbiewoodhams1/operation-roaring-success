@@ -90,7 +90,7 @@ const navItems: NavGroup[] = [
         href: '/complaints',
         icon: SquareX,
         roles: ['agent', 'team_leader', 'manager', 'director', 'admin'],
-        active: false,
+        active: true,
       },
       {
         title: 'Tech',

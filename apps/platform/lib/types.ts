@@ -11,17 +11,24 @@ export type AuditLog = {
   newData: any
 }
 
-export type FaultRow = {
+export type IssueRow = {
   id: string
   title: string
   type: string
   status: string
   ticketRef: string | null
   openedAt: Date | string
-  resolvedAt: Date | string | null
   assignedTo: string | null
   provisioningId: string | null
   createdAt: Date | string
+}
+
+export type FaultRow = IssueRow & {
+  resolvedAt: Date | string | null
+}
+
+export type ComplaintRow = IssueRow & {
+  closedAt: Date | string | null
 }
 
 export type DealRow = {

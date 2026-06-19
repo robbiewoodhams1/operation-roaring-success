@@ -21,12 +21,12 @@ import {
 } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Plus, X, ChevronsUpDown, Check } from 'lucide-react'
-import { createFault } from './actions'
+import { createComplaint } from './actions'
 import { useRouter } from 'next/navigation'
-import { FAULT_TYPES, FAULT_TYPE_LABELS } from '@/lib/constants'
+import { COMPLAINT_TYPES, COMPLAINT_TYPE_LABELS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
-export function CreateFaultModal({
+export function CreateComplaintModal({
   users,
   provisioning,
 }: {
@@ -53,7 +53,7 @@ export function CreateFaultModal({
   async function handleSubmit() {
     if (!form.title || !form.type) return
     setSaving(true)
-    await createFault({
+    await createComplaint({
       title: form.title,
       type: form.type,
       assignedTo: form.assignedTo || null,
@@ -72,7 +72,7 @@ export function CreateFaultModal({
     <>
       <Button onClick={() => setOpen(true)} className="gap-2">
         <Plus className="size-4" />
-        New fault
+        New complaint
       </Button>
 
       {open && (
@@ -80,7 +80,7 @@ export function CreateFaultModal({
           <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
           <div className="relative bg-background rounded-xl shadow-2xl w-full max-w-md mx-4">
             <div className="flex items-center justify-between px-4 py-3 border-b">
-              <h2 className="text-sm font-semibold">New fault</h2>
+              <h2 className="text-sm font-semibold">New complaint</h2>
               <button
                 onClick={() => setOpen(false)}
                 className="text-muted-foreground hover:text-foreground"
@@ -95,7 +95,7 @@ export function CreateFaultModal({
                 <Input
                   value={form.title}
                   onChange={(e) => update('title', e.target.value)}
-                  placeholder="Title of fault"
+                  placeholder="Title of complaint"
                 />
               </div>
 
@@ -104,7 +104,7 @@ export function CreateFaultModal({
                 <Textarea
                   value={form.description}
                   onChange={(e) => update('description', e.target.value)}
-                  placeholder="Describe the fault in detail..."
+                  placeholder="Describe the complaint in detail..."
                   className="min-h-20 text-sm resize-none"
                 />
               </div>
@@ -116,9 +116,9 @@ export function CreateFaultModal({
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {FAULT_TYPES.map((t) => (
+                    {COMPLAINT_TYPES.map((t) => (
                       <SelectItem key={t} value={t}>
-                        {FAULT_TYPE_LABELS[t] ?? t}
+                        {COMPLAINT_TYPE_LABELS[t] ?? t}
                       </SelectItem>
                     ))}
                   </SelectContent>
