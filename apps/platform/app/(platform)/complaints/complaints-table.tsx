@@ -61,8 +61,8 @@ export function ComplaintsTable({
                 </Badge>
               </TableCell>
               <TableCell className="font-mono text-sm">
-                {complaint.provisioningId && provMap[complaint.provisioningId]
-                  ? provMap[complaint.provisioningId].accountNumber
+                {complaint.provisioningId
+                  ? (provMap[complaint.provisioningId]?.accountNumber ?? '—')
                   : '—'}
               </TableCell>
               <TableCell>

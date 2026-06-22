@@ -50,6 +50,22 @@ export async function requireRole(...roles: UserRole[]): Promise<AuthUser> {
   return user
 }
 
+export async function resendInvite(email: string) {
+  await requireRole('admin')
+  const supabase = createAdminClient()
+
+  const { error } = await supabase.auth.admin.inviteUserByEmail(email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/confirm`,
+  })
+
+  if (error) {
+    console.error('Resend invite error:', error)
+    return { success: false, error: error.message }
+  }
+
+  return { success: true, error: null }
+}
+
 export async function inviteUser({
   email,
   fullName,

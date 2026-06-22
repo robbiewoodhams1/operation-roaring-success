@@ -62,9 +62,7 @@ export function FaultsTable({
                 </Badge>
               </TableCell>
               <TableCell className="font-mono text-sm">
-                {fault.provisioningId && provMap[fault.provisioningId]
-                  ? provMap[fault.provisioningId].accountNumber
-                  : '—'}
+                {fault.provisioningId ? (provMap[fault.provisioningId]?.accountNumber ?? '—') : '—'}
               </TableCell>
               <TableCell>{fault.assignedTo ? (userMap[fault.assignedTo] ?? '—') : '—'}</TableCell>
               <TableCell className="text-muted-foreground text-sm">

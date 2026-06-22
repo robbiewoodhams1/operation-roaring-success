@@ -47,9 +47,7 @@ export function DebtTable({
             >
               <TableCell className="font-medium">{debt.title}</TableCell>
               <TableCell className="font-mono text-sm">
-                {debt.provisioningId && provMap[debt.provisioningId]
-                  ? provMap[debt.provisioningId].accountNumber
-                  : '—'}
+                {debt.provisioningId ? (provMap[debt.provisioningId]?.accountNumber ?? '—') : '—'}
               </TableCell>
               <TableCell className="font-mono">£{Number(debt.totalOwed).toFixed(2)}</TableCell>
               <TableCell>

@@ -3,7 +3,8 @@
 import { db, users } from '@roaring/db'
 import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
-import { requireRole, setAuditUser } from '@roaring/auth'
+import { requireRole, setAuditUser, UserRole } from '@roaring/auth'
+import { resendInvite } from '@roaring/auth/server'
 
 export async function updateUser(id: string, data: { fullName: string; role: string }) {
   const currentUser = await requireRole('admin')
@@ -38,4 +39,9 @@ export async function toggleUserSuspension(id: string, currentlyActive: boolean)
 
   revalidatePath('/users')
   revalidatePath(`/users/${id}`)
+}
+
+export async function resendUserInvite(email: string) {
+  await requireRole('admin')
+  return resendInvite(email)
 }

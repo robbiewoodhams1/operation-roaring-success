@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { UserEdit } from './user-edit'
+import { ResendInviteButton } from './resend-invite-button'
+import { resendUserInvite } from './actions'
 
 const roleColours: Record<string, string> = {
   admin: 'bg-red-100 text-red-800 border-red-200',
@@ -37,15 +39,27 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
             <Badge variant="outline" className={roleColours[user.role] ?? ''}>
               {user.role.replace('_', ' ')}
             </Badge>
-            {!user.isActive && (
-              <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
-                Suspended
+            {user.approvalStatus == 'pending' ? (
+              <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200">
+                Pending
               </Badge>
+            ) : (
+              !user.isActive && (
+                <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
+                  Suspended
+                </Badge>
+              )
             )}
           </div>
           <p className="text-sm text-muted-foreground mt-1">{user.email}</p>
         </div>
       </div>
+
+      {user.approvalStatus === 'pending' && (
+        <div className="mb-6">
+          <ResendInviteButton email={user.email} onResend={resendUserInvite} />
+        </div>
+      )}
 
       <UserEdit user={user} currentUserId={currentUser.id} />
     </div>
