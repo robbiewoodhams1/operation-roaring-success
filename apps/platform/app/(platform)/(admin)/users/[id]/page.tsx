@@ -6,8 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { UserEdit } from './user-edit'
-import { ResendInviteButton } from './resend-invite-button'
-import { resendUserInvite } from './actions'
+import { DeletePendingButton } from './delete-pending-button'
 
 const roleColours: Record<string, string> = {
   admin: 'bg-red-100 text-red-800 border-red-200',
@@ -23,9 +22,10 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
   const currentUser = await requireRole('admin')
 
   const result = await db.select().from(users).where(eq(users.id, id)).limit(1)
-
   const user = result[0]
   if (!user || user.tenantId !== currentUser.tenantId) notFound()
+
+  const isSelf = user.id === currentUser.id
 
   return (
     <div className="p-6 w-full">
@@ -39,7 +39,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
             <Badge variant="outline" className={roleColours[user.role] ?? ''}>
               {user.role.replace('_', ' ')}
             </Badge>
-            {user.approvalStatus == 'pending' ? (
+            {user.approvalStatus === 'pending' ? (
               <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200">
                 Pending
               </Badge>
@@ -55,9 +55,20 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
         </div>
       </div>
 
-      {user.approvalStatus === 'pending' && (
-        <div className="mb-6">
-          <ResendInviteButton email={user.email} onResend={resendUserInvite} />
+      {!isSelf && user.approvalStatus === 'pending' && (
+        <div className="border border-red-200 rounded-lg overflow-hidden mb-6">
+          <div className="px-4 py-3 border-b border-red-200 bg-red-50">
+            <h2 className="text-sm font-medium text-red-800">Danger zone</h2>
+          </div>
+          <div className="px-4 py-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Delete pending invite</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Removes this user so you can re-invite them with a fresh link.
+              </p>
+            </div>
+            <DeletePendingButton userId={user.id} />
+          </div>
         </div>
       )}
 

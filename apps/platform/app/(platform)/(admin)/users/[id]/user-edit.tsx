@@ -129,7 +129,7 @@ export function UserEdit({ user, currentUserId }: { user: User; currentUserId: s
       </div>
 
       {/* Danger zone */}
-      {!isSelf && (
+      {!isSelf && user.approvalStatus !== 'pending' && (
         <div className="border border-red-200 rounded-lg overflow-hidden">
           <div className="px-4 py-3 border-b border-red-200 bg-red-50">
             <h2 className="text-sm font-medium text-red-800">Danger zone</h2>
