@@ -279,3 +279,38 @@ export const TODO_LINK_TYPE_LABELS: Record<string, string> = {
 }
 
 export const TODO_LINK_TYPES = Object.keys(TODO_LINK_TYPE_LABELS)
+
+// ── Transfers and Ceases ─────────────────────────────────────────────────────────────────
+
+export const TRANSFER_CEASE_TYPE_LABELS: Record<string, string> = {
+  cease: 'Cease',
+  transfer: 'Transfer',
+  historical_transfer: 'Historical transfer',
+  standard_cease: 'Standard cease',
+  standard_transfer: 'Standard transfer',
+}
+
+export const TRANSFER_CEASE_STATUS_LABELS: Record<string, string> = {
+  open: 'Open',
+  in_progress: 'In progress',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+}
+
+export const TRANSFER_CEASE_TYPES = Object.keys(TRANSFER_CEASE_TYPE_LABELS)
+export const TRANSFER_CEASE_STATUSES = Object.keys(TRANSFER_CEASE_STATUS_LABELS)
+
+export const TRANSFER_CEASE_TYPE_COLOURS: Record<string, string> = {
+  cease: 'bg-red-100 text-red-800 border-red-200',
+  transfer: 'bg-blue-100 text-blue-800 border-blue-200',
+  historical_transfer: 'bg-gray-100 text-gray-700 border-gray-200',
+  standard_cease: 'bg-orange-100 text-orange-800 border-orange-200',
+  standard_transfer: 'bg-green-100 text-green-800 border-green-200',
+}
+
+export const TRANSFER_CEASE_STATUS_COLOURS: Record<string, string> = {
+  open: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  in_progress: 'bg-blue-100 text-blue-800 border-blue-200',
+  completed: 'bg-green-100 text-green-800 border-green-200',
+  cancelled: 'bg-red-100 text-red-800 border-red-200',
+}
