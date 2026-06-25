@@ -33,7 +33,7 @@ function LogRow({ log, userName }: { log: AuditLog; userName: string }) {
     (data?.first_name ? `${data.first_name} ${data.last_name ?? ''}`.trim() : undefined) ??
     data?.email ??
     data?.service_type?.toUpperCase() ??
-    log.recordId.slice(0, 8)
+    log.id.slice(0, 8)
 
   // For updates, show a summary of what changed
   const changeSummary =
@@ -85,7 +85,7 @@ function LogRow({ log, userName }: { log: AuditLog; userName: string }) {
             </span>
             <span>
               <span className="font-medium text-foreground">Record ID</span>{' '}
-              <span className="font-mono">{log.recordId}</span>
+              <span className="font-mono">{log.id}</span>
             </span>
             <span>
               <span className="font-medium text-foreground">Table</span> {log.tableName}
@@ -185,6 +185,8 @@ export function AuditClient({
       const q = search.toLowerCase()
       result = result.filter(
         (l) =>
+          l.id.toLowerCase().includes(q) ||
+          l.recordId.toLowerCase().includes(q) ||
           l.tableName.includes(q) ||
           JSON.stringify(l.newData ?? {})
             .toLowerCase()

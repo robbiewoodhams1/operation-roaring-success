@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Users, FileText, Wifi, Plus, X, Check, Clock, TrendingUp } from 'lucide-react'
+import { Users, FileText, Wifi, Plus, X, Check, Clock, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import Link from 'next/link'
 import {
   STAT_DEFINITIONS,
   DEFAULT_STATS,
@@ -325,12 +326,21 @@ export function HomeClient({
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center justify-between">
-              To do
-              {pending.length > 0 && (
-                <Badge variant="outline" className="text-xs">
-                  {pending.length}
-                </Badge>
-              )}
+              <div className="flex items-center gap-2">
+                To do
+                {pending.length > 0 && (
+                  <Badge variant="outline" className="text-xs">
+                    {pending.length}
+                  </Badge>
+                )}
+              </div>
+              <Link
+                href="/todo"
+                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors font-normal"
+              >
+                View all
+                <ExternalLink className="size-3" />
+              </Link>
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0 space-y-3">

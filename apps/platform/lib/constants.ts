@@ -248,3 +248,34 @@ export const DEBT_OUTCOME_COLOURS: Record<string, string> = {
   take_on_dd: 'bg-indigo-100 text-indigo-800 border-indigo-200',
   uncollectable: 'bg-red-100 text-red-800 border-red-200',
 }
+
+// ── To Dos ─────────────────────────────────────────────────────────────────
+
+export const TODO_PRIORITY_LABELS: Record<string, string> = {
+  asap: 'ASAP',
+  today: 'Today',
+  tomorrow: 'Tomorrow',
+  this_week: 'This week',
+  no_rush: 'No rush',
+}
+
+export const TODO_PRIORITY_COLOURS: Record<string, string> = {
+  asap: 'bg-red-100 text-red-800 border-red-200',
+  today: 'bg-orange-100 text-orange-800 border-orange-200',
+  tomorrow: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  this_week: 'bg-blue-100 text-blue-800 border-blue-200',
+  no_rush: 'bg-gray-100 text-gray-700 border-gray-200',
+}
+
+export const TODO_PRIORITIES = Object.keys(TODO_PRIORITY_LABELS)
+
+export const TODO_LINK_TYPE_LABELS: Record<string, string> = {
+  customer: 'Customer',
+  provisioning: 'Provisioning',
+  fault: 'Fault',
+  complaint: 'Complaint',
+  debt: 'Debt',
+  deal: 'Deal',
+}
+
+export const TODO_LINK_TYPES = Object.keys(TODO_LINK_TYPE_LABELS)

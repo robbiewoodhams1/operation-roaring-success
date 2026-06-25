@@ -37,6 +37,7 @@ import {
   CircleHelp,
   Logs,
   Unplug,
+  Pencil,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -148,6 +149,13 @@ const navItems: NavGroup[] = [
         title: 'Search',
         href: '/search',
         icon: Search,
+        roles: ['sales', 'agent', 'team_leader', 'manager', 'director', 'admin'],
+        active: true,
+      },
+      {
+        title: 'To Do',
+        href: '/todo',
+        icon: Pencil,
         roles: ['sales', 'agent', 'team_leader', 'manager', 'director', 'admin'],
         active: true,
       },
