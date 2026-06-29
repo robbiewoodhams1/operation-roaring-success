@@ -127,6 +127,7 @@ export const WC_COLOURS: Record<string, string> = {
 
 export const WC_OUTCOMES = ['call_back', 'answered', 'no_answer', 'cancelled']
 export const CANCELLED_BY_OPTIONS = ['customer', 'bt_wholesale', 'openreach', 'us']
+
 // ── Customers ─────────────────────────────────────────────────────────────────
 
 export const CUSTOMER_STATUS_COLOURS: Record<string, string> = {
@@ -267,8 +268,6 @@ export const TODO_PRIORITY_COLOURS: Record<string, string> = {
   no_rush: 'bg-gray-100 text-gray-700 border-gray-200',
 }
 
-export const TODO_PRIORITIES = Object.keys(TODO_PRIORITY_LABELS)
-
 export const TODO_LINK_TYPE_LABELS: Record<string, string> = {
   customer: 'Customer',
   provisioning: 'Provisioning',
@@ -278,6 +277,22 @@ export const TODO_LINK_TYPE_LABELS: Record<string, string> = {
   deal: 'Deal',
 }
 
+export const TODO_STATUS_LABELS: Record<string, string> = {
+  not_started: 'Not started',
+  in_progress: 'In progress',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+}
+
+export const TODO_STATUS_COLOURS: Record<string, string> = {
+  not_started: 'bg-gray-100 text-gray-700 border-gray-200',
+  in_progress: 'bg-blue-100 text-blue-800 border-blue-200',
+  completed: 'bg-green-100 text-green-800 border-green-200',
+  cancelled: 'bg-red-100 text-red-800 border-red-200',
+}
+
+export const TODO_PRIORITIES = Object.keys(TODO_PRIORITY_LABELS)
+export const TODO_STATUSES = Object.keys(TODO_STATUS_LABELS)
 export const TODO_LINK_TYPES = Object.keys(TODO_LINK_TYPE_LABELS)
 
 // ── Transfers and Ceases ─────────────────────────────────────────────────────────────────

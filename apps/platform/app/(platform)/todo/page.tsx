@@ -10,8 +10,9 @@ import {
   complaints,
   debts,
 } from '@roaring/db'
-import { eq, or, desc } from 'drizzle-orm'
-import { TodoClient } from './todo-client'
+import { eq, or } from 'drizzle-orm'
+import { TodoFilters } from './todo-filters'
+import { CreateTodoModal } from './create-todo-modal'
 
 export default async function TodoPage() {
   const user = await requireUser()
@@ -21,11 +22,10 @@ export default async function TodoPage() {
       db
         .select()
         .from(todos)
-        .where(or(eq(todos.assignedTo, user.id), eq(todos.assignedBy, user.id ?? '')))
-        .orderBy(desc(todos.createdAt)),
+        .where(or(eq(todos.assignedTo, user.id), eq(todos.assignedBy, user.id))),
 
       db
-        .select({ id: users.id, fullName: users.fullName })
+        .select({ id: users.id, fullName: users.fullName, isActive: users.isActive })
         .from(users)
         .where(eq(users.tenantId, user.tenantId)),
 
@@ -57,12 +57,10 @@ export default async function TodoPage() {
         .select({ id: faults.id, title: faults.title })
         .from(faults)
         .where(eq(faults.tenantId, user.tenantId)),
-
       db
         .select({ id: complaints.id, title: complaints.title })
         .from(complaints)
         .where(eq(complaints.tenantId, user.tenantId)),
-
       db
         .select({ id: debts.id, title: debts.title })
         .from(debts)
@@ -86,12 +84,18 @@ export default async function TodoPage() {
   }
 
   return (
-    <TodoClient
-      todos={myTodos}
-      userId={user.id}
-      userMap={userMap}
-      allUsers={allUsers}
-      linkOptions={linkOptions}
-    />
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">To do</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {myTodos.filter((t) => t.status !== 'completed' && t.status !== 'cancelled').length}{' '}
+            active tasks
+          </p>
+        </div>
+        <CreateTodoModal userId={user.id} allUsers={allUsers} linkOptions={linkOptions} />
+      </div>
+      <TodoFilters todos={myTodos} userId={user.id} userMap={userMap} />
+    </div>
   )
 }

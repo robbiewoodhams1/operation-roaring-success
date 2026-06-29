@@ -198,12 +198,12 @@ export function CreateTodoModal({
                   </label>
                   <Popover open={linkOpen} onOpenChange={setLinkOpen}>
                     <PopoverTrigger>
-                      <button className="w-full flex items-center justify-between h-9 px-3 rounded-md border bg-background text-sm hover:bg-muted/30 transition-colors">
+                      <div className="w-full flex items-center justify-between h-9 px-3 rounded-md border bg-background text-sm hover:bg-muted/30 transition-colors">
                         <span className={cn(!selectedLink && 'text-muted-foreground')}>
                           {selectedLink ? selectedLink.label : 'Search...'}
                         </span>
                         <ChevronsUpDown className="size-3.5 text-muted-foreground" />
-                      </button>
+                      </div>
                     </PopoverTrigger>
                     <PopoverContent className="w-[400px] p-0" align="start">
                       <Command>
