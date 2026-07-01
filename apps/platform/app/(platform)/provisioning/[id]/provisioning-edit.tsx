@@ -528,6 +528,8 @@ export function ProvisioningEdit({
     wc1Comments: prov.wc1Comments ?? '',
     wc2Outcome: prov.wc2Outcome ?? '',
     wc2Comments: prov.wc2Comments ?? '',
+    wc3Outcome: prov.wc3Outcome ?? '',
+    wc3Comments: prov.wc3Comments ?? '',
     status: prov.status as string,
     proposedLiveDate: formatDate(prov.proposedLiveDate),
     dateOrdered: formatDate(prov.dateOrdered),
@@ -552,6 +554,8 @@ export function ProvisioningEdit({
       wc1Comments: form.wc1Comments || null,
       wc2Outcome: form.wc2Outcome || null,
       wc2Comments: form.wc2Comments || null,
+      wc3Outcome: form.wc3Outcome || null,
+      wc3Comments: form.wc3Comments || null,
       status: form.status,
       proposedLiveDate: form.proposedLiveDate || null,
       dateOrdered: form.dateOrdered || null,
@@ -575,6 +579,8 @@ export function ProvisioningEdit({
       wc1Comments: prov.wc1Comments ?? '',
       wc2Outcome: prov.wc2Outcome ?? '',
       wc2Comments: prov.wc2Comments ?? '',
+      wc3Outcome: prov.wc3Outcome ?? '',
+      wc3Comments: prov.wc3Comments ?? '',
       status: prov.status as string,
       proposedLiveDate: formatDate(prov.proposedLiveDate),
       dateOrdered: formatDate(prov.dateOrdered),
@@ -933,6 +939,43 @@ export function ProvisioningEdit({
                 />
               ) : (
                 <span className="text-sm">{form.wc2Comments || '—'}</span>
+              )}
+            </Row>
+            <Row label="WC3 outcome">
+              {isEditing ? (
+                <Select
+                  value={form.wc3Outcome}
+                  onValueChange={(v) => update('wc3Outcome', v ?? '')}
+                >
+                  <SelectTrigger className="h-8 w-48">
+                    <SelectValue placeholder="Select outcome" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">—</SelectItem>
+                    {WC_OUTCOMES.map((o) => (
+                      <SelectItem key={o} value={o}>
+                        {o.replace(/_/g, ' ')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : form.wc3Outcome ? (
+                <Badge variant="outline" className={WC_COLOURS[form.wc3Outcome]}>
+                  {form.wc3Outcome.replace(/_/g, ' ')}
+                </Badge>
+              ) : (
+                '—'
+              )}
+            </Row>
+            <Row label="WC3 comments">
+              {isEditing ? (
+                <Textarea
+                  value={form.wc3Comments}
+                  onChange={(e) => update('wc3Comments', e.target.value)}
+                  className="min-h-16 text-sm"
+                />
+              ) : (
+                <span className="text-sm">{form.wc3Comments || '—'}</span>
               )}
             </Row>
           </div>

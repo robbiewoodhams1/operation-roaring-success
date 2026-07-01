@@ -12,6 +12,8 @@ export async function updateProvisioning(
     wc1Comments: string | null
     wc2Outcome: string | null
     wc2Comments: string | null
+    wc3Outcome: string | null
+    wc3Comments: string | null
     status: string
     proposedLiveDate: string | null
     dateOrdered: string | null
@@ -37,6 +39,8 @@ export async function updateProvisioning(
         wc1Comments: data.wc1Comments || null,
         wc2Outcome: (data.wc2Outcome || null) as any,
         wc2Comments: data.wc2Comments || null,
+        wc3Outcome: (data.wc3Outcome || null) as any,
+        wc3Comments: data.wc3Comments || null,
         status: data.status as any,
         proposedLiveDate: data.proposedLiveDate || null,
         dateOrdered: data.dateOrdered || null,

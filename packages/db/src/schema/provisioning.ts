@@ -34,6 +34,8 @@ export const provisioning = appSchema.table('provisioning', {
   wc1Comments: text('wc1_comments'),
   wc2Outcome: wcOutcomeEnum('wc2_outcome'),
   wc2Comments: text('wc2_comments'),
+  wc3Outcome: wcOutcomeEnum('wc3_outcome'),
+  wc3Comments: text('wc3_comments'),
 
   // Router
   routerDispatched: boolean('router_dispatched').notNull().default(false),
