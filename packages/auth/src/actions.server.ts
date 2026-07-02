@@ -69,15 +69,13 @@ export async function inviteUser({
   department,
   team,
   invitedById,
-  invitedByEmail,
-  invitedByName,
 }: {
   email: string
   fullName: string
   role: UserRole
   tenantId: string
-  department?: string
-  team?: string
+  department?: string | undefined
+  team?: string | undefined
   invitedById: string
   invitedByEmail: string
   invitedByName: string
