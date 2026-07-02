@@ -7,13 +7,16 @@ import {
   dealServices,
   dealPricing,
   provisioningServices,
+  auditLogs,
+  users,
 } from '@roaring/db'
-import { eq, asc } from 'drizzle-orm'
+import { eq, asc, and, or, desc, inArray } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { ProvisioningEdit } from './provisioning-edit'
+import { ProvisioningHistory } from './provisioning-history'
 import CopyButton from '@/components/copy-button'
 import ProvisioningDetail from './provision-details'
 import { ProvisionModal } from './provision-modal'
@@ -69,6 +72,47 @@ export default async function ProvisioningDetailPage({
   const nfonServices = provServices.filter((s) => s.serviceType === 'nfon')
   const mpfServices = provServices.filter((s) => s.serviceType === 'mpf')
 
+  // Audit history for this provisioning record and all of its service rows.
+  const serviceIds = provServices.map((s) => s.id)
+  const historyLogs = await db
+    .select({
+      id: auditLogs.id,
+      tableName: auditLogs.tableName,
+      recordId: auditLogs.recordId,
+      action: auditLogs.action,
+      oldData: auditLogs.oldData,
+      newData: auditLogs.newData,
+      changedBy: auditLogs.changedBy,
+      changedAt: auditLogs.changedAt,
+    })
+    .from(auditLogs)
+    .where(
+      or(
+        and(eq(auditLogs.tableName, 'provisioning'), eq(auditLogs.recordId, prov.id)),
+        serviceIds.length > 0
+          ? and(
+              eq(auditLogs.tableName, 'provisioning_services'),
+              inArray(auditLogs.recordId, serviceIds)
+            )
+          : undefined
+      )
+    )
+    .orderBy(desc(auditLogs.changedAt))
+
+  const historyUserIds = [
+    ...new Set(historyLogs.map((l) => l.changedBy).filter(Boolean)),
+  ] as string[]
+  const historyUserNames: Record<string, string> = {}
+  if (historyUserIds.length > 0) {
+    const userResults = await db
+      .select({ id: users.id, fullName: users.fullName })
+      .from(users)
+      .where(inArray(users.id, historyUserIds))
+    for (const u of userResults) {
+      historyUserNames[u.id] = u.fullName
+    }
+  }
+
   const customerName = customer.companyName ?? `${customer.firstName} ${customer.lastName}`
 
   return (
@@ -121,6 +165,10 @@ export default async function ProvisioningDetailPage({
         nfonServices={nfonServices}
         mpfServices={mpfServices}
       />
+
+      <div className="mt-6">
+        <ProvisioningHistory logs={historyLogs} userNames={historyUserNames} />
+      </div>
 
       <div className="grid grid-cols-1 gap-6 mt-6">
         <ProvisioningDetail
