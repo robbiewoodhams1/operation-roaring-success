@@ -32,7 +32,7 @@ const { chain, mockTx, mockDb, mockRequireUser, mockSetAuditUser, mockRevalidate
 
 vi.mock('@roaring/db', () => ({ db: mockDb, customers: {} }))
 vi.mock('@roaring/auth', () => ({ requireUser: mockRequireUser, setAuditUser: mockSetAuditUser }))
-vi.mock('next/cache', () => ({ revalidatePath: mockRevalidatePath }))
+vi.mock('next/cache', () => ({ revalidatePath: mockRevalidatePath, revalidateTag: vi.fn() }))
 vi.mock('drizzle-orm', () => ({ eq: vi.fn((...a: any[]) => ({ op: 'eq', a })) }))
 
 function setupMocks() {

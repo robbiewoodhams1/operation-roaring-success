@@ -2,7 +2,7 @@ import { requireRole } from '@roaring/auth/server'
 import { InviteUserForm } from './invite-form'
 
 export default async function InviteUserPage() {
-  const currentUser = await requireRole('admin')
+  await requireRole('admin')
 
   return (
     <div className="p-8 max-w-lg mx-auto">
@@ -12,12 +12,7 @@ export default async function InviteUserPage() {
           They'll receive an email to set up their account
         </p>
       </div>
-      <InviteUserForm
-        tenantId={currentUser.tenantId}
-        invitedById={currentUser.id}
-        invitedByEmail={currentUser.email}
-        invitedByName={currentUser.fullName}
-      />
+      <InviteUserForm />
     </div>
   )
 }

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Pencil } from 'lucide-react'
 import { updateUserName } from './actions'
 
-export function AccountClient({ userId, fullName }: { userId: string; fullName: string }) {
+export function AccountClient({ fullName }: { fullName: string }) {
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [name, setName] = useState(fullName)
@@ -14,7 +14,7 @@ export function AccountClient({ userId, fullName }: { userId: string; fullName: 
 
   async function handleSave() {
     setSaving(true)
-    await updateUserName(userId, draft)
+    await updateUserName(draft)
     setName(draft)
     setSaving(false)
     setIsEditing(false)

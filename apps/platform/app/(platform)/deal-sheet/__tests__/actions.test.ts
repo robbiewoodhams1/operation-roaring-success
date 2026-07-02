@@ -42,6 +42,7 @@ vi.mock('@roaring/db', () => ({
 }))
 vi.mock('@roaring/auth', () => ({ requireUser: mockRequireUser, setAuditUser: mockSetAuditUser }))
 vi.mock('next/navigation', () => ({ redirect: mockRedirect }))
+vi.mock('next/cache', () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }))
 vi.mock('drizzle-orm', () => ({
   eq: vi.fn((...a: any[]) => ({ op: 'eq', a })),
   and: vi.fn((...a: any[]) => ({ op: 'and', a })),

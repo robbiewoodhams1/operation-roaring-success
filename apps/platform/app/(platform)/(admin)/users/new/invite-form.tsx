@@ -25,17 +25,7 @@ const ROLES = [
   { value: 'admin', label: 'Admin' },
 ] as const
 
-export function InviteUserForm({
-  tenantId,
-  invitedById,
-  invitedByEmail,
-  invitedByName,
-}: {
-  tenantId: string
-  invitedById: string
-  invitedByEmail: string
-  invitedByName: string
-}) {
+export function InviteUserForm() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -58,14 +48,10 @@ export function InviteUserForm({
     setLoading(true)
     setError(null)
 
-    const { success, error } = await inviteUserAction({
+    const { error } = await inviteUserAction({
       email: form.email,
       fullName: form.fullName,
       role: form.role,
-      tenantId,
-      invitedById,
-      invitedByEmail,
-      invitedByName,
       ...(form.department && { department: form.department }),
       ...(form.team && { team: form.team }),
     })

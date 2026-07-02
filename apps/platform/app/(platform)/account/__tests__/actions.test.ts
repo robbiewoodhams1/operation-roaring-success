@@ -56,29 +56,37 @@ describe('updateUserName', () => {
   })
 
   it('calls requireUser to gate the action', async () => {
-    await updateUserName('user-123', 'Jane Doe')
+    await updateUserName('Jane Doe')
     expect(mockRequireUser).toHaveBeenCalledOnce()
   })
 
   it('runs the update inside a transaction', async () => {
-    await updateUserName('user-123', 'Jane Doe')
+    await updateUserName('Jane Doe')
     expect(mockDb.transaction).toHaveBeenCalledOnce()
     expect(mockTx.update).toHaveBeenCalled()
   })
 
+  it('scopes the update to the authenticated user, ignoring any client-supplied id', async () => {
+    const eqMock = (await import('drizzle-orm')).eq as unknown as ReturnType<typeof vi.fn>
+    await updateUserName('Jane Doe')
+    // the WHERE must be built from the session user's id, never a client argument
+    const eqCall = eqMock.mock.calls.find((c) => c[1] === 'user-id')
+    expect(eqCall, 'update must be scoped to the session user id').toBeDefined()
+  })
+
   it('calls setAuditUser inside the transaction', async () => {
-    await updateUserName('user-123', 'Jane Doe')
+    await updateUserName('Jane Doe')
     expect(mockSetAuditUser).toHaveBeenCalledWith(mockTx, 'user-id')
   })
 
   it('revalidates the account path', async () => {
-    await updateUserName('user-123', 'Jane Doe')
+    await updateUserName('Jane Doe')
     expect(mockRevalidatePath).toHaveBeenCalledWith('/account')
   })
 
   it('propagates requireUser errors', async () => {
     mockRequireUser.mockRejectedValue(new Error('Unauthorized'))
-    await expect(updateUserName('user-123', 'Jane Doe')).rejects.toThrow('Unauthorized')
+    await expect(updateUserName('Jane Doe')).rejects.toThrow('Unauthorized')
     expect(mockDb.transaction).not.toHaveBeenCalled()
   })
 })
