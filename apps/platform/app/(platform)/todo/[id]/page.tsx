@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { cachedQuery } from '@/lib/cached-query'
 import { TodoDetail } from './todo-detail'
 import {
   TODO_STATUS_COLOURS,
@@ -13,24 +14,39 @@ import {
   TODO_PRIORITY_LABELS,
 } from '@/lib/constants'
 
-export default async function TodoDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const user = await requireUser()
+const getCachedTodo = (tenantId: string, id: string) =>
+  cachedQuery([`todo-${id}`], [`todos-${tenantId}`], () =>
+    db.select().from(todos).where(eq(todos.id, id)).limit(1)
+  )
 
-  const todoResult = await db.select().from(todos).where(eq(todos.id, id)).limit(1)
-  const todo = todoResult[0]
-  if (!todo || todo.tenantId !== user.tenantId) notFound()
-
-  const [comments, allUsers] = await Promise.all([
+const getCachedTodoComments = (tenantId: string, id: string) =>
+  cachedQuery([`todo-comments-${id}`], [`todos-${tenantId}`], () =>
     db
       .select()
       .from(todoComments)
       .where(eq(todoComments.todoId, id))
-      .orderBy(asc(todoComments.createdAt)),
+      .orderBy(asc(todoComments.createdAt))
+  )
+
+const getCachedTodoDetailUsers = (tenantId: string) =>
+  cachedQuery([`users-${tenantId}`], [`users-${tenantId}`], () =>
     db
       .select({ id: users.id, fullName: users.fullName })
       .from(users)
-      .where(eq(users.tenantId, user.tenantId)),
+      .where(eq(users.tenantId, tenantId))
+  )
+
+export default async function TodoDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const user = await requireUser()
+
+  const todoResult = await getCachedTodo(user.tenantId, id)
+  const todo = todoResult[0]
+  if (!todo || todo.tenantId !== user.tenantId) notFound()
+
+  const [comments, allUsers] = await Promise.all([
+    getCachedTodoComments(user.tenantId, id),
+    getCachedTodoDetailUsers(user.tenantId),
   ])
 
   const userMap = Object.fromEntries(allUsers.map((u) => [u.id, u.fullName]))

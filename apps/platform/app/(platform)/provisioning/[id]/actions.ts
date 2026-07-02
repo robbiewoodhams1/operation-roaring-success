@@ -2,7 +2,7 @@
 
 import { db, provisioning, provisioningServices } from '@roaring/db'
 import { eq } from 'drizzle-orm'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { requireUser, setAuditUser } from '@roaring/auth'
 
 export async function updateProvisioning(
@@ -56,6 +56,7 @@ export async function updateProvisioning(
       .where(eq(provisioning.id, id))
   })
 
+  revalidateTag(`provisioning-${user.tenantId}`, 'max')
   revalidatePath('/provisioning')
 }
 
@@ -100,6 +101,7 @@ export async function updateProvisioningService(
       .where(eq(provisioningServices.id, id))
   })
 
+  revalidateTag(`provisioningServices-${user.tenantId}`, 'max')
   revalidatePath('/provisioning')
 }
 
@@ -121,5 +123,6 @@ export async function addProvisioningServiceAttempt(
     })
   })
 
+  revalidateTag(`provisioningServices-${user.tenantId}`, 'max')
   revalidatePath('/provisioning')
 }

@@ -2,7 +2,7 @@
 
 import { db, complaintComments } from '@roaring/db'
 import { eq } from 'drizzle-orm'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { requireUser, setAuditUser } from '@roaring/auth'
 
 export async function addComplaintComment(complaintId: string, body: string) {
@@ -17,6 +17,7 @@ export async function addComplaintComment(complaintId: string, body: string) {
     })
   })
 
+  revalidateTag(`complaints-${user.tenantId}`, 'max')
   revalidatePath(`/complaints/${complaintId}`)
 }
 
@@ -28,5 +29,6 @@ export async function deleteComplaintComment(id: string, complaintId: string) {
     await tx.delete(complaintComments).where(eq(complaintComments.id, id))
   })
 
+  revalidateTag(`complaints-${user.tenantId}`, 'max')
   revalidatePath(`/complaints/${complaintId}`)
 }

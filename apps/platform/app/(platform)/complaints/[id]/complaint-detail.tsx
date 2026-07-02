@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useOptimisticStatus } from '@/lib/hooks/use-optimistic-status'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -60,6 +61,8 @@ export function ComplaintDetail({
   const [commentBody, setCommentBody] = useState('')
   const [submittingComment, setSubmittingComment] = useState(false)
 
+  const [optimisticStatus, applyStatusChange, isPending] = useOptimisticStatus(complaint.status)
+
   const [form, setForm] = useState({
     title: complaint.title,
     type: complaint.type as string,
@@ -84,9 +87,10 @@ export function ComplaintDetail({
     router.refresh()
   }
 
-  async function handleStatusChange(status: string) {
-    await updateComplaintStatus(complaint.id, status)
-    router.refresh()
+  function handleStatusChange(status: string) {
+    applyStatusChange(status as typeof complaint.status, () =>
+      updateComplaintStatus(complaint.id, status)
+    )
   }
 
   async function handleAddComment() {
@@ -133,10 +137,14 @@ export function ComplaintDetail({
         <div className="divide-y">
           <Row label="Status">
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className={COMPLAINT_STATUS_COLOURS[complaint.status]}>
-                {COMPLAINT_STATUS_LABELS[complaint.status] ?? complaint.status}
+              <Badge variant="outline" className={COMPLAINT_STATUS_COLOURS[optimisticStatus]}>
+                {COMPLAINT_STATUS_LABELS[optimisticStatus] ?? optimisticStatus}
               </Badge>
-              <Select value={complaint.status} onValueChange={(v) => v && handleStatusChange(v)}>
+              <Select
+                value={optimisticStatus}
+                onValueChange={(v) => v && handleStatusChange(v)}
+                disabled={isPending}
+              >
                 <SelectTrigger className="h-7 w-48 text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -148,6 +156,7 @@ export function ComplaintDetail({
                   ))}
                 </SelectContent>
               </Select>
+              {isPending && <span className="text-xs text-muted-foreground">Saving...</span>}
             </div>
           </Row>
           <Row label="Title">

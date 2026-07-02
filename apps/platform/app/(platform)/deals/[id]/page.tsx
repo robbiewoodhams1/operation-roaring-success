@@ -5,48 +5,58 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { ArrowLeft } from 'lucide-react'
+import { cachedQuery } from '@/lib/cached-query'
 import { DealEdit } from './deal-edit'
 import { DEAL_STATUS_COLOURS } from '@/lib/constants'
+
+const getCachedCustomer = (tenantId: string, id: string) =>
+  cachedQuery([`customers-${tenantId}`, id], [`customers-${tenantId}`], () =>
+    db.select().from(customers).where(eq(customers.accountNumber, id)).limit(1)
+  )
+
+const getCachedDeal = (tenantId: string, customerId: string) =>
+  cachedQuery([`deals-${tenantId}`, customerId], [`deals-${tenantId}`], () =>
+    db.select().from(deals).where(eq(deals.customerId, customerId)).limit(1)
+  )
+
+const getCachedDealServices = (tenantId: string, dealId: string) =>
+  cachedQuery([`dealServices-${tenantId}`, dealId], [`dealServices-${tenantId}`], () =>
+    db.select().from(dealServices).where(eq(dealServices.dealId, dealId)).limit(1)
+  )
+
+const getCachedDealPricing = (tenantId: string, dealId: string) =>
+  cachedQuery([`dealPricing-${tenantId}`, dealId], [`dealPricing-${tenantId}`], () =>
+    db.select().from(dealPricing).where(eq(dealPricing.dealId, dealId)).limit(1)
+  )
+
+const getCachedDealBilling = (tenantId: string, dealId: string) =>
+  cachedQuery([`dealBilling-${tenantId}`, dealId], [`dealBilling-${tenantId}`], () =>
+    db.select().from(dealBilling).where(eq(dealBilling.dealId, dealId)).limit(1)
+  )
 
 export default async function DealPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const user = await requireUser()
 
-  const customerResult = await db
-    .select()
-    .from(customers)
-    .where(eq(customers.accountNumber, id))
-    .limit(1)
+  const customerResult = await getCachedCustomer(user.tenantId, id)
 
   const customer = customerResult[0]
   if (!customer || customer.tenantId !== user.tenantId) notFound()
 
-  const dealResult = await db.select().from(deals).where(eq(deals.customerId, customer.id)).limit(1)
+  const dealResult = await getCachedDeal(user.tenantId, customer.id)
 
   const deal = dealResult[0]
   if (!deal) notFound()
 
-  const servicesResult = await db
-    .select()
-    .from(dealServices)
-    .where(eq(dealServices.dealId, deal.id))
-    .limit(1)
+  const servicesResult = await getCachedDealServices(user.tenantId, deal.id)
 
   const services = servicesResult[0] ?? null
 
-  const pricingResult = await db
-    .select()
-    .from(dealPricing)
-    .where(eq(dealPricing.dealId, deal.id))
-    .limit(1)
+  const pricingResult = await getCachedDealPricing(user.tenantId, deal.id)
 
   const pricing = pricingResult[0] ?? null
 
-  const billingResult = await db
-    .select()
-    .from(dealBilling)
-    .where(eq(dealBilling.dealId, deal.id))
-    .limit(1)
+  const billingResult = await getCachedDealBilling(user.tenantId, deal.id)
 
   const billing = billingResult[0] ?? null
 

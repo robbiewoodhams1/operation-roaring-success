@@ -2,7 +2,7 @@
 
 import { db, users } from '@roaring/db'
 import { eq } from 'drizzle-orm'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { requireRole, setAuditUser, deletePendingUser } from '@roaring/auth'
 
 export async function updateUser(id: string, data: { fullName: string; role: string }) {
@@ -19,6 +19,7 @@ export async function updateUser(id: string, data: { fullName: string; role: str
       .where(eq(users.id, id))
   })
 
+  revalidateTag(`users-${currentUser.tenantId}`, 'max')
   revalidatePath('/users')
   revalidatePath(`/users/${id}`)
 }
@@ -36,12 +37,14 @@ export async function toggleUserSuspension(id: string, currentlyActive: boolean)
       .where(eq(users.id, id))
   })
 
+  revalidateTag(`users-${currentUser.tenantId}`, 'max')
   revalidatePath('/users')
   revalidatePath(`/users/${id}`)
 }
 
 export async function deletePendingUserAction(id: string) {
-  await requireRole('admin')
+  const currentUser = await requireRole('admin')
   await deletePendingUser(id)
+  revalidateTag(`users-${currentUser.tenantId}`, 'max')
   revalidatePath('/users')
 }

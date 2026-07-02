@@ -15,6 +15,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { cachedQuery } from '@/lib/cached-query'
 import { ProvisioningEdit } from './provisioning-edit'
 import { ProvisioningHistory } from './provisioning-history'
 import CopyButton from '@/components/copy-button'
@@ -30,42 +31,51 @@ export default async function ProvisioningDetailPage({
   const { id } = await params
   const user = await requireUser()
 
-  const customerResult = await db
-    .select()
-    .from(customers)
-    .where(eq(customers.accountNumber, id))
-    .limit(1)
+  const customerResult = await cachedQuery(
+    [`customers-${user.tenantId}`, id],
+    [`customers-${user.tenantId}`],
+    () => db.select().from(customers).where(eq(customers.accountNumber, id)).limit(1)
+  )
 
   const customer = customerResult[0]
   if (!customer || customer.tenantId !== user.tenantId) notFound()
 
-  const dealResult = await db.select().from(deals).where(eq(deals.customerId, customer.id)).limit(1)
+  const dealResult = await cachedQuery(
+    [`deals-${user.tenantId}`, customer.id],
+    [`deals-${user.tenantId}`],
+    () => db.select().from(deals).where(eq(deals.customerId, customer.id)).limit(1)
+  )
 
   const deal = dealResult[0]
   if (!deal) notFound()
 
-  const provResult = await db
-    .select()
-    .from(provisioning)
-    .where(eq(provisioning.dealId, deal.id))
-    .limit(1)
+  const provResult = await cachedQuery(
+    [`provisioning-${user.tenantId}`, deal.id],
+    [`provisioning-${user.tenantId}`],
+    () => db.select().from(provisioning).where(eq(provisioning.dealId, deal.id)).limit(1)
+  )
 
   const prov = provResult[0]
   if (!prov) notFound()
 
-  const servicesResult = await db
-    .select()
-    .from(dealServices)
-    .where(eq(dealServices.dealId, deal.id))
-    .limit(1)
+  const servicesResult = await cachedQuery(
+    [`dealServices-${user.tenantId}`, deal.id],
+    [`dealServices-${user.tenantId}`],
+    () => db.select().from(dealServices).where(eq(dealServices.dealId, deal.id)).limit(1)
+  )
 
   const services = servicesResult[0] ?? null
 
-  const provServices = await db
-    .select()
-    .from(provisioningServices)
-    .where(eq(provisioningServices.provisioningId, prov.id))
-    .orderBy(asc(provisioningServices.serviceType), asc(provisioningServices.attempt))
+  const provServices = await cachedQuery(
+    [`provisioningServices-${user.tenantId}`, prov.id],
+    [`provisioningServices-${user.tenantId}`],
+    () =>
+      db
+        .select()
+        .from(provisioningServices)
+        .where(eq(provisioningServices.provisioningId, prov.id))
+        .orderBy(asc(provisioningServices.serviceType), asc(provisioningServices.attempt))
+  )
 
   const bbServices = provServices.filter((s) => s.serviceType === 'bb')
   const whcServices = provServices.filter((s) => s.serviceType === 'whc')
@@ -104,10 +114,15 @@ export default async function ProvisioningDetailPage({
   ] as string[]
   const historyUserNames: Record<string, string> = {}
   if (historyUserIds.length > 0) {
-    const userResults = await db
-      .select({ id: users.id, fullName: users.fullName })
-      .from(users)
-      .where(inArray(users.id, historyUserIds))
+    const userResults = await cachedQuery(
+      [`users-${user.tenantId}`, historyUserIds.join(',')],
+      [`users-${user.tenantId}`],
+      () =>
+        db
+          .select({ id: users.id, fullName: users.fullName })
+          .from(users)
+          .where(inArray(users.id, historyUserIds))
+    )
     for (const u of userResults) {
       historyUserNames[u.id] = u.fullName
     }

@@ -2,7 +2,7 @@
 
 import { db, deals, dealServices, dealPricing, dealBilling, customers } from '@roaring/db'
 import { eq } from 'drizzle-orm'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { requireUser, setAuditUser } from '@roaring/auth'
 
 export async function updateDeal(data: {
@@ -158,6 +158,11 @@ export async function updateDeal(data: {
     ])
   })
 
+  revalidateTag(`deals-${user.tenantId}`, 'max')
+  revalidateTag(`dealServices-${user.tenantId}`, 'max')
+  revalidateTag(`dealPricing-${user.tenantId}`, 'max')
+  revalidateTag(`dealBilling-${user.tenantId}`, 'max')
+  revalidateTag(`customers-${user.tenantId}`, 'max')
   revalidatePath('/deals')
   revalidatePath('/customers')
 }

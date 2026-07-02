@@ -2,7 +2,7 @@
 
 import { db, transferCeases, transferCeaseComments } from '@roaring/db'
 import { eq } from 'drizzle-orm'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { requireUser, setAuditUser } from '@roaring/auth'
 
 export async function createTransferCease(data: {
@@ -33,10 +33,12 @@ export async function createTransferCease(data: {
         authorId: user.id,
         body: data.description,
       })
+      revalidateTag(`transferCeaseComments-${user.tenantId}`, 'max')
     }
   })
 
-  revalidatePath('/routers')
+  revalidateTag(`transferCeases-${user.tenantId}`, 'max')
+  revalidatePath('/transfers-ceases')
 }
 
 export async function updateTransferCeaseStatus(id: string, status: string) {
@@ -54,8 +56,9 @@ export async function updateTransferCeaseStatus(id: string, status: string) {
       .where(eq(transferCeases.id, id))
   })
 
-  revalidatePath('/routers')
-  revalidatePath(`/routers/${id}`)
+  revalidateTag(`transferCeases-${user.tenantId}`, 'max')
+  revalidatePath('/transfers-ceases')
+  revalidatePath(`/transfers-ceases/${id}`)
 }
 
 export async function updateTransferCease(
@@ -79,6 +82,7 @@ export async function updateTransferCease(
       .where(eq(transferCeases.id, id))
   })
 
-  revalidatePath('/routers')
-  revalidatePath(`/routers/${id}`)
+  revalidateTag(`transferCeases-${user.tenantId}`, 'max')
+  revalidatePath('/transfers-ceases')
+  revalidatePath(`/transfers-ceases/${id}`)
 }

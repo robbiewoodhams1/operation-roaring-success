@@ -13,6 +13,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { cachedQuery } from '@/lib/cached-query'
 import { Detail } from './detail'
 import {
   TRANSFER_CEASE_TYPE_LABELS,
@@ -36,6 +37,55 @@ type ProvCustomer = {
   postcode: string | null
 }
 
+const getCachedTransferCease = (id: string, tenantId: string) =>
+  cachedQuery([`transferCease-${id}`], [`transferCeases-${tenantId}`], () =>
+    db.select().from(transferCeases).where(eq(transferCeases.id, id)).limit(1)
+  )
+
+const getCachedComments = (id: string, tenantId: string) =>
+  cachedQuery([`transferCeaseComments-${id}`], [`transferCeaseComments-${tenantId}`], () =>
+    db
+      .select()
+      .from(transferCeaseComments)
+      .where(eq(transferCeaseComments.transferCeaseId, id))
+      .orderBy(asc(transferCeaseComments.createdAt))
+  )
+
+const getCachedUsers = (tenantId: string) =>
+  cachedQuery([`users-${tenantId}`], [`users-${tenantId}`], () =>
+    db
+      .select({ id: users.id, fullName: users.fullName })
+      .from(users)
+      .where(eq(users.tenantId, tenantId))
+  )
+
+const getCachedProvCustomer = (provisioningId: string, tenantId: string) =>
+  cachedQuery(
+    [`provisioning-${provisioningId}`],
+    [`provisioning-${tenantId}`, `customers-${tenantId}`, `deals-${tenantId}`],
+    () =>
+      db
+        .select({
+          accountNumber: customers.accountNumber,
+          companyName: customers.companyName,
+          firstName: customers.firstName,
+          lastName: customers.lastName,
+          mobile: customers.mobile,
+          landline: customers.landline,
+          email: customers.email,
+          addressLine1: customers.addressLine1,
+          addressLine2: customers.addressLine2,
+          addressLine3: customers.addressLine3,
+          addressLine4: customers.addressLine4,
+          postcode: customers.postcode,
+        })
+        .from(provisioning)
+        .innerJoin(deals, eq(deals.id, provisioning.dealId))
+        .innerJoin(customers, eq(customers.id, deals.customerId))
+        .where(eq(provisioning.id, provisioningId))
+        .limit(1)
+  )
+
 export default async function TransferCeaseDetailPage({
   params,
 }: {
@@ -44,41 +94,15 @@ export default async function TransferCeaseDetailPage({
   const { id } = await params
   const user = await requireUser()
 
-  const result = await db.select().from(transferCeases).where(eq(transferCeases.id, id)).limit(1)
+  const result = await getCachedTransferCease(id, user.tenantId)
   const record = result[0]
   if (!record || record.tenantId !== user.tenantId) notFound()
 
   const [comments, allUsers, provResult] = await Promise.all([
-    db
-      .select()
-      .from(transferCeaseComments)
-      .where(eq(transferCeaseComments.transferCeaseId, id))
-      .orderBy(asc(transferCeaseComments.createdAt)),
-    db
-      .select({ id: users.id, fullName: users.fullName })
-      .from(users)
-      .where(eq(users.tenantId, user.tenantId)),
+    getCachedComments(id, user.tenantId),
+    getCachedUsers(user.tenantId),
     record.provisioningId
-      ? db
-          .select({
-            accountNumber: customers.accountNumber,
-            companyName: customers.companyName,
-            firstName: customers.firstName,
-            lastName: customers.lastName,
-            mobile: customers.mobile,
-            landline: customers.landline,
-            email: customers.email,
-            addressLine1: customers.addressLine1,
-            addressLine2: customers.addressLine2,
-            addressLine3: customers.addressLine3,
-            addressLine4: customers.addressLine4,
-            postcode: customers.postcode,
-          })
-          .from(provisioning)
-          .innerJoin(deals, eq(deals.id, provisioning.dealId))
-          .innerJoin(customers, eq(customers.id, deals.customerId))
-          .where(eq(provisioning.id, record.provisioningId))
-          .limit(1)
+      ? getCachedProvCustomer(record.provisioningId, user.tenantId)
       : Promise.resolve([] as ProvCustomer[]),
   ])
 

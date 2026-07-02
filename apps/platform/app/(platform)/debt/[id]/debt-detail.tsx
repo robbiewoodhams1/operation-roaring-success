@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useOptimisticStatus } from '@/lib/hooks/use-optimistic-status'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -60,6 +61,8 @@ export function DebtDetail({
   const [commentBody, setCommentBody] = useState('')
   const [submittingComment, setSubmittingComment] = useState(false)
 
+  const [optimisticOutcome, applyOutcomeChange, isPending] = useOptimisticStatus(debt.outcome)
+
   const [form, setForm] = useState({
     title: debt.title,
     totalOwed: debt.totalOwed,
@@ -86,9 +89,8 @@ export function DebtDetail({
     router.refresh()
   }
 
-  async function handleOutcomeChange(outcome: string) {
-    await updateDebtOutcome(debt.id, outcome)
-    router.refresh()
+  function handleOutcomeChange(outcome: string) {
+    applyOutcomeChange(outcome as typeof debt.outcome, () => updateDebtOutcome(debt.id, outcome))
   }
 
   async function handleAddComment() {
@@ -134,12 +136,16 @@ export function DebtDetail({
         <div className="divide-y">
           <Row label="Outcome">
             <div className="flex items-center gap-2">
-              {debt.outcome && (
-                <Badge variant="outline" className={DEBT_OUTCOME_COLOURS[debt.outcome]}>
-                  {DEBT_OUTCOME_LABELS[debt.outcome] ?? debt.outcome}
+              {optimisticOutcome && (
+                <Badge variant="outline" className={DEBT_OUTCOME_COLOURS[optimisticOutcome]}>
+                  {DEBT_OUTCOME_LABELS[optimisticOutcome] ?? optimisticOutcome}
                 </Badge>
               )}
-              <Select value={debt.outcome ?? ''} onValueChange={(v) => v && handleOutcomeChange(v)}>
+              <Select
+                value={optimisticOutcome ?? ''}
+                onValueChange={(v) => v && handleOutcomeChange(v)}
+                disabled={isPending}
+              >
                 <SelectTrigger className="h-7 w-52 text-xs">
                   <SelectValue placeholder="Set outcome" />
                 </SelectTrigger>
@@ -151,6 +157,7 @@ export function DebtDetail({
                   ))}
                 </SelectContent>
               </Select>
+              {isPending && <span className="text-xs text-muted-foreground">Saving...</span>}
             </div>
           </Row>
           <Row label="Title">

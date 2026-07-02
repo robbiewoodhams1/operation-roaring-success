@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useOptimisticStatus } from '@/lib/hooks/use-optimistic-status'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -41,9 +42,10 @@ export function TodoDetail({
   const [commentBody, setCommentBody] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  async function handleStatusChange(status: string) {
-    await updateTodoStatus(todo.id, status)
-    router.refresh()
+  const [optimisticStatus, applyStatusChange, isPending] = useOptimisticStatus(todo.status)
+
+  function handleStatusChange(status: string) {
+    applyStatusChange(status as typeof todo.status, () => updateTodoStatus(todo.id, status))
   }
 
   async function handleAddComment() {
@@ -70,10 +72,14 @@ export function TodoDetail({
         <div className="divide-y">
           <Row label="Status">
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className={TODO_STATUS_COLOURS[todo.status]}>
-                {TODO_STATUS_LABELS[todo.status]}
+              <Badge variant="outline" className={TODO_STATUS_COLOURS[optimisticStatus]}>
+                {TODO_STATUS_LABELS[optimisticStatus]}
               </Badge>
-              <Select value={todo.status} onValueChange={(v) => v && handleStatusChange(v)}>
+              <Select
+                value={optimisticStatus}
+                onValueChange={(v) => v && handleStatusChange(v)}
+                disabled={isPending}
+              >
                 <SelectTrigger className="h-7 w-36 text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -85,6 +91,7 @@ export function TodoDetail({
                   ))}
                 </SelectContent>
               </Select>
+              {isPending && <span className="text-xs text-muted-foreground">Saving...</span>}
             </div>
           </Row>
           <Row label="Priority">

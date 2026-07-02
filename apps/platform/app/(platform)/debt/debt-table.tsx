@@ -43,7 +43,7 @@ export function DebtTable({
             <TableRow
               key={debt.id}
               className="cursor-pointer hover:bg-muted/50"
-              onClick={() => router.push(`/targets/debt/${debt.id}`)}
+              onClick={() => router.push(`/debt/${debt.id}`)}
             >
               <TableCell className="font-medium">{debt.title}</TableCell>
               <TableCell className="font-mono text-sm">

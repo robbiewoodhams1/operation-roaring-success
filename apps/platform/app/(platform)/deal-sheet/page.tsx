@@ -1,16 +1,22 @@
 import { requireUser } from '@roaring/auth/server'
 import { db, customers } from '@roaring/db'
 import { eq, asc } from 'drizzle-orm'
+import { cachedQuery } from '@/lib/cached-query'
 import SalesForm from './sales-form'
+
+const getCachedCustomers = (tenantId: string) =>
+  cachedQuery([`customers-${tenantId}`], [`customers-${tenantId}`], () =>
+    db
+      .select()
+      .from(customers)
+      .where(eq(customers.tenantId, tenantId))
+      .orderBy(asc(customers.accountNumber))
+  )
 
 // page.tsx
 export default async function DealSheetPage() {
   const user = await requireUser()
-  const allCustomers = await db
-    .select()
-    .from(customers)
-    .where(eq(customers.tenantId, user.tenantId))
-    .orderBy(asc(customers.accountNumber))
+  const allCustomers = await getCachedCustomers(user.tenantId)
 
   return (
     <div className="px-6">

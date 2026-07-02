@@ -1,6 +1,6 @@
 {
   "permissions": {
-    "allow": ["Bash(cat > *)"],
+    "allow": ["Bash(cat > *)", "Bash(pnpm --filter @roaring/platform type-check)"],
     "additionalDirectories": [
       "c:\\Users\\RobertWoodhams\\Documents\\operation-roaring-success\\packages\\algorithms",
       "c:\\Users\\RobertWoodhams\\Documents\\operation-roaring-success\\packages\\telephony"

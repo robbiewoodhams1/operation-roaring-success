@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { cachedQuery } from '@/lib/cached-query'
 import { DebtDetail } from './debt-detail'
 import { DEBT_OUTCOME_COLOURS, DEBT_OUTCOME_LABELS } from '@/lib/constants'
 
@@ -27,41 +28,52 @@ export default async function DebtDetailPage({ params }: { params: Promise<{ id:
   const { id } = await params
   const user = await requireUser()
 
-  const debtResult = await db.select().from(debts).where(eq(debts.id, id)).limit(1)
+  const debtResult = await cachedQuery([`debt-${id}`], [`debts-${user.tenantId}`], () =>
+    db.select().from(debts).where(eq(debts.id, id)).limit(1)
+  )
   const debt = debtResult[0]
   if (!debt || debt.tenantId !== user.tenantId) notFound()
 
   const [comments, allUsers, provResult] = await Promise.all([
-    db
-      .select()
-      .from(debtComments)
-      .where(eq(debtComments.debtId, id))
-      .orderBy(asc(debtComments.createdAt)),
-    db
-      .select({ id: users.id, fullName: users.fullName })
-      .from(users)
-      .where(eq(users.tenantId, user.tenantId)),
+    cachedQuery([`debt-comments-${id}`], [`debts-${user.tenantId}`], () =>
+      db
+        .select()
+        .from(debtComments)
+        .where(eq(debtComments.debtId, id))
+        .orderBy(asc(debtComments.createdAt))
+    ),
+    cachedQuery([`users-${user.tenantId}`], [`users-${user.tenantId}`], () =>
+      db
+        .select({ id: users.id, fullName: users.fullName })
+        .from(users)
+        .where(eq(users.tenantId, user.tenantId))
+    ),
     debt.provisioningId
-      ? db
-          .select({
-            accountNumber: customers.accountNumber,
-            companyName: customers.companyName,
-            firstName: customers.firstName,
-            lastName: customers.lastName,
-            mobile: customers.mobile,
-            landline: customers.landline,
-            email: customers.email,
-            addressLine1: customers.addressLine1,
-            addressLine2: customers.addressLine2,
-            addressLine3: customers.addressLine3,
-            addressLine4: customers.addressLine4,
-            postcode: customers.postcode,
-          })
-          .from(provisioning)
-          .innerJoin(deals, eq(deals.id, provisioning.dealId))
-          .innerJoin(customers, eq(customers.id, deals.customerId))
-          .where(eq(provisioning.id, debt.provisioningId))
-          .limit(1)
+      ? cachedQuery(
+          [`provisioning-customer-${debt.provisioningId}`],
+          [`provisioning-${user.tenantId}`],
+          () =>
+            db
+              .select({
+                accountNumber: customers.accountNumber,
+                companyName: customers.companyName,
+                firstName: customers.firstName,
+                lastName: customers.lastName,
+                mobile: customers.mobile,
+                landline: customers.landline,
+                email: customers.email,
+                addressLine1: customers.addressLine1,
+                addressLine2: customers.addressLine2,
+                addressLine3: customers.addressLine3,
+                addressLine4: customers.addressLine4,
+                postcode: customers.postcode,
+              })
+              .from(provisioning)
+              .innerJoin(deals, eq(deals.id, provisioning.dealId))
+              .innerJoin(customers, eq(customers.id, deals.customerId))
+              .where(eq(provisioning.id, debt.provisioningId as string))
+              .limit(1)
+        )
       : Promise.resolve([] as ProvCustomer[]),
   ])
 
@@ -71,7 +83,7 @@ export default async function DebtDetailPage({ params }: { params: Promise<{ id:
   return (
     <div className="p-6 max-w-4xl">
       <div className="flex items-center gap-4 mb-8">
-        <Link href="/targets/debt">
+        <Link href="/debt">
           <ArrowLeft className="size-4" />
         </Link>
         <div className="flex-1">

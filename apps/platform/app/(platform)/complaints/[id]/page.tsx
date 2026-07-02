@@ -13,6 +13,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { cachedQuery } from '@/lib/cached-query'
 import { ComplaintDetail } from './complaint-detail'
 import {
   COMPLAINT_STATUS_COLOURS,
@@ -39,43 +40,59 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
   const { id } = await params
   const user = await requireUser()
 
-  const complaintResult = await db.select().from(complaints).where(eq(complaints.id, id)).limit(1)
+  const complaintResult = await cachedQuery(
+    [`complaint-${id}-${user.tenantId}`],
+    [`complaints-${user.tenantId}`],
+    () => db.select().from(complaints).where(eq(complaints.id, id)).limit(1)
+  )
   const complaint = complaintResult[0]
   if (!complaint || complaint.tenantId !== user.tenantId) notFound()
 
   const [comments, allUsers, provResult] = await Promise.all([
-    db
-      .select()
-      .from(complaintComments)
-      .where(eq(complaintComments.complaintId, id))
-      .orderBy(asc(complaintComments.createdAt)),
+    cachedQuery(
+      [`complaint-comments-${id}-${user.tenantId}`],
+      [`complaints-${user.tenantId}`],
+      () =>
+        db
+          .select()
+          .from(complaintComments)
+          .where(eq(complaintComments.complaintId, id))
+          .orderBy(asc(complaintComments.createdAt))
+    ),
 
-    db
-      .select({ id: users.id, fullName: users.fullName })
-      .from(users)
-      .where(eq(users.tenantId, user.tenantId)),
+    cachedQuery([`users-${user.tenantId}`], [`users-${user.tenantId}`], () =>
+      db
+        .select({ id: users.id, fullName: users.fullName })
+        .from(users)
+        .where(eq(users.tenantId, user.tenantId))
+    ),
 
     complaint.provisioningId
-      ? db
-          .select({
-            accountNumber: customers.accountNumber,
-            companyName: customers.companyName,
-            firstName: customers.firstName,
-            lastName: customers.lastName,
-            mobile: customers.mobile,
-            landline: customers.landline,
-            email: customers.email,
-            addressLine1: customers.addressLine1,
-            addressLine2: customers.addressLine2,
-            addressLine3: customers.addressLine3,
-            addressLine4: customers.addressLine4,
-            postcode: customers.postcode,
-          })
-          .from(provisioning)
-          .innerJoin(deals, eq(deals.id, provisioning.dealId))
-          .innerJoin(customers, eq(customers.id, deals.customerId))
-          .where(eq(provisioning.id, complaint.provisioningId))
-          .limit(1)
+      ? cachedQuery(
+          [`prov-customer-${complaint.provisioningId}-${user.tenantId}`],
+          [`provisioning-${user.tenantId}`],
+          () =>
+            db
+              .select({
+                accountNumber: customers.accountNumber,
+                companyName: customers.companyName,
+                firstName: customers.firstName,
+                lastName: customers.lastName,
+                mobile: customers.mobile,
+                landline: customers.landline,
+                email: customers.email,
+                addressLine1: customers.addressLine1,
+                addressLine2: customers.addressLine2,
+                addressLine3: customers.addressLine3,
+                addressLine4: customers.addressLine4,
+                postcode: customers.postcode,
+              })
+              .from(provisioning)
+              .innerJoin(deals, eq(deals.id, provisioning.dealId))
+              .innerJoin(customers, eq(customers.id, deals.customerId))
+              .where(eq(provisioning.id, complaint.provisioningId as string))
+              .limit(1)
+        )
       : Promise.resolve([] as ProvCustomer[]),
   ])
 

@@ -3,16 +3,18 @@ import { db, users } from '@roaring/db'
 import { eq, desc } from 'drizzle-orm'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { cachedQuery } from '@/lib/cached-query'
 import { UsersTable } from './users-table'
+
+const getCachedUsers = (tenantId: string) =>
+  cachedQuery([`users-${tenantId}`], [`users-${tenantId}`], () =>
+    db.select().from(users).where(eq(users.tenantId, tenantId)).orderBy(desc(users.createdAt))
+  )
 
 export default async function UsersPage() {
   const currentUser = await requireRole('admin')
 
-  const allUsers = await db
-    .select()
-    .from(users)
-    .where(eq(users.tenantId, currentUser.tenantId))
-    .orderBy(desc(users.createdAt))
+  const allUsers = await getCachedUsers(currentUser.tenantId)
 
   return (
     <div className="px-6 mx-auto">

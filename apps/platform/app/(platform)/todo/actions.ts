@@ -2,7 +2,7 @@
 
 import { db, todos, todoComments } from '@roaring/db'
 import { eq } from 'drizzle-orm'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { requireUser, setAuditUser } from '@roaring/auth'
 
 export async function createTodo(data: {
@@ -33,6 +33,8 @@ export async function createTodo(data: {
     })
   })
 
+  revalidateTag(`todos-${user.tenantId}`, 'max')
+  revalidateTag(`todos-${user.tenantId}-${user.id}`, 'max')
   revalidatePath('/todo')
   revalidatePath('/home')
 }
@@ -51,6 +53,8 @@ export async function updateTodoStatus(id: string, status: string) {
       .where(eq(todos.id, id))
   })
 
+  revalidateTag(`todos-${user.tenantId}`, 'max')
+  revalidateTag(`todos-${user.tenantId}-${user.id}`, 'max')
   revalidatePath('/todo')
   revalidatePath(`/todo/${id}`)
 }
@@ -63,6 +67,8 @@ export async function deleteTodo(id: string) {
     await tx.delete(todos).where(eq(todos.id, id))
   })
 
+  revalidateTag(`todos-${user.tenantId}`, 'max')
+  revalidateTag(`todos-${user.tenantId}-${user.id}`, 'max')
   revalidatePath('/todo')
 }
 
@@ -78,6 +84,7 @@ export async function addTodoComment(todoId: string, body: string) {
     })
   })
 
+  revalidateTag(`todos-${user.tenantId}`, 'max')
   revalidatePath(`/todo/${todoId}`)
 }
 
@@ -89,5 +96,6 @@ export async function deleteTodoComment(id: string, todoId: string) {
     await tx.delete(todoComments).where(eq(todoComments.id, id))
   })
 
+  revalidateTag(`todos-${user.tenantId}`, 'max')
   revalidatePath(`/todo/${todoId}`)
 }

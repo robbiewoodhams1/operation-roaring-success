@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useOptimisticStatus } from '@/lib/hooks/use-optimistic-status'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -17,8 +18,13 @@ import { Pencil, Send, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import { addFaultComment, deleteFaultComment } from './actions'
 import { updateFault, updateFaultStatus } from '../actions'
 import type { Fault, FaultComment } from '@roaring/db'
-import { cn } from '@/lib/utils'
-import { FAULT_STATUSES, FAULT_TYPES, FAULT_STATUS_COLOURS } from '@/lib/constants'
+import {
+  FAULT_STATUSES,
+  FAULT_TYPES,
+  FAULT_STATUS_COLOURS,
+  FAULT_STATUS_LABELS,
+  FAULT_TYPE_LABELS,
+} from '@/lib/constants'
 
 export function FaultDetail({
   fault,
@@ -48,12 +54,14 @@ export function FaultDetail({
   currentUserId: string
   allUsers: { id: string; fullName: string }[]
 }) {
-  const [customerOpen, setCustomerOpen] = useState(false)
   const router = useRouter()
+  const [customerOpen, setCustomerOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [commentBody, setCommentBody] = useState('')
   const [submittingComment, setSubmittingComment] = useState(false)
+
+  const [optimisticStatus, applyStatusChange, isPending] = useOptimisticStatus(fault.status)
 
   const [form, setForm] = useState({
     title: fault.title,
@@ -79,9 +87,8 @@ export function FaultDetail({
     router.refresh()
   }
 
-  async function handleStatusChange(status: string) {
-    await updateFaultStatus(fault.id, status)
-    router.refresh()
+  function handleStatusChange(status: string) {
+    applyStatusChange(status as typeof fault.status, () => updateFaultStatus(fault.id, status))
   }
 
   async function handleAddComment() {
@@ -100,7 +107,6 @@ export function FaultDetail({
 
   return (
     <div className="space-y-6">
-      {/* Details card */}
       <div className="border rounded-lg overflow-hidden">
         <div className="px-4 py-3 border-b bg-muted/30 flex items-center justify-between">
           <h2 className="text-sm font-medium">Details</h2>
@@ -128,21 +134,26 @@ export function FaultDetail({
         <div className="divide-y">
           <Row label="Status">
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className={FAULT_STATUS_COLOURS[fault.status]}>
-                {fault.status.replace('_', ' ')}
+              <Badge variant="outline" className={FAULT_STATUS_COLOURS[optimisticStatus]}>
+                {FAULT_STATUS_LABELS[optimisticStatus] ?? optimisticStatus}
               </Badge>
-              <Select value={fault.status} onValueChange={(v) => v && handleStatusChange(v)}>
-                <SelectTrigger className="h-7 w-36 text-xs">
+              <Select
+                value={optimisticStatus}
+                onValueChange={(v) => v && handleStatusChange(v)}
+                disabled={isPending}
+              >
+                <SelectTrigger className="h-7 w-48 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {FAULT_STATUSES.map((s) => (
                     <SelectItem key={s} value={s}>
-                      {s.replace('_', ' ')}
+                      {FAULT_STATUS_LABELS[s] ?? s}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {isPending && <span className="text-xs text-muted-foreground">Saving...</span>}
             </div>
           </Row>
           <Row label="Title">
@@ -168,13 +179,13 @@ export function FaultDetail({
                 <SelectContent>
                   {FAULT_TYPES.map((t) => (
                     <SelectItem key={t} value={t}>
-                      {t.toUpperCase()}
+                      {FAULT_TYPE_LABELS[t] ?? t}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             ) : (
-              <span className="text-sm">{fault.type.toUpperCase()}</span>
+              <span className="text-sm">{FAULT_TYPE_LABELS[fault.type] ?? fault.type}</span>
             )}
           </Row>
           <Row label="Assigned to">
@@ -201,7 +212,6 @@ export function FaultDetail({
               </span>
             )}
           </Row>
-
           <Row label="Ticket ref">
             {isEditing ? (
               <Input
@@ -300,12 +310,10 @@ export function FaultDetail({
         </div>
       )}
 
-      {/* Comments thread */}
       <div className="border rounded-lg overflow-hidden">
         <div className="px-4 py-3 border-b bg-muted/30">
           <h2 className="text-sm font-medium">Comments ({comments.length})</h2>
         </div>
-
         <div className="divide-y">
           {comments.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-6">No comments yet.</p>
@@ -345,8 +353,6 @@ export function FaultDetail({
             )
           })}
         </div>
-
-        {/* Add comment */}
         <div className="px-4 py-3 border-t bg-muted/10">
           <div className="flex gap-2">
             <Textarea

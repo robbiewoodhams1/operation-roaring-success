@@ -2,6 +2,7 @@
 
 import { inviteUser } from '@roaring/auth/server'
 import type { UserRole } from '@roaring/auth'
+import { revalidatePath, revalidateTag } from 'next/cache'
 
 export async function inviteUserAction(data: {
   email: string
@@ -14,5 +15,12 @@ export async function inviteUserAction(data: {
   invitedByEmail: string
   invitedByName: string
 }) {
-  return inviteUser(data)
+  const result = await inviteUser(data)
+
+  if (result.success) {
+    revalidateTag(`users-${data.tenantId}`, 'max')
+    revalidatePath('/users')
+  }
+
+  return result
 }

@@ -2,7 +2,7 @@
 
 import { db, transferCeaseComments } from '@roaring/db'
 import { eq } from 'drizzle-orm'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { requireUser, setAuditUser } from '@roaring/auth'
 
 export async function addComment(transferCeaseId: string, body: string) {
@@ -17,7 +17,8 @@ export async function addComment(transferCeaseId: string, body: string) {
     })
   })
 
-  revalidatePath(`/routers/${transferCeaseId}`)
+  revalidateTag(`transferCeaseComments-${user.tenantId}`, 'max')
+  revalidatePath(`/transfers-ceases/${transferCeaseId}`)
 }
 
 export async function deleteComment(id: string, transferCeaseId: string) {
@@ -28,5 +29,6 @@ export async function deleteComment(id: string, transferCeaseId: string) {
     await tx.delete(transferCeaseComments).where(eq(transferCeaseComments.id, id))
   })
 
-  revalidatePath(`/routers/${transferCeaseId}`)
+  revalidateTag(`transferCeaseComments-${user.tenantId}`, 'max')
+  revalidatePath(`/transfers-ceases/${transferCeaseId}`)
 }

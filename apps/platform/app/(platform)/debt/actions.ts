@@ -2,7 +2,7 @@
 
 import { db, debts, debtComments } from '@roaring/db'
 import { eq } from 'drizzle-orm'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { requireUser, setAuditUser } from '@roaring/auth'
 
 export async function createDebt(data: {
@@ -37,7 +37,8 @@ export async function createDebt(data: {
     }
   })
 
-  revalidatePath('/targets/debt')
+  revalidateTag(`debts-${user.tenantId}`, 'max')
+  revalidatePath('/debt')
 }
 
 export async function updateDebtOutcome(id: string, outcome: string) {
@@ -59,8 +60,9 @@ export async function updateDebtOutcome(id: string, outcome: string) {
       .where(eq(debts.id, id))
   })
 
-  revalidatePath('/targets/debt')
-  revalidatePath(`/targets/debt/${id}`)
+  revalidateTag(`debts-${user.tenantId}`, 'max')
+  revalidatePath('/debt')
+  revalidatePath(`/debt/${id}`)
 }
 
 export async function updateDebt(
@@ -94,6 +96,7 @@ export async function updateDebt(
       .where(eq(debts.id, id))
   })
 
-  revalidatePath('/targets/debt')
-  revalidatePath(`/targets/debt/${id}`)
+  revalidateTag(`debts-${user.tenantId}`, 'max')
+  revalidatePath('/debt')
+  revalidatePath(`/debt/${id}`)
 }

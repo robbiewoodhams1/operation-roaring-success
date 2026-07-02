@@ -12,6 +12,7 @@ import {
 } from '@roaring/db'
 import { eq, desc, like, sql, and, gte } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
+import { revalidateTag } from 'next/cache'
 import { requireUser, setAuditUser } from '@roaring/auth'
 
 function generateNextAccountNumber(latest: string | null): string {
@@ -268,6 +269,8 @@ export async function submitDeal(data: {
       { provisioningId: newProv.id, serviceType: 'whc', status: 'not_applied', attempt: 1 },
     ])
   })
+
+  revalidateTag(`customers-${data.tenantId}`, 'max')
 
   redirect(`/deals/${accountNumber}`)
 }

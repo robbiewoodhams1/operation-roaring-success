@@ -2,7 +2,7 @@
 
 import { db, debtComments } from '@roaring/db'
 import { eq } from 'drizzle-orm'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { requireUser, setAuditUser } from '@roaring/auth'
 
 export async function addDebtComment(debtId: string, body: string) {
@@ -13,7 +13,8 @@ export async function addDebtComment(debtId: string, body: string) {
     await tx.insert(debtComments).values({ debtId, authorId: user.id, body })
   })
 
-  revalidatePath(`/targets/debt/${debtId}`)
+  revalidateTag(`debts-${user.tenantId}`, 'max')
+  revalidatePath(`/debt/${debtId}`)
 }
 
 export async function deleteDebtComment(id: string, debtId: string) {
@@ -24,5 +25,6 @@ export async function deleteDebtComment(id: string, debtId: string) {
     await tx.delete(debtComments).where(eq(debtComments.id, id))
   })
 
-  revalidatePath(`/targets/debt/${debtId}`)
+  revalidateTag(`debts-${user.tenantId}`, 'max')
+  revalidatePath(`/debt/${debtId}`)
 }

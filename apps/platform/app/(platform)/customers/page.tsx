@@ -1,16 +1,22 @@
 import { requireUser } from '@roaring/auth/server'
 import { db, customers } from '@roaring/db'
 import { eq, asc } from 'drizzle-orm'
+import { cachedQuery } from '@/lib/cached-query'
 import { CustomersFilters } from './customers-filters'
+
+const getCachedCustomers = (tenantId: string) =>
+  cachedQuery([`customers-${tenantId}`], [`customers-${tenantId}`], () =>
+    db
+      .select()
+      .from(customers)
+      .where(eq(customers.tenantId, tenantId))
+      .orderBy(asc(customers.accountNumber))
+  )
 
 export default async function CustomersPage() {
   const user = await requireUser()
 
-  const allCustomers = await db
-    .select()
-    .from(customers)
-    .where(eq(customers.tenantId, user.tenantId))
-    .orderBy(asc(customers.accountNumber))
+  const allCustomers = await getCachedCustomers(user.tenantId)
 
   return (
     <div className="p-6">

@@ -2,7 +2,7 @@
 
 import { db, customers } from '@roaring/db'
 import { eq } from 'drizzle-orm'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { requireUser, setAuditUser } from '@roaring/auth'
 
 export async function updateCustomer(
@@ -48,5 +48,6 @@ export async function updateCustomer(
       .where(eq(customers.id, id))
   })
 
+  revalidateTag(`customers-${user.tenantId}`, 'max')
   revalidatePath('/customers')
 }

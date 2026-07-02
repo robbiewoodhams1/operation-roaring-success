@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { cachedQuery } from '@/lib/cached-query'
 import { UserEdit } from './user-edit'
 import { DeletePendingButton } from './delete-pending-button'
 
@@ -17,11 +18,16 @@ const roleColours: Record<string, string> = {
   sales: 'bg-yellow-100 text-yellow-800 border-yellow-200',
 }
 
+const getCachedUser = (tenantId: string, id: string) =>
+  cachedQuery([`users-${tenantId}`, id], [`users-${tenantId}`], () =>
+    db.select().from(users).where(eq(users.id, id)).limit(1)
+  )
+
 export default async function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const currentUser = await requireRole('admin')
 
-  const result = await db.select().from(users).where(eq(users.id, id)).limit(1)
+  const result = await getCachedUser(currentUser.tenantId, id)
   const user = result[0]
   if (!user || user.tenantId !== currentUser.tenantId) notFound()
 

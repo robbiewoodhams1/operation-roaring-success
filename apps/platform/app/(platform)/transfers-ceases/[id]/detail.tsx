@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useOptimisticStatus } from '@/lib/hooks/use-optimistic-status'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -59,6 +60,8 @@ export function Detail({
   const [commentBody, setCommentBody] = useState('')
   const [submittingComment, setSubmittingComment] = useState(false)
 
+  const [optimisticStatus, applyStatusChange, isPending] = useOptimisticStatus(record.status)
+
   const [form, setForm] = useState({
     type: record.type as string,
     assignedTo: record.assignedTo ?? '',
@@ -75,9 +78,10 @@ export function Detail({
     router.refresh()
   }
 
-  async function handleStatusChange(status: string) {
-    await updateTransferCeaseStatus(record.id, status)
-    router.refresh()
+  function handleStatusChange(status: string) {
+    applyStatusChange(status as typeof record.status, () =>
+      updateTransferCeaseStatus(record.id, status)
+    )
   }
 
   async function handleAddComment() {
@@ -124,10 +128,14 @@ export function Detail({
         <div className="divide-y">
           <Row label="Status">
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className={TRANSFER_CEASE_STATUS_COLOURS[record.status]}>
-                {TRANSFER_CEASE_STATUS_LABELS[record.status] ?? record.status}
+              <Badge variant="outline" className={TRANSFER_CEASE_STATUS_COLOURS[optimisticStatus]}>
+                {TRANSFER_CEASE_STATUS_LABELS[optimisticStatus] ?? optimisticStatus}
               </Badge>
-              <Select value={record.status} onValueChange={(v) => v && handleStatusChange(v)}>
+              <Select
+                value={optimisticStatus}
+                onValueChange={(v) => v && handleStatusChange(v)}
+                disabled={isPending}
+              >
                 <SelectTrigger className="h-7 w-36 text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -139,6 +147,7 @@ export function Detail({
                   ))}
                 </SelectContent>
               </Select>
+              {isPending && <span className="text-xs text-muted-foreground">Saving...</span>}
             </div>
           </Row>
           <Row label="Type">

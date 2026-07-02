@@ -2,7 +2,7 @@
 
 import { db, faults, faultComments } from '@roaring/db'
 import { eq } from 'drizzle-orm'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { requireUser, setAuditUser } from '@roaring/auth'
 
 export async function createFault(data: {
@@ -38,10 +38,11 @@ export async function createFault(data: {
     }
   })
 
+  revalidateTag(`faults-${user.tenantId}`, 'max')
   revalidatePath('/faults')
 }
 
-export async function updateFaultStatus(id: string, status: string, resolvedAt?: string) {
+export async function updateFaultStatus(id: string, status: string) {
   const user = await requireUser()
 
   await db.transaction(async (tx) => {
@@ -50,12 +51,13 @@ export async function updateFaultStatus(id: string, status: string, resolvedAt?:
       .update(faults)
       .set({
         status: status as any,
-        resolvedAt: status === 'resolved' ? (resolvedAt ? new Date(resolvedAt) : new Date()) : null,
+        resolvedAt: status === 'resolved' ? new Date() : null,
         updatedAt: new Date(),
       })
       .where(eq(faults.id, id))
   })
 
+  revalidateTag(`faults-${user.tenantId}`, 'max')
   revalidatePath('/faults')
   revalidatePath(`/faults/${id}`)
 }
@@ -87,6 +89,7 @@ export async function updateFault(
       .where(eq(faults.id, id))
   })
 
+  revalidateTag(`faults-${user.tenantId}`, 'max')
   revalidatePath('/faults')
   revalidatePath(`/faults/${id}`)
 }
