@@ -46,3 +46,4 @@ export type ProvisioningService = typeof provisioningServices.$inferSelect
 export type NewProvisioningService = typeof provisioningServices.$inferInsert
 export type ServiceType = (typeof serviceTypeEnum.enumValues)[number]
 export type ServiceStatus = (typeof serviceStatusEnum.enumValues)[number]
+export type CancelledBy = (typeof cancelledByTypeEnum.enumValues)[number]

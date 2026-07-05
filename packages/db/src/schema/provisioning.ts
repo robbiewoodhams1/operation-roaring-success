@@ -1,4 +1,4 @@
-import { boolean, date, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { date, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { appSchema, tenants } from './tenants'
 import { deals } from './deals'
 
@@ -19,6 +19,8 @@ export const provisioningStatusEnum = appSchema.enum('provisioning_status', [
   'failed',
 ])
 
+export const routerDispatchedEnum = appSchema.enum('router_dispatched', ['yes', 'no', 'not_needed'])
+
 export const provisioning = appSchema.table('provisioning', {
   id: uuid('id').primaryKey().defaultRandom(),
   tenantId: uuid('tenant_id')
@@ -38,7 +40,8 @@ export const provisioning = appSchema.table('provisioning', {
   wc3Comments: text('wc3_comments'),
 
   // Router
-  routerDispatched: boolean('router_dispatched').notNull().default(false),
+  routerDispatched: routerDispatchedEnum('router_dispatched').notNull().default('no'),
+  routerOrderedDate: date('router_ordered_date'),
   routerDispatchRef: text('router_dispatch_ref'),
   routerTrackingNumber: text('router_tracking_number'),
 
@@ -58,3 +61,5 @@ export const provisioning = appSchema.table('provisioning', {
 export type Provisioning = typeof provisioning.$inferSelect
 export type NewProvisioning = typeof provisioning.$inferInsert
 export type ProvisioningStatus = (typeof provisioningStatusEnum.enumValues)[number]
+export type WcOutcome = (typeof wcOutcomeEnum.enumValues)[number]
+export type RouterDispatched = (typeof routerDispatchedEnum.enumValues)[number]

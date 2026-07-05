@@ -8,12 +8,15 @@ export type StatKey =
   | 'prov_live'
   | 'prov_live_today'
   | 'prov_pending'
-  | 'prov_attempted_today'
-  | 'prov_attempt_rate_today'
   | 'prov_cancelled'
   | 'prov_delayed'
   | 'active_customers'
   | 'customers_total'
+  | 'bb_ordered_today'
+  | 'whc_ordered_today'
+  | 'mpf_ordered_today'
+  | 'nfon_ordered_today'
+  | 'routers_ordered_today'
 
 export type StatCategory = 'sales' | 'provisioning' | 'customers'
 
@@ -27,12 +30,15 @@ export const STAT_DEFINITIONS: Record<StatKey, { label: string; category: StatCa
   prov_live: { label: 'Live (all time)', category: 'provisioning' },
   prov_live_today: { label: 'Went live today', category: 'provisioning' },
   prov_pending: { label: 'Not started', category: 'provisioning' },
-  prov_attempted_today: { label: 'Attempted today', category: 'provisioning' },
-  prov_attempt_rate_today: { label: 'Attempt rate (today)', category: 'provisioning' },
   prov_cancelled: { label: 'Cancelled today', category: 'provisioning' },
   prov_delayed: { label: 'Delayed today', category: 'provisioning' },
   active_customers: { label: 'Active customers', category: 'customers' },
   customers_total: { label: 'Total customers', category: 'customers' },
+  bb_ordered_today: { label: 'BB applied today', category: 'provisioning' },
+  whc_ordered_today: { label: 'WHC applied today', category: 'provisioning' },
+  mpf_ordered_today: { label: 'MPF applied today', category: 'provisioning' },
+  nfon_ordered_today: { label: 'NFON applied today', category: 'provisioning' },
+  routers_ordered_today: { label: 'Routers ordered today', category: 'provisioning' },
 }
 
 export const DEFAULT_STATS: StatKey[] = ['deals_today', 'gp_today']

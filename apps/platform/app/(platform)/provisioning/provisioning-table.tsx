@@ -70,12 +70,18 @@ export function ProvisioningTable({ rows }: { rows: ProvisioningRow[] }) {
                 <ServiceBadge status={row.mpfStatus} label="MPF" />
               </TableCell>
               <TableCell>
-                {row.routerDispatched ? (
+                {row.routerDispatched === 'yes' ? (
                   <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
                     Dispatched
                   </Badge>
+                ) : row.routerDispatched === 'not_needed' ? (
+                  <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-200">
+                    Not needed
+                  </Badge>
                 ) : (
-                  '—'
+                  <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200">
+                    Not dispatched
+                  </Badge>
                 )}
               </TableCell>
               <TableCell>

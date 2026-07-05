@@ -25,7 +25,7 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
   const [nfonStatusFilter, setNfonStatusFilter] = useState<string[]>([])
   const [mpfStatusFilter, setMpfStatusFilter] = useState<string[]>([])
   const [wc1Filter, setWc1Filter] = useState<string[]>([])
-  const [routerFilter, setRouterFilter] = useState<'all' | 'dispatched' | 'not_dispatched'>('all')
+  const [routerFilter, setRouterFilter] = useState<'all' | 'yes' | 'no' | 'not_needed'>('all')
   const [wcDoneFilter, setWcDoneFilter] = useState<'all' | 'done' | 'not_done'>('all')
   const [sort, setSort] = useState<SortOption>('newest')
   const [customerTypeFilter, setCustomerTypeFilter] = useState<'all' | 'business' | 'residential'>(
@@ -69,10 +69,12 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
       result = result.filter((r) => r.wc1Outcome !== 'answered' && r.wc2Outcome !== 'answered')
     }
 
-    if (routerFilter === 'dispatched') {
-      result = result.filter((r) => r.routerDispatched)
-    } else if (routerFilter === 'not_dispatched') {
-      result = result.filter((r) => !r.routerDispatched)
+    if (routerFilter === 'yes') {
+      result = result.filter((r) => r.routerDispatched === 'yes')
+    } else if (routerFilter === 'no') {
+      result = result.filter((r) => r.routerDispatched === 'no')
+    } else if (routerFilter === 'not_needed') {
+      result = result.filter((r) => r.routerDispatched === 'not_needed')
     }
 
     if (nfonStatusFilter.length > 0) {
@@ -340,12 +342,29 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
       <div className="space-y-2">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Router</p>
         <div className="flex gap-2">
-          {(['all', 'dispatched', 'not_dispatched'] as const).map((r) => (
+          {(['all', 'yes', 'no', 'not_needed'] as const).map((r) => (
             <FilterChip
               key={r}
-              label={r === 'all' ? 'All' : r === 'dispatched' ? 'Dispatched' : 'Not dispatched'}
+              label={
+                r === 'all'
+                  ? 'All'
+                  : r === 'yes'
+                    ? 'Dispatched'
+                    : r === 'not_needed'
+                      ? 'Not needed'
+                      : 'Not dispatched'
+              }
               active={routerFilter === r}
               onClick={() => setRouterFilter(r)}
+              colour={
+                r === 'yes'
+                  ? 'bg-green-100 text-green-800 border-green-200'
+                  : r === 'not_needed'
+                    ? 'bg-gray-100 text-gray-700 border-gray-200'
+                    : r === 'no'
+                      ? 'bg-red-100 text-red-800 border-red-200'
+                      : undefined
+              }
             />
           ))}
         </div>

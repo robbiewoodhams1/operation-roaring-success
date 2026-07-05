@@ -1,6 +1,13 @@
 'use server'
 
 import { db, provisioning, provisioningServices } from '@roaring/db'
+import type {
+  WcOutcome,
+  RouterDispatched,
+  ProvisioningStatus,
+  ServiceStatus,
+  CancelledBy,
+} from '@roaring/db'
 import { eq } from 'drizzle-orm'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { requireUser, setAuditUser } from '@roaring/auth'
@@ -22,9 +29,10 @@ export async function updateProvisioning(
     provisioner: string | null
     lastCheckedAt: string | null
     lastCheckedBy: string | null
-    routerDispatched: boolean
+    routerDispatched: string | null
     routerDispatchRef: string | null
     routerTrackingNumber: string | null
+    routerOrderedDate: string | null
   }
 ) {
   const user = await requireUser()
@@ -35,13 +43,13 @@ export async function updateProvisioning(
     await tx
       .update(provisioning)
       .set({
-        wc1Outcome: (data.wc1Outcome || null) as any,
+        wc1Outcome: (data.wc1Outcome || null) as WcOutcome | null,
         wc1Comments: data.wc1Comments || null,
-        wc2Outcome: (data.wc2Outcome || null) as any,
+        wc2Outcome: (data.wc2Outcome || null) as WcOutcome | null,
         wc2Comments: data.wc2Comments || null,
-        wc3Outcome: (data.wc3Outcome || null) as any,
+        wc3Outcome: (data.wc3Outcome || null) as WcOutcome | null,
         wc3Comments: data.wc3Comments || null,
-        status: data.status as any,
+        status: data.status as ProvisioningStatus,
         proposedLiveDate: data.proposedLiveDate || null,
         dateOrdered: data.dateOrdered || null,
         orderFaultRef: data.orderFaultRef || null,
@@ -49,15 +57,17 @@ export async function updateProvisioning(
         provisioner: data.provisioner || null,
         lastCheckedAt: data.lastCheckedAt ? new Date(data.lastCheckedAt) : null,
         lastCheckedBy: data.lastCheckedBy || null,
-        routerDispatched: data.routerDispatched,
+        routerDispatched: (data.routerDispatched || 'no') as RouterDispatched,
         routerDispatchRef: data.routerDispatchRef || null,
         routerTrackingNumber: data.routerTrackingNumber || null,
+        routerOrderedDate: data.routerOrderedDate || null,
       })
       .where(eq(provisioning.id, id))
   })
 
   revalidateTag(`provisioning-${user.tenantId}`, 'max')
   revalidatePath('/provisioning')
+  revalidatePath('/home')
 }
 
 export async function updateProvisioningService(
@@ -85,13 +95,13 @@ export async function updateProvisioningService(
     await tx
       .update(provisioningServices)
       .set({
-        status: data.status as any,
+        status: data.status as ServiceStatus,
         reference: data.reference || null,
         dateOrdered: data.dateOrdered || null,
         liveDate: data.liveDate || null,
         lastCheckedAt: data.lastCheckedAt || null,
         cancelledDate: data.cancelledDate || null,
-        cancelledBy: (data.cancelledBy || null) as any,
+        cancelledBy: (data.cancelledBy || null) as CancelledBy | null,
         cancellationReason: data.cancellationReason || null,
         delayedDate: data.delayedDate || null,
         presumedSolveDate: data.presumedSolveDate || null,
@@ -103,6 +113,7 @@ export async function updateProvisioningService(
 
   revalidateTag(`provisioningServices-${user.tenantId}`, 'max')
   revalidatePath('/provisioning')
+  revalidatePath('/home')
 }
 
 export async function addProvisioningServiceAttempt(
@@ -125,4 +136,5 @@ export async function addProvisioningServiceAttempt(
 
   revalidateTag(`provisioningServices-${user.tenantId}`, 'max')
   revalidatePath('/provisioning')
+  revalidatePath('/home')
 }

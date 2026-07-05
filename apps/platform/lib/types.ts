@@ -7,7 +7,9 @@ export type AuditLog = {
   action: string
   changedBy: string | null
   changedAt: Date | string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   oldData: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   newData: any
 }
 
@@ -74,7 +76,7 @@ export type ProvisioningRow = {
   lastCheckedBy: string | null
   wc1Outcome: string | null
   wc2Outcome: string | null
-  routerDispatched: boolean
+  routerDispatched: string | null
   accountNumber: string | null
   companyName: string | null
   firstName: string | null
@@ -86,6 +88,21 @@ export type ProvisioningRow = {
   nfonStatus: string | null
   mpfStatus: string | null
   customerType: string | null
+}
+
+export type ServiceFormData = {
+  status: string
+  reference: string | null
+  dateOrdered: string | null
+  liveDate: string | null
+  lastCheckedAt: string | null
+  cancelledDate: string | null
+  cancelledBy: string | null
+  cancellationReason: string | null
+  delayedDate: string | null
+  presumedSolveDate: string | null
+  delayReason: string | null
+  notes: string | null
 }
 
 export type SearchResult = {

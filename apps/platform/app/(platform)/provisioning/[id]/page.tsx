@@ -5,7 +5,6 @@ import {
   deals,
   customers,
   dealServices,
-  dealPricing,
   provisioningServices,
   auditLogs,
   users,
@@ -18,7 +17,6 @@ import { Badge } from '@/components/ui/badge'
 import { cachedQuery } from '@/lib/cached-query'
 import { ProvisioningEdit } from './provisioning-edit'
 import { ProvisioningHistory } from './provisioning-history'
-import CopyButton from '@/components/copy-button'
 import ProvisioningDetail from './provision-details'
 import { ProvisionModal } from './provision-modal'
 import { PROV_STATUS_COLOURS, PROV_STATUS_LABELS } from '@/lib/constants'

@@ -1,53 +1,127 @@
 import { requireUser } from '@roaring/auth/server'
-import { db, deals, dealPricing, customers, provisioning, auditLogs, users } from '@roaring/db'
-import { eq, gte, desc, and } from 'drizzle-orm'
+import {
+  db,
+  deals,
+  dealPricing,
+  customers,
+  provisioning,
+  provisioningServices,
+  auditLogs,
+  users,
+} from '@roaring/db'
+import { eq, gte, desc, and, or } from 'drizzle-orm'
 import { HomeClient } from './home-client'
+
+// Format a Date as YYYY-MM-DD in *local* time. toISOString() converts to UTC,
+// which shifts local midnight to the previous day during BST.
+function localDateString(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
 
 export default async function HomePage() {
   const user = await requireUser()
 
   const now = new Date()
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-  const todayStr = todayStart.toISOString().split('T')[0] ?? ''
-  const monthStartStr = monthStart.toISOString().split('T')[0] ?? ''
+  const todayStr = localDateString(now)
+  const monthStartStr = localDateString(new Date(now.getFullYear(), now.getMonth(), 1))
 
-  const [dealsAll, provAll, customersAll, auditToday, recentActivity, currentUserResult] =
-    await Promise.all([
-      db
-        .select({
-          id: deals.id,
-          dealDate: deals.dealDate,
-          salesAgent: deals.salesAgent,
-          closingAgent: deals.closingAgent,
-          monthlyGp: dealPricing.monthlyGp,
-        })
-        .from(deals)
-        .leftJoin(dealPricing, eq(dealPricing.dealId, deals.id))
-        .where(and(eq(deals.tenantId, user.tenantId), gte(deals.dealDate, monthStartStr))),
+  const [
+    dealsAll,
+    provAll,
+    customersAll,
+    serviceAuditToday,
+    recentActivity,
+    currentUserResult,
+    servicesToday,
+    routersOrderedToday,
+  ] = await Promise.all([
+    db
+      .select({
+        id: deals.id,
+        dealDate: deals.dealDate,
+        salesAgent: deals.salesAgent,
+        closingAgent: deals.closingAgent,
+        monthlyGp: dealPricing.monthlyGp,
+      })
+      .from(deals)
+      .leftJoin(dealPricing, eq(dealPricing.dealId, deals.id))
+      .where(and(eq(deals.tenantId, user.tenantId), gte(deals.dealDate, monthStartStr))),
 
-      db
-        .select({ id: provisioning.id, status: provisioning.status })
-        .from(provisioning)
-        .where(eq(provisioning.tenantId, user.tenantId)),
+    db
+      .select({ id: provisioning.id, status: provisioning.status })
+      .from(provisioning)
+      .where(eq(provisioning.tenantId, user.tenantId)),
 
-      db
-        .select({ id: customers.id, status: customers.status })
-        .from(customers)
-        .where(eq(customers.tenantId, user.tenantId)),
+    db
+      .select({ id: customers.id, status: customers.status })
+      .from(customers)
+      .where(eq(customers.tenantId, user.tenantId)),
 
-      // All audit log entries for today — tenant-wide source of truth
-      db.select().from(auditLogs).where(gte(auditLogs.changedAt, todayStart)),
+    // Service status changes recorded today, scoped to this tenant via the
+    // provisioning join (audit_logs itself has no tenant column).
+    db
+      .select({
+        recordId: auditLogs.recordId,
+        action: auditLogs.action,
+        oldData: auditLogs.oldData,
+        newData: auditLogs.newData,
+        serviceType: provisioningServices.serviceType,
+      })
+      .from(auditLogs)
+      .innerJoin(provisioningServices, eq(provisioningServices.id, auditLogs.recordId))
+      .innerJoin(provisioning, eq(provisioning.id, provisioningServices.provisioningId))
+      .where(
+        and(
+          eq(auditLogs.tableName, 'provisioning_services'),
+          eq(provisioning.tenantId, user.tenantId),
+          gte(auditLogs.changedAt, todayStart)
+        )
+      ),
 
-      db
-        .select()
-        .from(auditLogs)
-        .where(eq(auditLogs.changedBy, user.id))
-        .orderBy(desc(auditLogs.changedAt))
-        .limit(8),
+    db
+      .select()
+      .from(auditLogs)
+      .where(eq(auditLogs.changedBy, user.id))
+      .orderBy(desc(auditLogs.changedAt))
+      .limit(8),
 
-      db.select({ fullName: users.fullName }).from(users).where(eq(users.id, user.id)).limit(1),
-    ])
+    db.select({ fullName: users.fullName }).from(users).where(eq(users.id, user.id)).limit(1),
+
+    // Services with any of their milestone dates set to today.
+    db
+      .select({
+        id: provisioningServices.id,
+        serviceType: provisioningServices.serviceType,
+        dateOrdered: provisioningServices.dateOrdered,
+        liveDate: provisioningServices.liveDate,
+        cancelledDate: provisioningServices.cancelledDate,
+        delayedDate: provisioningServices.delayedDate,
+      })
+      .from(provisioningServices)
+      .innerJoin(provisioning, eq(provisioning.id, provisioningServices.provisioningId))
+      .where(
+        and(
+          eq(provisioning.tenantId, user.tenantId),
+          or(
+            eq(provisioningServices.dateOrdered, todayStr),
+            eq(provisioningServices.liveDate, todayStr),
+            eq(provisioningServices.cancelledDate, todayStr),
+            eq(provisioningServices.delayedDate, todayStr)
+          )
+        )
+      ),
+
+    db
+      .select({ routerOrderedDate: provisioning.routerOrderedDate })
+      .from(provisioning)
+      .where(
+        and(eq(provisioning.tenantId, user.tenantId), eq(provisioning.routerOrderedDate, todayStr))
+      ),
+  ])
 
   const fullName = currentUserResult[0] ? currentUserResult[0].fullName : 'there'
 
@@ -57,48 +131,56 @@ export default async function HomePage() {
   const gpToday = dealsToday.reduce((sum, d) => sum + (d.monthlyGp ? Number(d.monthlyGp) : 0), 0)
   const gpMtd = dealsAll.reduce((sum, d) => sum + (d.monthlyGp ? Number(d.monthlyGp) : 0), 0)
 
-  // ── Provisioning stats (audit-log based) ────────────────────────────────
+  // ── Provisioning stats ───────────────────────────────────────────────────
   const provLive = provAll.filter((p) => p.status === 'live').length
   const provPending = provAll.filter((p) => p.status === 'not_started').length
 
-  // Status changes on provisioning_services today = "attempts"
-  const statusChangesToday = auditToday.filter((log) => {
-    if (log.tableName !== 'provisioning_services') return false
-    if (log.action !== 'UPDATE') return false
-    const old = log.oldData as any
-    const next = log.newData as any
-    return old?.status !== next?.status
-  })
+  // Services whose status was changed to `status` today, deduped per service.
+  function serviceIdsChangedTo(status: string, serviceType?: string): Set<string> {
+    const ids = new Set<string>()
+    for (const log of serviceAuditToday) {
+      if (log.action !== 'UPDATE') continue
+      const oldStatus = (log.oldData as { status?: string } | null)?.status
+      const newStatus = (log.newData as { status?: string } | null)?.status
+      if (newStatus !== status || oldStatus === newStatus) continue
+      if (serviceType && log.serviceType !== serviceType) continue
+      ids.add(log.recordId)
+    }
+    return ids
+  }
 
-  const attemptedToday = statusChangesToday.length
+  // A service counts for a "today" stat if its status was changed today OR the
+  // matching milestone date field is set to today — whichever was recorded.
+  function countToday(changed: Set<string>, alsoIds: string[]): number {
+    const ids = new Set(changed)
+    for (const id of alsoIds) ids.add(id)
+    return ids.size
+  }
 
-  // "Went live today" — status changed TO 'live' today
-  const liveToday = statusChangesToday.filter(
-    (log) => (log.newData as any)?.status === 'live'
-  ).length
+  const liveToday = countToday(
+    serviceIdsChangedTo('live'),
+    servicesToday.filter((s) => s.liveDate === todayStr).map((s) => s.id)
+  )
+  const cancelledToday = countToday(
+    serviceIdsChangedTo('cancelled'),
+    servicesToday.filter((s) => s.cancelledDate === todayStr).map((s) => s.id)
+  )
+  const delayedToday = countToday(
+    serviceIdsChangedTo('delayed'),
+    servicesToday.filter((s) => s.delayedDate === todayStr).map((s) => s.id)
+  )
 
-  // "Cancelled today" / "Delayed today" — status changed to those values today
-  const cancelledToday = statusChangesToday.filter(
-    (log) => (log.newData as any)?.status === 'cancelled'
-  ).length
-  const delayedToday = statusChangesToday.filter(
-    (log) => (log.newData as any)?.status === 'delayed'
-  ).length
+  // ── Services applied today ───────────────────────────────────────────────
+  function appliedToday(serviceType: 'bb' | 'whc' | 'mpf' | 'nfon'): number {
+    return countToday(
+      serviceIdsChangedTo('applied', serviceType),
+      servicesToday
+        .filter((s) => s.serviceType === serviceType && s.dateOrdered === todayStr)
+        .map((s) => s.id)
+    )
+  }
 
-  // Attempt success rate today — of status changes today, % that landed on 'applied' or 'live'
-  const attemptRateToday =
-    attemptedToday > 0
-      ? Math.round(
-          (statusChangesToday.filter((log) => {
-            const status = (log.newData as any)?.status
-            return status === 'applied' || status === 'live'
-          }).length /
-            attemptedToday) *
-            100
-        )
-      : 0
-
-  const provCancelled = provAll.filter((p) => p.status === 'failed').length
+  const routerCount = routersOrderedToday.length
 
   // ── Customer stats ───────────────────────────────────────────────────────
   const activeCustomers = customersAll.filter((c) => c.status === 'active').length
@@ -113,10 +195,13 @@ export default async function HomePage() {
     prov_live: { value: String(provLive) },
     prov_live_today: { value: String(liveToday) },
     prov_pending: { value: String(provPending) },
-    prov_attempted_today: { value: String(attemptedToday) },
-    prov_attempt_rate_today: { value: `${attemptRateToday}%` },
     prov_cancelled: { value: String(cancelledToday) },
     prov_delayed: { value: String(delayedToday) },
+    bb_ordered_today: { value: String(appliedToday('bb')) },
+    whc_ordered_today: { value: String(appliedToday('whc')) },
+    mpf_ordered_today: { value: String(appliedToday('mpf')) },
+    nfon_ordered_today: { value: String(appliedToday('nfon')) },
+    routers_ordered_today: { value: String(routerCount) },
     active_customers: { value: String(activeCustomers) },
     customers_total: { value: String(customersAll.length) },
   }

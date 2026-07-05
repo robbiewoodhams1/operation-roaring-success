@@ -32,6 +32,7 @@ import {
   WC_OUTCOMES,
   CANCELLED_BY_OPTIONS,
 } from '@/lib/constants'
+import { ServiceFormData } from '@/lib/types'
 
 function formatDate(date: string | Date | null | undefined): string {
   if (!date) return ''
@@ -74,7 +75,7 @@ function ServicePanel({
 }: {
   service: ProvisioningService
   label: string
-  onSave: (id: string, data: any) => Promise<void>
+  onSave: (id: string, data: ServiceFormData) => Promise<void>
   onAddAttempt: () => Promise<void>
   isLatest: boolean
   collapsed: boolean
@@ -538,12 +539,13 @@ export function ProvisioningEdit({
     provisioner: prov.provisioner ?? '',
     lastCheckedAt: formatDate(prov.lastCheckedAt),
     lastCheckedBy: prov.lastCheckedBy ?? '',
-    routerDispatched: prov.routerDispatched,
+    routerDispatched: (prov.routerDispatched as string) ?? 'no',
     routerDispatchRef: prov.routerDispatchRef ?? '',
     routerTrackingNumber: prov.routerTrackingNumber ?? '',
+    routerOrderedDate: prov.routerOrderedDate ?? '',
   })
 
-  function update(field: string, value: string | boolean) {
+  function update(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
@@ -567,6 +569,7 @@ export function ProvisioningEdit({
       routerDispatched: form.routerDispatched,
       routerDispatchRef: form.routerDispatchRef || null,
       routerTrackingNumber: form.routerTrackingNumber || null,
+      routerOrderedDate: form.routerOrderedDate || null,
     })
     setSaving(false)
     setIsEditing(false)
@@ -589,9 +592,10 @@ export function ProvisioningEdit({
       provisioner: prov.provisioner ?? '',
       lastCheckedAt: formatDate(prov.lastCheckedAt),
       lastCheckedBy: prov.lastCheckedBy ?? '',
-      routerDispatched: prov.routerDispatched,
+      routerDispatched: (prov.routerDispatched as string) ?? 'no',
       routerDispatchRef: prov.routerDispatchRef ?? '',
       routerTrackingNumber: prov.routerTrackingNumber ?? '',
+      routerOrderedDate: prov.routerOrderedDate ?? '',
     })
     setIsEditing(false)
   }
@@ -1004,23 +1008,35 @@ export function ProvisioningEdit({
             <Row label="Dispatched">
               {isEditing ? (
                 <Select
-                  value={form.routerDispatched ? 'yes' : 'no'}
-                  onValueChange={(v) => update('routerDispatched', v === 'yes')}
+                  value={form.routerDispatched ?? 'no'}
+                  onValueChange={(v) => update('routerDispatched', v ?? 'no')}
                 >
-                  <SelectTrigger className="h-8 w-32">
+                  <SelectTrigger className="h-8 w-36">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="no">No</SelectItem>
                     <SelectItem value="yes">Yes</SelectItem>
+                    <SelectItem value="not_needed">Not needed</SelectItem>
                   </SelectContent>
                 </Select>
-              ) : form.routerDispatched ? (
-                <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
-                  Dispatched
-                </Badge>
               ) : (
-                'No'
+                <Badge
+                  variant="outline"
+                  className={
+                    form.routerDispatched === 'yes'
+                      ? 'bg-green-100 text-green-800 border-green-200'
+                      : form.routerDispatched === 'not_needed'
+                        ? 'bg-gray-100 text-gray-700 border-gray-200'
+                        : 'bg-red-100 text-red-800 border-red-200'
+                  }
+                >
+                  {form.routerDispatched === 'yes'
+                    ? 'Yes'
+                    : form.routerDispatched === 'not_needed'
+                      ? 'Not needed'
+                      : 'No'}
+                </Badge>
               )}
             </Row>
             <Row
@@ -1035,6 +1051,22 @@ export function ProvisioningEdit({
                 />
               ) : (
                 <span className="text-sm font-mono">{form.routerDispatchRef || '—'}</span>
+              )}
+            </Row>
+            <Row label="Router ordered date">
+              {isEditing ? (
+                <Input
+                  type="date"
+                  value={form.routerOrderedDate ?? ''}
+                  onChange={(e) => setForm((p) => ({ ...p, routerOrderedDate: e.target.value }))}
+                  className="h-8 w-40"
+                />
+              ) : (
+                <span className="text-sm">
+                  {form.routerOrderedDate
+                    ? new Date(form.routerOrderedDate).toLocaleDateString('en-GB')
+                    : '—'}
+                </span>
               )}
             </Row>
             <Row
