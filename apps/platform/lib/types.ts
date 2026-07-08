@@ -86,7 +86,9 @@ export type ProvisioningRow = {
   bbStatus: string | null
   whcStatus: string | null
   nfonStatus: string | null
-  mpfStatus: string | null
+  mpfBbStatus: string | null
+  mpfVoiceStatus: string | null
+  mobileStatus: string | null
   customerType: string | null
 }
 

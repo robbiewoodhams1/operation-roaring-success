@@ -10,6 +10,7 @@ import {
   provisioning,
   provisioningServices,
 } from '@roaring/db'
+import type { Title } from '@roaring/db'
 import { eq, desc, like, sql, and, gte } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 import { revalidateTag } from 'next/cache'
@@ -129,11 +130,11 @@ export async function submitDeal(data: {
   await db.transaction(async (tx) => {
     await setAuditUser(tx, user.id)
 
-    // Step 1 — customer
+    // Step 1 — use existing customer, or create a new one
     if (data.existingCustomerId) {
       customerId = data.existingCustomerId
       const existing = await tx
-        .select()
+        .select({ accountNumber: customers.accountNumber })
         .from(customers)
         .where(eq(customers.id, data.existingCustomerId))
         .limit(1)
@@ -160,7 +161,7 @@ export async function submitDeal(data: {
           accountNumber,
           type: data.dealType.toLowerCase() as any,
           companyName: data.businessName || null,
-          title: data.customerTitle || null,
+          title: (data.customerTitle || null) as Title | null,
           firstName: data.customerFirstName,
           lastName: data.customerLastName,
           landline: data.landline || null,
@@ -264,13 +265,71 @@ export async function submitDeal(data: {
 
     if (!newProv) throw new Error('Failed to create provisioning record')
 
-    await tx.insert(provisioningServices).values([
-      { provisioningId: newProv.id, serviceType: 'bb', status: 'not_applied', attempt: 1 },
-      { provisioningId: newProv.id, serviceType: 'whc', status: 'not_applied', attempt: 1 },
-    ])
+    const servicesToInsert: {
+      provisioningId: string
+      serviceType: any
+      status: 'not_applied'
+      attempt: number
+    }[] = []
+
+    if (data.bbType === 'MPF Broadband') {
+      servicesToInsert.push({
+        provisioningId: newProv.id,
+        serviceType: 'mpf_broadband',
+        status: 'not_applied',
+        attempt: 1,
+      })
+    } else if (data.bbType && data.bbType !== 'Line Only') {
+      servicesToInsert.push({
+        provisioningId: newProv.id,
+        serviceType: 'bb',
+        status: 'not_applied',
+        attempt: 1,
+      })
+    }
+
+    if (data.voice) {
+      if (data.voiceOption === 'WHC') {
+        servicesToInsert.push({
+          provisioningId: newProv.id,
+          serviceType: 'whc',
+          status: 'not_applied',
+          attempt: 1,
+        })
+      } else if (data.voiceOption === 'NFON') {
+        servicesToInsert.push({
+          provisioningId: newProv.id,
+          serviceType: 'nfon',
+          status: 'not_applied',
+          attempt: 1,
+        })
+      } else if (data.voiceOption === 'MPF') {
+        servicesToInsert.push({
+          provisioningId: newProv.id,
+          serviceType: 'mpf_voice',
+          status: 'not_applied',
+          attempt: 1,
+        })
+        const alreadyHasMpfBb = servicesToInsert.some((s) => s.serviceType === 'mpf_broadband')
+        if (!alreadyHasMpfBb) {
+          servicesToInsert.push({
+            provisioningId: newProv.id,
+            serviceType: 'mpf_broadband',
+            status: 'not_applied',
+            attempt: 1,
+          })
+        }
+      }
+    }
+
+    if (servicesToInsert.length > 0) {
+      await tx.insert(provisioningServices).values(servicesToInsert)
+    }
   })
 
   revalidateTag(`customers-${data.tenantId}`, 'max')
+  revalidateTag(`deals-${data.tenantId}`, 'max')
+  revalidateTag(`provisioning-${data.tenantId}`, 'max')
 
   redirect(`/deals/${accountNumber}`)
 }

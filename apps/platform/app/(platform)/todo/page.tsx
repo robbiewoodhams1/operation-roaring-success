@@ -56,8 +56,11 @@ const getCachedTodoProvisioning = (tenantId: string) =>
         lastName: customers.lastName,
       })
       .from(provisioning)
-      .innerJoin(deals, eq(deals.id, provisioning.dealId))
-      .innerJoin(customers, eq(customers.id, deals.customerId))
+      .leftJoin(deals, eq(deals.id, provisioning.dealId))
+      .innerJoin(
+        customers,
+        or(eq(customers.id, deals.customerId), eq(customers.id, provisioning.customerId))
+      )
       .where(eq(provisioning.tenantId, tenantId))
   )
 

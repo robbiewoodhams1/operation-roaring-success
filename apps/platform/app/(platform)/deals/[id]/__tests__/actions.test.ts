@@ -104,6 +104,7 @@ const baseData = {
   accountNumberBilling: null,
   bankChecked: false,
   companyName: 'ACME',
+  title: 'Mr',
   firstName: 'John',
   lastName: 'Doe',
   mobile: null,

@@ -1,6 +1,6 @@
 import { requireUser } from '@roaring/auth/server'
 import { db, transferCeases, users, provisioning, customers, deals } from '@roaring/db'
-import { eq, desc } from 'drizzle-orm'
+import { eq, desc, or } from 'drizzle-orm'
 import { cachedQuery } from '@/lib/cached-query'
 import { TransferCeasesFilters } from './transfers-filters'
 import { CreateModal } from './create-modal'
@@ -45,8 +45,11 @@ const getCachedProvisioning = (tenantId: string) =>
           lastName: customers.lastName,
         })
         .from(provisioning)
-        .innerJoin(deals, eq(deals.id, provisioning.dealId))
-        .innerJoin(customers, eq(customers.id, deals.customerId))
+        .leftJoin(deals, eq(deals.id, provisioning.dealId))
+        .innerJoin(
+          customers,
+          or(eq(customers.id, deals.customerId), eq(customers.id, provisioning.customerId))
+        )
         .where(eq(provisioning.tenantId, tenantId))
   )
 

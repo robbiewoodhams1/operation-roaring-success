@@ -1,6 +1,6 @@
 import { requireUser } from '@roaring/auth/server'
 import { db, debts, users, provisioning, customers, deals } from '@roaring/db'
-import { eq, desc } from 'drizzle-orm'
+import { eq, desc, or } from 'drizzle-orm'
 import { cachedQuery } from '@/lib/cached-query'
 import { DebtFilters } from './debt-filters'
 import { CreateDebtModal } from './create-debt-modal'
@@ -47,8 +47,11 @@ export default async function DebtPage() {
           lastName: customers.lastName,
         })
         .from(provisioning)
-        .innerJoin(deals, eq(deals.id, provisioning.dealId))
-        .innerJoin(customers, eq(customers.id, deals.customerId))
+        .leftJoin(deals, eq(deals.id, provisioning.dealId))
+        .innerJoin(
+          customers,
+          or(eq(customers.id, deals.customerId), eq(customers.id, provisioning.customerId))
+        )
         .where(eq(provisioning.tenantId, user.tenantId))
     ),
   ])

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -39,6 +39,7 @@ const CALL_TARIFFS = [
 ]
 const BB_TYPES = [
   'Line Only',
+  'MPF Broadband',
   'Unlimited SOGEA Broadband - Up to 80mbps',
   'Unlimited FTTP Broadband - Up to 80mbps',
   'Unlimited FTTP Broadband - Up to 160mbps',
@@ -50,6 +51,7 @@ const INTL_PACKAGES = ['N/A', 'European Calls - 500 Mins', 'Worldwide Calls - 50
 
 const BB_WHOLESALE: Record<string, number> = {
   'Line Only': 0,
+  'MPF Broadband': 12.21,
   'Unlimited SOGEA Broadband - Up to 80mbps': 24.41,
   'Unlimited FTTP Broadband - Up to 80mbps': 27.0,
   'Unlimited FTTP Broadband - Up to 160mbps': 28.04,
@@ -161,45 +163,45 @@ function PriceBreakdown({ lines }: { lines: { label: string; amount: number }[] 
 }
 
 export default function SalesForm({
-  customers,
   tenantId,
   createdBy,
+  prefilledCustomer,
 }: {
-  customers: {
+  tenantId: string
+  createdBy: string
+  prefilledCustomer: {
     id: string
-    accountNumber: string
     companyName: string | null
+    accountNumber: string
+    title: string | null
     firstName: string
     lastName: string
     mobile: string | null
-    email: string | null
+    landline: string | null
+    postcode: string | null
     addressLine1: string | null
     addressLine2: string | null
     addressLine3: string | null
-    addressLine4: string | null
-    postcode: string | null
-  }[]
-  tenantId: string
-  createdBy: string
+  } | null
 }) {
   const [submitted, setSubmitted] = useState(false)
   const [errors, setErrors] = useState<Errors>({})
   const [submitting, setSubmitting] = useState(false)
 
+  const [businessName, setBusinessName] = useState(prefilledCustomer?.companyName ?? '')
+  const [customerTitle, setCustomerTitle] = useState(prefilledCustomer?.title ?? '')
+  const [landline, setLandline] = useState(prefilledCustomer?.landline ?? '')
+  const [customerFirstName, setCustomerFirstName] = useState(prefilledCustomer?.firstName ?? '')
+  const [customerLastName, setCustomerLastName] = useState(prefilledCustomer?.lastName ?? '')
+  const [mobile, setMobile] = useState(prefilledCustomer?.mobile ?? '')
+  const [postcode, setPostcode] = useState(prefilledCustomer?.postcode ?? '')
+  const [address1, setAddress1] = useState(prefilledCustomer?.addressLine1 ?? '')
+  const [town, setTown] = useState(prefilledCustomer?.addressLine2 ?? '')
+  const [county, setCounty] = useState(prefilledCustomer?.addressLine3 ?? '')
   const [date, setDate] = useState('')
   const [salesAgent, setSalesAgent] = useState('')
   const [closingAgent, setClosingAgent] = useState('')
-  const [businessName, setBusinessName] = useState('')
-  const [customerTitle, setCustomerTitle] = useState('')
-  const [customerFirstName, setCustomerFirstName] = useState('')
-  const [customerLastName, setCustomerLastName] = useState('')
   const [additionalHolder, setAdditionalHolder] = useState('')
-  const [landline, setLandline] = useState('')
-  const [mobile, setMobile] = useState('')
-  const [postcode, setPostcode] = useState('')
-  const [address1, setAddress1] = useState('')
-  const [town, setTown] = useState('')
-  const [county, setCounty] = useState('')
   const [tradingAddress, setTradingAddress] = useState('')
   const [lineChecked, setLineChecked] = useState('')
   const [connectionFee, setConnectionFee] = useState('')
@@ -244,9 +246,6 @@ export default function SalesForm({
   const [dealType, setDealType] = useState('')
   const [welcomeCall, setWelcomeCall] = useState('')
 
-  const [existingCustomerId, setExistingCustomerId] = useState<string | null>(null)
-  const [customerSearch, setCustomerSearch] = useState('')
-
   // Wholesale lines
   const wholesaleLines: { label: string; amount: number }[] = []
   if (bbType && BB_WHOLESALE[bbType] !== undefined) {
@@ -283,7 +282,7 @@ export default function SalesForm({
   const gpValue = parseFloat(monthlyGp) || 0
   const gpPositive = gpValue >= 0
 
-  const handlePhoneQty = useCallback((key: string, qty: number) => {
+  const handlePhoneQty = (key: string, qty: number) => {
     setPhoneQtys((prev) => {
       const next = { ...prev }
       if (qty <= 0) delete next[key]
@@ -291,19 +290,16 @@ export default function SalesForm({
       return next
     })
     setBbCostOverride(null)
-  }, [])
+  }
 
-  const clear = useCallback(
-    (key: string) =>
-      setErrors((prev) => {
-        const n = { ...prev }
-        delete n[key]
-        return n
-      }),
-    []
-  )
+  const clear = (key: string) =>
+    setErrors((prev) => {
+      const n = { ...prev }
+      delete n[key]
+      return n
+    })
 
-  const validate = useCallback((): Errors => {
+  const validate = (): Errors => {
     const e: Errors = {}
     if (!date) e.date = true
     if (!salesAgent) e.salesAgent = true
@@ -358,56 +354,7 @@ export default function SalesForm({
     if (!dealType) e.dealType = true
     if (!welcomeCall) e.welcomeCall = true
     return e
-  }, [
-    date,
-    salesAgent,
-    closingAgent,
-    businessName,
-    customerTitle,
-    customerFirstName,
-    customerLastName,
-    landline,
-    postcode,
-    address1,
-    town,
-    county,
-    lineChecked,
-    connectionFee,
-    connectionFeeOther,
-    voice,
-    currentVoiceType,
-    lineType,
-    numLicenses,
-    voiceOption,
-    callTariff,
-    bbType,
-    normalBbSpeed,
-    minSpeed,
-    maxSpeed,
-    bbCost,
-    bundlePrice,
-    intlPackage,
-    intlPackageOther,
-    intlLocation,
-    intlLocationOther,
-    premiumPackage,
-    premiumOther,
-    billingType,
-    paymentMethod,
-    phoneProvider,
-    broadbandProvider,
-    billAmount,
-    contractLength,
-    contractLengthOther,
-    ddCollected,
-    invoiceName,
-    bankBranch,
-    sortCode,
-    accountNumber,
-    bankChecked,
-    dealType,
-    welcomeCall,
-  ])
+  }
 
   const handleSubmit = async () => {
     if (submitting) return
@@ -431,7 +378,7 @@ export default function SalesForm({
     )
 
     await submitDeal({
-      existingCustomerId,
+      existingCustomerId: prefilledCustomer?.id ?? null,
       tenantId,
       createdBy,
       businessName,
@@ -529,79 +476,6 @@ export default function SalesForm({
         </Card>
       )}
 
-      <Card>
-        <CardContent className="pt-4 space-y-3">
-          <Label className="text-sm font-semibold">Existing Customer (optional)</Label>
-          <p className="text-xs text-muted-foreground">
-            Search to pre-fill customer details. Leave blank to create a new customer.
-          </p>
-          <Input
-            value={customerSearch}
-            onChange={(e) => setCustomerSearch(e.target.value)}
-            placeholder="Search by account number or name..."
-          />
-          {customerSearch.length > 1 && (
-            <div className="border rounded-md divide-y max-h-48 overflow-y-auto">
-              {customers
-                .filter(
-                  (c) =>
-                    c.accountNumber.toLowerCase().includes(customerSearch.toLowerCase()) ||
-                    (c.companyName ?? '').toLowerCase().includes(customerSearch.toLowerCase()) ||
-                    `${c.firstName} ${c.lastName}`
-                      .toLowerCase()
-                      .includes(customerSearch.toLowerCase())
-                )
-                .slice(0, 8)
-                .map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center justify-between"
-                    onClick={() => {
-                      setExistingCustomerId(c.id)
-                      setCustomerSearch(c.companyName ?? `${c.firstName} ${c.lastName}`)
-                      // Pre-fill fields
-                      setBusinessName(c.companyName ?? '')
-                      setCustomerFirstName(c.firstName)
-                      setCustomerLastName(c.lastName)
-                      setMobile(c.mobile ?? '')
-                      setLandline('')
-                      setPostcode(c.postcode ?? '')
-                      setAddress1(c.addressLine1 ?? '')
-                      setTown(c.addressLine2 ?? '')
-                      setCounty(c.addressLine3 ?? '')
-                    }}
-                  >
-                    <span className="font-medium">
-                      {c.companyName ?? `${c.firstName} ${c.lastName}`}
-                    </span>
-                    <span className="text-xs text-muted-foreground font-mono">
-                      {c.accountNumber}
-                    </span>
-                  </button>
-                ))}
-              {customers.filter(
-                (c) =>
-                  c.accountNumber.toLowerCase().includes(customerSearch.toLowerCase()) ||
-                  (c.companyName ?? '').toLowerCase().includes(customerSearch.toLowerCase()) ||
-                  `${c.firstName} ${c.lastName}`
-                    .toLowerCase()
-                    .includes(customerSearch.toLowerCase())
-              ).length === 0 && (
-                <p className="px-3 py-2 text-sm text-muted-foreground">
-                  No customers found — will create new.
-                </p>
-              )}
-            </div>
-          )}
-          {existingCustomerId && (
-            <p className="text-xs text-green-600 font-medium">
-              ✓ Existing customer selected — fields pre-filled.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
       <SectionHeader title="Deal Information" />
       <QuestionCard label="Date" required error={!!e.date}>
         <Input
@@ -659,8 +533,8 @@ export default function SalesForm({
       <QuestionCard label="Business Name" required error={!!e.businessName}>
         <Input
           value={businessName}
-          onChange={(e) => {
-            setBusinessName(e.target.value)
+          onChange={(ev) => {
+            setBusinessName(ev.target.value)
             clear('businessName')
           }}
           placeholder="e.g. Acme Ltd"
@@ -690,8 +564,8 @@ export default function SalesForm({
       <QuestionCard label="Customer First Name" required error={!!e.customerFirstName}>
         <Input
           value={customerFirstName}
-          onChange={(e) => {
-            setCustomerFirstName(e.target.value)
+          onChange={(ev) => {
+            setCustomerFirstName(ev.target.value)
             clear('customerFirstName')
           }}
           placeholder="e.g. Robbie"
@@ -701,8 +575,8 @@ export default function SalesForm({
       <QuestionCard label="Customer Last Name" required error={!!e.customerLastName}>
         <Input
           value={customerLastName}
-          onChange={(e) => {
-            setCustomerLastName(e.target.value)
+          onChange={(ev) => {
+            setCustomerLastName(ev.target.value)
             clear('customerLastName')
           }}
           placeholder="e.g. Woodhams"
@@ -712,7 +586,7 @@ export default function SalesForm({
       <QuestionCard label="Additional Account Holder">
         <Input
           value={additionalHolder}
-          onChange={(e) => setAdditionalHolder(e.target.value)}
+          onChange={(ev) => setAdditionalHolder(ev.target.value)}
           placeholder="Full name (if applicable)"
         />
       </QuestionCard>
@@ -753,8 +627,8 @@ export default function SalesForm({
       <QuestionCard label="Address Line 1" required error={!!e.address1}>
         <Input
           value={address1}
-          onChange={(e) => {
-            setAddress1(e.target.value)
+          onChange={(ev) => {
+            setAddress1(ev.target.value)
             clear('address1')
           }}
           placeholder="Street address"
@@ -764,8 +638,8 @@ export default function SalesForm({
       <QuestionCard label="Town" required error={!!e.town}>
         <Input
           value={town}
-          onChange={(e) => {
-            setTown(e.target.value)
+          onChange={(ev) => {
+            setTown(ev.target.value)
             clear('town')
           }}
           placeholder="e.g. Birmingham"
@@ -775,8 +649,8 @@ export default function SalesForm({
       <QuestionCard label="County" required error={!!e.county}>
         <Input
           value={county}
-          onChange={(e) => {
-            setCounty(e.target.value)
+          onChange={(ev) => {
+            setCounty(ev.target.value)
             clear('county')
           }}
           placeholder="e.g. Kent"
@@ -786,7 +660,7 @@ export default function SalesForm({
       <QuestionCard label="Trading Address">
         <Input
           value={tradingAddress}
-          onChange={(e) => setTradingAddress(e.target.value)}
+          onChange={(ev) => setTradingAddress(ev.target.value)}
           placeholder="If different from above"
         />
       </QuestionCard>
@@ -817,8 +691,8 @@ export default function SalesForm({
           <Input
             type="number"
             value={connectionFeeOther}
-            onChange={(e) => {
-              setConnectionFeeOther(e.target.value)
+            onChange={(ev) => {
+              setConnectionFeeOther(ev.target.value)
               clear('connectionFeeOther')
             }}
             placeholder="Enter amount (£)"
@@ -863,7 +737,14 @@ export default function SalesForm({
                   setVoiceOption('WHC')
                   clear('voiceOption')
                 }
-                if (v === 'Multi Line') setVoiceOption('NFON')
+                if (v === 'Multi Line') {
+                  setVoiceOption('NFON')
+                  clear('voiceOption')
+                }
+                if (v === 'MPF (Already has Broadband)') {
+                  setVoiceOption('MPF')
+                  clear('voiceOption')
+                }
               }}
               error={!!e.lineType}
             />
@@ -873,8 +754,8 @@ export default function SalesForm({
               <Input
                 type="number"
                 value={numLicenses}
-                onChange={(e) => {
-                  setNumLicenses(e.target.value)
+                onChange={(ev) => {
+                  setNumLicenses(ev.target.value)
                   clear('numLicenses')
                 }}
                 placeholder="e.g. 5"
@@ -885,7 +766,7 @@ export default function SalesForm({
           <QuestionCard label="Make of Existing Handsets">
             <Input
               value={existingHandsets}
-              onChange={(e) => setExistingHandsets(e.target.value)}
+              onChange={(ev) => setExistingHandsets(ev.target.value)}
               placeholder="e.g. Yealink T42S"
             />
           </QuestionCard>
@@ -944,8 +825,8 @@ export default function SalesForm({
         <QuestionCard label="ONT Serial Number" required error={!!e.serialNumber}>
           <Input
             value={serialNumber}
-            onChange={(e) => {
-              setSerialNumber(e.target.value)
+            onChange={(ev) => {
+              setSerialNumber(ev.target.value)
               clear('serialNumber')
             }}
             placeholder="e.g. ALCLF977A701"
@@ -956,8 +837,8 @@ export default function SalesForm({
       <QuestionCard label="Normal Available BB Speed (Mbps)" required error={!!e.normalBbSpeed}>
         <Input
           value={normalBbSpeed}
-          onChange={(e) => {
-            setNormalBbSpeed(e.target.value)
+          onChange={(ev) => {
+            setNormalBbSpeed(ev.target.value)
             clear('normalBbSpeed')
           }}
           placeholder="e.g. 80"
@@ -967,8 +848,8 @@ export default function SalesForm({
       <QuestionCard label="Minimum Speed (Mbps)" required error={!!e.minSpeed}>
         <Input
           value={minSpeed}
-          onChange={(e) => {
-            setMinSpeed(e.target.value)
+          onChange={(ev) => {
+            setMinSpeed(ev.target.value)
             clear('minSpeed')
           }}
           placeholder="e.g. 10"
@@ -978,8 +859,8 @@ export default function SalesForm({
       <QuestionCard label="Maximum Speed (Mbps)" required error={!!e.maxSpeed}>
         <Input
           value={maxSpeed}
-          onChange={(e) => {
-            setMaxSpeed(e.target.value)
+          onChange={(ev) => {
+            setMaxSpeed(ev.target.value)
             clear('maxSpeed')
           }}
           placeholder="e.g. 80"
@@ -1001,8 +882,8 @@ export default function SalesForm({
         {intlPackage === 'Other' && (
           <Input
             value={intlPackageOther}
-            onChange={(e) => {
-              setIntlPackageOther(e.target.value)
+            onChange={(ev) => {
+              setIntlPackageOther(ev.target.value)
               clear('intlPackageOther')
             }}
             placeholder="Specify package(s)"
@@ -1023,8 +904,8 @@ export default function SalesForm({
         {intlLocation === 'Other' && (
           <Input
             value={intlLocationOther}
-            onChange={(e) => {
-              setIntlLocationOther(e.target.value)
+            onChange={(ev) => {
+              setIntlLocationOther(ev.target.value)
               clear('intlLocationOther')
             }}
             placeholder="Specify location(s)"
@@ -1050,8 +931,8 @@ export default function SalesForm({
         {premiumPackage === 'Other' && (
           <Input
             value={premiumOther}
-            onChange={(e) => {
-              setPremiumOther(e.target.value)
+            onChange={(ev) => {
+              setPremiumOther(ev.target.value)
               clear('premiumOther')
             }}
             placeholder="Specify package details"
@@ -1145,8 +1026,8 @@ export default function SalesForm({
         <Input
           type="number"
           value={bundlePrice}
-          onChange={(e) => {
-            setBundlePrice(e.target.value)
+          onChange={(ev) => {
+            setBundlePrice(ev.target.value)
             clear('bundlePrice')
           }}
           placeholder="e.g. 49.99"
@@ -1207,15 +1088,15 @@ export default function SalesForm({
         <Input
           type="email"
           value={emailAddress}
-          onChange={(e) => setEmailAddress(e.target.value)}
+          onChange={(ev) => setEmailAddress(ev.target.value)}
           placeholder="e.g. billing@company.com"
         />
       </QuestionCard>
       <QuestionCard label="Phone Provider" required error={!!e.phoneProvider}>
         <Input
           value={phoneProvider}
-          onChange={(e) => {
-            setPhoneProvider(e.target.value)
+          onChange={(ev) => {
+            setPhoneProvider(ev.target.value)
             clear('phoneProvider')
           }}
           placeholder="e.g. BT, Sky, Virgin"
@@ -1225,8 +1106,8 @@ export default function SalesForm({
       <QuestionCard label="Broadband Provider" required error={!!e.broadbandProvider}>
         <Input
           value={broadbandProvider}
-          onChange={(e) => {
-            setBroadbandProvider(e.target.value)
+          onChange={(ev) => {
+            setBroadbandProvider(ev.target.value)
             clear('broadbandProvider')
           }}
           placeholder="e.g. BT, TalkTalk"
@@ -1237,8 +1118,8 @@ export default function SalesForm({
         <Input
           type="number"
           value={billAmount}
-          onChange={(e) => {
-            setBillAmount(e.target.value)
+          onChange={(ev) => {
+            setBillAmount(ev.target.value)
             clear('billAmount')
           }}
           placeholder="e.g. 45.00"
@@ -1258,8 +1139,8 @@ export default function SalesForm({
         {contractLength === 'Other' && (
           <Input
             value={contractLengthOther}
-            onChange={(e) => {
-              setContractLengthOther(e.target.value)
+            onChange={(ev) => {
+              setContractLengthOther(ev.target.value)
               clear('contractLengthOther')
             }}
             placeholder="Specify contract length"
@@ -1270,7 +1151,7 @@ export default function SalesForm({
       <QuestionCard label="Soft Facts">
         <Textarea
           value={softFacts}
-          onChange={(e) => setSoftFacts(e.target.value)}
+          onChange={(ev) => setSoftFacts(ev.target.value)}
           placeholder="Any additional notes about the customer or deal"
         />
       </QuestionCard>
@@ -1292,8 +1173,8 @@ export default function SalesForm({
           <QuestionCard label="Invoice Name" required error={!!e.invoiceName}>
             <Input
               value={invoiceName}
-              onChange={(e) => {
-                setInvoiceName(e.target.value)
+              onChange={(ev) => {
+                setInvoiceName(ev.target.value)
                 clear('invoiceName')
               }}
               placeholder="Name on invoice"
@@ -1303,8 +1184,8 @@ export default function SalesForm({
           <QuestionCard label="Bank Branch" required error={!!e.bankBranch}>
             <Input
               value={bankBranch}
-              onChange={(e) => {
-                setBankBranch(e.target.value)
+              onChange={(ev) => {
+                setBankBranch(ev.target.value)
                 clear('bankBranch')
               }}
               placeholder="e.g. Lloyds Bank Birmingham"

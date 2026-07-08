@@ -1,57 +1,74 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useTransition } from 'react'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { CustomersTable } from './customers-table'
-import { X } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Customer } from '@roaring/db'
 import { capitalise } from '@/components/capitalise'
 import { CUSTOMER_STATUS_COLOURS, CUSTOMER_TYPE_COLOURS } from '@/lib/constants'
 
-export function CustomersFilters({ customers }: { customers: Customer[] }) {
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string[]>([])
-  const [typeFilter, setTypeFilter] = useState<'all' | 'business' | 'residential'>('all')
+export function CustomersFilters({
+  customers,
+  total,
+  page,
+  totalPages,
+}: {
+  customers: Customer[]
+  total: number
+  page: number
+  totalPages: number
+}) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [isPending, startTransition] = useTransition()
 
-  const filtered = useMemo(() => {
-    let result = [...customers]
+  const [search, setSearch] = useState(searchParams.get('q') ?? '')
+  const statusFilter = searchParams.get('status') ?? ''
+  const typeFilter = searchParams.get('type') ?? 'all'
 
-    if (search.trim()) {
-      const q = search.toLowerCase()
-      result = result.filter(
-        (c) =>
-          c.accountNumber.toLowerCase().includes(q) ||
-          (c.companyName ?? '').toLowerCase().includes(q) ||
-          `${c.firstName} ${c.lastName}`.toLowerCase().includes(q) ||
-          (c.email ?? '').toLowerCase().includes(q) ||
-          (c.postcode ?? '').toLowerCase().includes(q)
-      )
+  // Debounce search input → update URL
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      updateParams({ q: search || null, page: null })
+    }, 400)
+    return () => clearTimeout(timeout)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search])
+
+  function updateParams(updates: Record<string, string | null>) {
+    const params = new URLSearchParams(searchParams.toString())
+    for (const [key, value] of Object.entries(updates)) {
+      if (value) params.set(key, value)
+      else params.delete(key)
     }
-
-    if (typeFilter !== 'all') {
-      result = result.filter((c) => c.type === typeFilter)
-    }
-
-    if (statusFilter.length > 0) {
-      result = result.filter((c) => statusFilter.includes(c.status))
-    }
-
-    return result
-  }, [customers, search, statusFilter, typeFilter])
+    startTransition(() => {
+      router.push(`${pathname}?${params.toString()}`)
+    })
+  }
 
   function toggleStatus(s: string) {
-    setStatusFilter((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]))
+    updateParams({ status: statusFilter === s ? null : s, page: null })
+  }
+
+  function setType(t: string) {
+    updateParams({ type: t === 'all' ? null : t, page: null })
   }
 
   function clearAll() {
     setSearch('')
-    setTypeFilter('all')
-    setStatusFilter([])
+    router.push(pathname)
   }
 
-  const hasFilters = search || statusFilter.length > 0 || typeFilter !== 'all'
+  function goToPage(p: number) {
+    updateParams({ page: p === 1 ? null : String(p) })
+  }
+
+  const hasFilters = search || statusFilter || typeFilter !== 'all'
 
   return (
     <div className="space-y-4">
@@ -80,9 +97,7 @@ export function CustomersFilters({ customers }: { customers: Customer[] }) {
               className={cn(
                 'inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border transition-all',
                 CUSTOMER_STATUS_COLOURS[s],
-                statusFilter.includes(s)
-                  ? 'ring-2 ring-offset-1 ring-foreground/30'
-                  : 'hover:scale-103'
+                statusFilter === s ? 'ring-2 ring-offset-1 ring-foreground/30' : 'hover:scale-103'
               )}
             >
               {capitalise(s).replace('_', ' ')}
@@ -97,7 +112,7 @@ export function CustomersFilters({ customers }: { customers: Customer[] }) {
           {(['all', 'business', 'residential'] as const).map((t) => (
             <button
               key={t}
-              onClick={() => setTypeFilter(t)}
+              onClick={() => setType(t)}
               className={cn(
                 'inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border transition-all',
                 t === 'all'
@@ -118,11 +133,40 @@ export function CustomersFilters({ customers }: { customers: Customer[] }) {
         </div>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        {filtered.length} of {customers.length} customers
+      <p className={cn('text-xs text-muted-foreground', isPending && 'opacity-50')}>
+        {total} customer{total !== 1 ? 's' : ''} match{total === 1 ? 'es' : ''}
       </p>
 
-      <CustomersTable customers={filtered} />
+      <CustomersTable customers={customers} />
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-xs text-muted-foreground">
+            Page {page} of {totalPages}
+          </p>
+          <div className="flex gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1 || isPending}
+              onClick={() => goToPage(page - 1)}
+            >
+              <ChevronLeft className="size-3.5 mr-1" />
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages || isPending}
+              onClick={() => goToPage(page + 1)}
+            >
+              Next
+              <ChevronRight className="size-3.5 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

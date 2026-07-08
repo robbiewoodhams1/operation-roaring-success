@@ -8,12 +8,14 @@ import {
   customers,
   deals,
 } from '@roaring/db'
-import { eq, asc } from 'drizzle-orm'
+import { eq, asc, or } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cachedQuery } from '@/lib/cached-query'
+import { getChangeHistory } from '@/lib/change-history'
+import { ChangeHistory } from '@/components/change-history'
 import { Detail } from './detail'
 import {
   TRANSFER_CEASE_TYPE_LABELS,
@@ -80,8 +82,11 @@ const getCachedProvCustomer = (provisioningId: string, tenantId: string) =>
           postcode: customers.postcode,
         })
         .from(provisioning)
-        .innerJoin(deals, eq(deals.id, provisioning.dealId))
-        .innerJoin(customers, eq(customers.id, deals.customerId))
+        .leftJoin(deals, eq(deals.id, provisioning.dealId))
+        .innerJoin(
+          customers,
+          or(eq(customers.id, deals.customerId), eq(customers.id, provisioning.customerId))
+        )
         .where(eq(provisioning.id, provisioningId))
         .limit(1)
   )
@@ -108,6 +113,11 @@ export default async function TransferCeaseDetailPage({
 
   const userMap = Object.fromEntries(allUsers.map((u) => [u.id, u.fullName]))
   const provCustomer = provResult[0] ?? null
+
+  const { logs, userNames } = await getChangeHistory([
+    { table: 'transfer_ceases', ids: [record.id] },
+    { table: 'transfer_cease_comments', parentField: 'transfer_cease_id', parentId: record.id },
+  ])
 
   return (
     <div className="p-6 w-full">
@@ -141,6 +151,14 @@ export default async function TransferCeaseDetailPage({
         currentUserId={user.id}
         allUsers={allUsers}
       />
+
+      <div className="mt-6">
+        <ChangeHistory
+          logs={logs}
+          userNames={userNames}
+          tableLabels={{ transfer_ceases: 'Transfer/Cease', transfer_cease_comments: 'Comment' }}
+        />
+      </div>
     </div>
   )
 }

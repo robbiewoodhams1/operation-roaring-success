@@ -29,6 +29,7 @@ export default async function ProvisioningDetailPage({
   const { id } = await params
   const user = await requireUser()
 
+  // Find customer by account number
   const customerResult = await cachedQuery(
     [`customers-${user.tenantId}`, id],
     [`customers-${user.tenantId}`],
@@ -38,31 +39,41 @@ export default async function ProvisioningDetailPage({
   const customer = customerResult[0]
   if (!customer || customer.tenantId !== user.tenantId) notFound()
 
+  // Find deal — optional now
   const dealResult = await cachedQuery(
     [`deals-${user.tenantId}`, customer.id],
     [`deals-${user.tenantId}`],
     () => db.select().from(deals).where(eq(deals.customerId, customer.id)).limit(1)
   )
+  const deal = dealResult[0] ?? null
 
-  const deal = dealResult[0]
-  if (!deal) notFound()
-
+  // Find provisioning via deal OR directly via customer
   const provResult = await cachedQuery(
-    [`provisioning-${user.tenantId}`, deal.id],
+    [`provisioning-${user.tenantId}`, customer.id],
     [`provisioning-${user.tenantId}`],
-    () => db.select().from(provisioning).where(eq(provisioning.dealId, deal.id)).limit(1)
+    () =>
+      db
+        .select()
+        .from(provisioning)
+        .where(
+          deal
+            ? or(eq(provisioning.dealId, deal.id), eq(provisioning.customerId, customer.id))
+            : eq(provisioning.customerId, customer.id)
+        )
+        .limit(1)
   )
 
   const prov = provResult[0]
   if (!prov) notFound()
 
-  const servicesResult = await cachedQuery(
-    [`dealServices-${user.tenantId}`, deal.id],
-    [`dealServices-${user.tenantId}`],
-    () => db.select().from(dealServices).where(eq(dealServices.dealId, deal.id)).limit(1)
-  )
-
-  const services = servicesResult[0] ?? null
+  // Deal services — only if deal exists
+  const services = deal
+    ? await cachedQuery(
+        [`dealServices-${user.tenantId}`, deal.id],
+        [`dealServices-${user.tenantId}`],
+        () => db.select().from(dealServices).where(eq(dealServices.dealId, deal.id)).limit(1)
+      ).then((r) => r[0] ?? null)
+    : null
 
   const provServices = await cachedQuery(
     [`provisioningServices-${user.tenantId}`, prov.id],
@@ -78,9 +89,10 @@ export default async function ProvisioningDetailPage({
   const bbServices = provServices.filter((s) => s.serviceType === 'bb')
   const whcServices = provServices.filter((s) => s.serviceType === 'whc')
   const nfonServices = provServices.filter((s) => s.serviceType === 'nfon')
-  const mpfServices = provServices.filter((s) => s.serviceType === 'mpf')
+  const mpfBbServices = provServices.filter((s) => s.serviceType === 'mpf_broadband')
+  const mpfVoiceServices = provServices.filter((s) => s.serviceType === 'mpf_voice')
+  const mobileServices = provServices.filter((s) => s.serviceType === 'mobile')
 
-  // Audit history for this provisioning record and all of its service rows.
   const serviceIds = provServices.map((s) => s.id)
   const historyLogs = await db
     .select({
@@ -145,9 +157,11 @@ export default async function ProvisioningDetailPage({
           </div>
           <div className="flex items-center gap-3 mt-1">
             <p className="text-sm font-mono text-muted-foreground">{customer.accountNumber}</p>
-            <p className="text-sm text-muted-foreground">
-              {deal.dealDate ? new Date(deal.dealDate).toLocaleDateString('en-GB') : '—'}
-            </p>
+            {deal?.dealDate && (
+              <p className="text-sm text-muted-foreground">
+                {new Date(deal.dealDate).toLocaleDateString('en-GB')}
+              </p>
+            )}
           </div>
         </div>
         <ProvisionModal
@@ -176,7 +190,9 @@ export default async function ProvisioningDetailPage({
         bbServices={bbServices}
         whcServices={whcServices}
         nfonServices={nfonServices}
-        mpfServices={mpfServices}
+        mpfBbServices={mpfBbServices}
+        mpfVoiceServices={mpfVoiceServices}
+        mobileServices={mobileServices}
       />
 
       <div className="mt-6">
@@ -200,12 +216,16 @@ export default async function ProvisioningDetailPage({
               : null
           }
           customer={customer}
-          deal={{
-            salesAgent: deal.salesAgent,
-            closingAgent: deal.closingAgent,
-            dealType: deal.dealType,
-            softFacts: deal.softFacts,
-          }}
+          deal={
+            deal
+              ? {
+                  salesAgent: deal.salesAgent,
+                  closingAgent: deal.closingAgent,
+                  dealType: deal.dealType,
+                  softFacts: deal.softFacts,
+                }
+              : null
+          }
         />
       </div>
     </div>

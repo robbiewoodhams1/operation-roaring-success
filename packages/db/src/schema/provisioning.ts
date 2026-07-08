@@ -1,6 +1,7 @@
 import { date, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { appSchema, tenants } from './tenants'
 import { deals } from './deals'
+import { customers } from './customers'
 
 export const wcOutcomeEnum = appSchema.enum('wc_outcome', [
   'call_back',
@@ -17,6 +18,8 @@ export const provisioningStatusEnum = appSchema.enum('provisioning_status', [
   'broadband_and_whc_applied',
   'live',
   'failed',
+  'mpf_broadband_applied',
+  'mpf_voice_applied',
 ])
 
 export const routerDispatchedEnum = appSchema.enum('router_dispatched', ['yes', 'no', 'not_needed'])
@@ -26,9 +29,8 @@ export const provisioning = appSchema.table('provisioning', {
   tenantId: uuid('tenant_id')
     .notNull()
     .references(() => tenants.id),
-  dealId: uuid('deal_id')
-    .notNull()
-    .references(() => deals.id),
+  dealId: uuid('deal_id').references(() => deals.id), // nullable — no longer notNull
+  customerId: uuid('customer_id').references(() => customers.id), // new — direct customer link
   status: provisioningStatusEnum('status').notNull().default('not_started'),
 
   // Welcome calls

@@ -1,6 +1,7 @@
 'use server'
 
 import { db, deals, dealServices, dealPricing, dealBilling, customers } from '@roaring/db'
+import type { Title } from '@roaring/db'
 import { eq } from 'drizzle-orm'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { requireUser, setAuditUser } from '@roaring/auth'
@@ -141,7 +142,7 @@ export async function updateDeal(data: {
         .update(customers)
         .set({
           companyName: data.companyName || null,
-          title: data.title,
+          title: (data.title || null) as Title | null,
           firstName: data.firstName,
           lastName: data.lastName,
           mobile: data.mobile || null,

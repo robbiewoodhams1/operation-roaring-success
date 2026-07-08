@@ -1,4 +1,4 @@
-import { pgEnum, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { appSchema, tenants } from './tenants'
 import { users } from './users'
 
@@ -11,6 +11,17 @@ export const customerStatusEnum = appSchema.enum('customer_status', [
   'churned',
 ])
 
+export const titleEnum = appSchema.enum('title', [
+  'Mr',
+  'Mrs',
+  'Ms',
+  'Miss',
+  'Dr',
+  'Rev',
+  'Prof',
+  'Mx',
+])
+
 export const customers = appSchema.table('customers', {
   id: uuid('id').primaryKey().defaultRandom(),
   tenantId: uuid('tenant_id')
@@ -19,7 +30,7 @@ export const customers = appSchema.table('customers', {
   accountNumber: text('account_number').notNull().unique(),
   type: customerTypeEnum('type').notNull().default('business'),
   companyName: text('company_name'),
-  title: text('title'),
+  title: titleEnum('title'),
   firstName: text('first_name').notNull(),
   lastName: text('last_name').notNull(),
   mobile: text('mobile'),
@@ -41,3 +52,4 @@ export type Customer = typeof customers.$inferSelect
 export type NewCustomer = typeof customers.$inferInsert
 export type CustomerType = (typeof customerTypeEnum.enumValues)[number]
 export type CustomerStatus = (typeof customerStatusEnum.enumValues)[number]
+export type Title = (typeof titleEnum.enumValues)[number]

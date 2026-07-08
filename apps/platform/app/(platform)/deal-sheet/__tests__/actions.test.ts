@@ -71,6 +71,7 @@ const baseData = {
   tenantId: 'tenant-1',
   createdBy: 'user-1',
   businessName: 'ACME Corp',
+  customerTitle: 'Mr',
   customerFirstName: 'John',
   customerLastName: 'Doe',
   mobile: '07123456789',

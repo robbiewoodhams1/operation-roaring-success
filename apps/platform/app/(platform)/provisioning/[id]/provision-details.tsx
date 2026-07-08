@@ -89,7 +89,7 @@ type DealData = {
   closingAgent: string
   dealType: string
   softFacts: string | null
-}
+} | null
 
 export default function ProvisioningDetail({
   services,
@@ -179,12 +179,14 @@ export default function ProvisioningDetail({
         <Row label="Postcode" value={customer.postcode} copyable />
       </Section>
 
-      <Section title="Deal" collapsed={collapsed.deal} onToggle={() => toggle('deal')}>
-        <Row label="Sales agent" value={deal.salesAgent} copyable />
-        <Row label="Closing agent" value={deal.closingAgent} copyable />
-        <Row label="Deal type" value={deal.dealType} copyable />
-        <Row label="Soft facts" value={deal.softFacts} copyable />
-      </Section>
+      {deal && (
+        <Section title="Deal" collapsed={collapsed.deal} onToggle={() => toggle('deal')}>
+          <Row label="Sales agent" value={deal.salesAgent} copyable />
+          <Row label="Closing agent" value={deal.closingAgent} copyable />
+          <Row label="Deal type" value={deal.dealType} copyable />
+          <Row label="Soft facts" value={deal.softFacts} copyable />
+        </Section>
+      )}
     </div>
   )
 }

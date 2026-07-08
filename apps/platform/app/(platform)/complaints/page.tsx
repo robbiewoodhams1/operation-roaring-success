@@ -1,6 +1,6 @@
 import { requireUser } from '@roaring/auth/server'
 import { db, complaints, users, provisioning, customers, deals } from '@roaring/db'
-import { eq, desc } from 'drizzle-orm'
+import { eq, desc, or } from 'drizzle-orm'
 import { cachedQuery } from '@/lib/cached-query'
 import { ComplaintsFilters } from './complaints-filters'
 import { CreateComplaintModal } from './create-complaint-modal'
@@ -45,8 +45,11 @@ export default async function ComplaintsPage() {
           lastName: customers.lastName,
         })
         .from(provisioning)
-        .innerJoin(deals, eq(deals.id, provisioning.dealId))
-        .innerJoin(customers, eq(customers.id, deals.customerId))
+        .leftJoin(deals, eq(deals.id, provisioning.dealId))
+        .innerJoin(
+          customers,
+          or(eq(customers.id, deals.customerId), eq(customers.id, provisioning.customerId))
+        )
         .where(eq(provisioning.tenantId, user.tenantId))
     ),
   ])

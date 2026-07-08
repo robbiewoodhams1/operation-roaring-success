@@ -1,11 +1,13 @@
 import { requireUser } from '@roaring/auth/server'
 import { db, debts, debtComments, users, provisioning, customers, deals } from '@roaring/db'
-import { eq, asc } from 'drizzle-orm'
+import { eq, asc, or } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cachedQuery } from '@/lib/cached-query'
+import { getChangeHistory } from '@/lib/change-history'
+import { ChangeHistory } from '@/components/change-history'
 import { DebtDetail } from './debt-detail'
 import { DEBT_OUTCOME_COLOURS, DEBT_OUTCOME_LABELS } from '@/lib/constants'
 
@@ -69,8 +71,11 @@ export default async function DebtDetailPage({ params }: { params: Promise<{ id:
                 postcode: customers.postcode,
               })
               .from(provisioning)
-              .innerJoin(deals, eq(deals.id, provisioning.dealId))
-              .innerJoin(customers, eq(customers.id, deals.customerId))
+              .leftJoin(deals, eq(deals.id, provisioning.dealId))
+              .innerJoin(
+                customers,
+                or(eq(customers.id, deals.customerId), eq(customers.id, provisioning.customerId))
+              )
               .where(eq(provisioning.id, debt.provisioningId as string))
               .limit(1)
         )
@@ -79,6 +84,11 @@ export default async function DebtDetailPage({ params }: { params: Promise<{ id:
 
   const userMap = Object.fromEntries(allUsers.map((u) => [u.id, u.fullName]))
   const provCustomer = provResult[0] ?? null
+
+  const { logs, userNames } = await getChangeHistory([
+    { table: 'debts', ids: [debt.id] },
+    { table: 'debt_comments', parentField: 'debt_id', parentId: debt.id },
+  ])
 
   return (
     <div className="p-6 max-w-4xl">
@@ -110,6 +120,14 @@ export default async function DebtDetailPage({ params }: { params: Promise<{ id:
         currentUserId={user.id}
         allUsers={allUsers}
       />
+
+      <div className="mt-6">
+        <ChangeHistory
+          logs={logs}
+          userNames={userNames}
+          tableLabels={{ debts: 'Debt', debt_comments: 'Comment' }}
+        />
+      </div>
     </div>
   )
 }

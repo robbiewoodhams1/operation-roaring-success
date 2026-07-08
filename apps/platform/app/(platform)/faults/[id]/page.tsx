@@ -1,10 +1,12 @@
 import { requireUser } from '@roaring/auth/server'
 import { db, faults, faultComments, users, provisioning, customers, deals } from '@roaring/db'
-import { eq, asc } from 'drizzle-orm'
+import { eq, asc, or } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { getChangeHistory } from '@/lib/change-history'
+import { ChangeHistory } from '@/components/change-history'
 import { FaultDetail } from './fault-detail'
 import { FAULT_STATUS_COLOURS } from '@/lib/constants'
 
@@ -60,8 +62,11 @@ export default async function FaultDetailPage({ params }: { params: Promise<{ id
             postcode: customers.postcode,
           })
           .from(provisioning)
-          .innerJoin(deals, eq(deals.id, provisioning.dealId))
-          .innerJoin(customers, eq(customers.id, deals.customerId))
+          .leftJoin(deals, eq(deals.id, provisioning.dealId))
+          .innerJoin(
+            customers,
+            or(eq(customers.id, deals.customerId), eq(customers.id, provisioning.customerId))
+          )
           .where(eq(provisioning.id, fault.provisioningId))
           .limit(1)
       : Promise.resolve([] as ProvCustomer[]),
@@ -69,6 +74,11 @@ export default async function FaultDetailPage({ params }: { params: Promise<{ id
 
   const userMap = Object.fromEntries(allUsers.map((u) => [u.id, u.fullName]))
   const provCustomer = provResult[0] ?? null
+
+  const { logs, userNames } = await getChangeHistory([
+    { table: 'faults', ids: [fault.id] },
+    { table: 'fault_comments', parentField: 'fault_id', parentId: fault.id },
+  ])
 
   return (
     <div className="p-6 w-full">
@@ -99,6 +109,14 @@ export default async function FaultDetailPage({ params }: { params: Promise<{ id
         currentUserId={user.id}
         allUsers={allUsers}
       />
+
+      <div className="mt-6">
+        <ChangeHistory
+          logs={logs}
+          userNames={userNames}
+          tableLabels={{ faults: 'Fault', fault_comments: 'Comment' }}
+        />
+      </div>
     </div>
   )
 }

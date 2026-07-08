@@ -20,7 +20,7 @@ function ServiceBadge({ status, label }: { status: string | null; label: string 
     <div className="flex items-center gap-1.5">
       <span className="text-xs text-muted-foreground">{label}</span>
       <Badge variant="outline" className={cn('text-xs', SERVICE_STATUS_COLOURS[status])}>
-        {status.replace('_', ' ')}
+        {status.replace(/_/g, ' ')}
       </Badge>
     </div>
   )
@@ -39,7 +39,9 @@ export function ProvisioningTable({ rows }: { rows: ProvisioningRow[] }) {
             <TableHead>BB</TableHead>
             <TableHead>WHC</TableHead>
             <TableHead>NFON</TableHead>
-            <TableHead>MPF</TableHead>
+            <TableHead>MPF BB</TableHead>
+            <TableHead>MPF Voice</TableHead>
+            <TableHead>Mobile</TableHead>
             <TableHead>Router</TableHead>
             <TableHead>Proposed Live</TableHead>
             <TableHead>Date Ordered</TableHead>
@@ -67,7 +69,13 @@ export function ProvisioningTable({ rows }: { rows: ProvisioningRow[] }) {
                 <ServiceBadge status={row.nfonStatus} label="NFON" />
               </TableCell>
               <TableCell>
-                <ServiceBadge status={row.mpfStatus} label="MPF" />
+                <ServiceBadge status={row.mpfBbStatus} label="MPF BB" />
+              </TableCell>
+              <TableCell>
+                <ServiceBadge status={row.mpfVoiceStatus} label="MPF Voice" />
+              </TableCell>
+              <TableCell>
+                <ServiceBadge status={row.mobileStatus} label="Mobile" />
               </TableCell>
               <TableCell>
                 {row.routerDispatched === 'yes' ? (

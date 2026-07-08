@@ -99,7 +99,10 @@ export async function search(tenantId: string, query: string): Promise<SearchRes
     })
     .from(provisioning)
     .leftJoin(deals, eq(provisioning.dealId, deals.id))
-    .leftJoin(customers, eq(deals.customerId, customers.id))
+    .leftJoin(
+      customers,
+      or(eq(customers.id, deals.customerId), eq(customers.id, provisioning.customerId))
+    )
     .where(
       or(
         ilike(customers.accountNumber, q),
@@ -149,7 +152,10 @@ export async function search(tenantId: string, query: string): Promise<SearchRes
         })
         .from(provisioning)
         .leftJoin(deals, eq(provisioning.dealId, deals.id))
-        .leftJoin(customers, eq(deals.customerId, customers.id))
+        .leftJoin(
+          customers,
+          or(eq(customers.id, deals.customerId), eq(customers.id, provisioning.customerId))
+        )
         .where(eq(provisioning.id, provId))
         .limit(1)
 

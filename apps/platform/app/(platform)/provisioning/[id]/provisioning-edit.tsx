@@ -477,13 +477,17 @@ export function ProvisioningEdit({
   bbServices,
   whcServices,
   nfonServices,
-  mpfServices,
+  mpfBbServices,
+  mpfVoiceServices,
+  mobileServices,
 }: {
   prov: Provisioning
   bbServices: ProvisioningService[]
   whcServices: ProvisioningService[]
   nfonServices: ProvisioningService[]
-  mpfServices: ProvisioningService[]
+  mpfBbServices: ProvisioningService[]
+  mpfVoiceServices: ProvisioningService[]
+  mobileServices: ProvisioningService[]
 }) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
@@ -494,7 +498,9 @@ export function ProvisioningEdit({
     bb: false,
     whc: false,
     nfon: false,
-    mpf: false,
+    mpfBb: false,
+    mpfVoice: false,
+    mobile: false,
     order: false,
     welcomeCalls: false,
     router: false,
@@ -508,7 +514,9 @@ export function ProvisioningEdit({
       bb: next,
       whc: next,
       nfon: next,
-      mpf: next,
+      mpfBb: next,
+      mpfVoice: next,
+      mobile: next,
       order: next,
       welcomeCalls: next,
       router: next,
@@ -522,7 +530,9 @@ export function ProvisioningEdit({
   const latestBb = bbServices[bbServices?.length - 1]
   const latestWhc = whcServices[whcServices?.length - 1]
   const latestNfon = nfonServices[nfonServices?.length - 1]
-  const latestMpf = mpfServices[mpfServices?.length - 1]
+  const latestMpfBb = mpfBbServices[mpfBbServices?.length - 1]
+  const latestMpfVoice = mpfVoiceServices[mpfVoiceServices?.length - 1]
+  const latestMobile = mobileServices[mobileServices?.length - 1]
 
   const [form, setForm] = useState({
     wc1Outcome: prov.wc1Outcome ?? '',
@@ -690,25 +700,69 @@ export function ProvisioningEdit({
         </>
       )}
 
-      {/* MPF Service */}
-      {latestMpf && (
+      {/* MPF Broadband */}
+      {latestMpfBb && (
         <>
           <ServicePanel
-            service={latestMpf}
-            label="MPF"
+            service={latestMpfBb}
+            label="MPF Broadband"
             isLatest
-            collapsed={collapsed.mpf}
-            onToggleCollapse={() => toggle('mpf')}
+            collapsed={collapsed.mpfBb}
+            onToggleCollapse={() => toggle('mpfBb')}
             onSave={async (id, data) => {
               await updateProvisioningService(id, data)
               router.refresh()
             }}
             onAddAttempt={async () => {
-              await addProvisioningServiceAttempt(prov.id, 'mpf', latestMpf.attempt)
+              await addProvisioningServiceAttempt(prov.id, 'mpf_broadband', latestMpfBb.attempt)
               router.refresh()
             }}
           />
-          <ServiceHistory services={mpfServices} label="MPF" />
+          <ServiceHistory services={mpfBbServices} label="MPF Broadband" />
+        </>
+      )}
+
+      {/* MPF Voice */}
+      {latestMpfVoice && (
+        <>
+          <ServicePanel
+            service={latestMpfVoice}
+            label="MPF Voice"
+            isLatest
+            collapsed={collapsed.mpfVoice}
+            onToggleCollapse={() => toggle('mpfVoice')}
+            onSave={async (id, data) => {
+              await updateProvisioningService(id, data)
+              router.refresh()
+            }}
+            onAddAttempt={async () => {
+              await addProvisioningServiceAttempt(prov.id, 'mpf_voice', latestMpfVoice.attempt)
+              router.refresh()
+            }}
+          />
+          <ServiceHistory services={mpfVoiceServices} label="MPF Voice" />
+        </>
+      )}
+
+      {/* Mobile */}
+      {latestMobile && (
+        <>
+          <ServicePanel
+            service={latestMobile}
+            label="Mobile"
+            isLatest
+            collapsed={collapsed.mobile}
+            onToggleCollapse={() => toggle('mobile')}
+            onSave={async (id, data) => {
+              await updateProvisioningService(id, data)
+              router.refresh()
+            }}
+            onAddAttempt={async () => {
+              await addProvisioningServiceAttempt(prov.id, 'mobile', latestMobile.attempt)
+              router.refresh()
+            }}
+          />
+          <ServiceHistory services={mobileServices} label="Mobile" />
         </>
       )}
 

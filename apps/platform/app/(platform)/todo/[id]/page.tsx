@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cachedQuery } from '@/lib/cached-query'
+import { getChangeHistory } from '@/lib/change-history'
+import { ChangeHistory } from '@/components/change-history'
 import { TodoDetail } from './todo-detail'
 import {
   TODO_STATUS_COLOURS,
@@ -51,6 +53,11 @@ export default async function TodoDetailPage({ params }: { params: Promise<{ id:
 
   const userMap = Object.fromEntries(allUsers.map((u) => [u.id, u.fullName]))
 
+  const { logs, userNames } = await getChangeHistory([
+    { table: 'todos', ids: [todo.id] },
+    { table: 'todo_comments', parentField: 'todo_id', parentId: todo.id },
+  ])
+
   return (
     <div className="p-6 max-w-3xl">
       <div className="flex items-center gap-4 mb-8">
@@ -82,6 +89,14 @@ export default async function TodoDetailPage({ params }: { params: Promise<{ id:
         currentUserId={user.id}
         allUsers={allUsers}
       />
+
+      <div className="mt-6">
+        <ChangeHistory
+          logs={logs}
+          userNames={userNames}
+          tableLabels={{ todos: 'Todo', todo_comments: 'Comment' }}
+        />
+      </div>
     </div>
   )
 }

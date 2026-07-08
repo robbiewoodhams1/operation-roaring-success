@@ -1,6 +1,6 @@
 import { requireUser } from '@roaring/auth/server'
 import { db, provisioning, deals, customers, provisioningServices } from '@roaring/db'
-import { eq, asc } from 'drizzle-orm'
+import { eq, asc, or } from 'drizzle-orm'
 import { cachedQuery } from '@/lib/cached-query'
 import { ProvisioningFilters } from './provisioning-filters'
 
@@ -14,6 +14,7 @@ const getCachedProvisioning = (tenantId: string) =>
           id: provisioning.id,
           status: provisioning.status,
           dealId: provisioning.dealId,
+          customerId: provisioning.customerId,
           provisioner: provisioning.provisioner,
           proposedLiveDate: provisioning.proposedLiveDate,
           dateOrdered: provisioning.dateOrdered,
@@ -32,7 +33,10 @@ const getCachedProvisioning = (tenantId: string) =>
         })
         .from(provisioning)
         .leftJoin(deals, eq(provisioning.dealId, deals.id))
-        .leftJoin(customers, eq(deals.customerId, customers.id))
+        .leftJoin(
+          customers,
+          or(eq(customers.id, deals.customerId), eq(customers.id, provisioning.customerId))
+        )
         .where(eq(provisioning.tenantId, tenantId))
         .orderBy(provisioning.createdAt)
   )
@@ -46,34 +50,38 @@ export default async function ProvisioningPage() {
   const user = await requireUser()
 
   const allProvisioning = await getCachedProvisioning(user.tenantId)
-
-  // Fetch latest service statuses for each provisioning record
   const allServices = await getCachedProvisioningServices(user.tenantId)
 
-  // Map provisioning id → latest bb/whc status
   const serviceMap: Record<
     string,
     {
       bbStatus: string | null
       whcStatus: string | null
       nfonStatus: string | null
-      mpfStatus: string | null
+      mpfBbStatus: string | null
+      mpfVoiceStatus: string | null
+      mobileStatus: string | null
     }
   > = {}
+
   for (const svc of allServices) {
     if (!serviceMap[svc.provisioningId]) {
       serviceMap[svc.provisioningId] = {
         bbStatus: null,
         whcStatus: null,
         nfonStatus: null,
-        mpfStatus: null,
+        mpfBbStatus: null,
+        mpfVoiceStatus: null,
+        mobileStatus: null,
       }
     }
     const entry = serviceMap[svc.provisioningId]!
     if (svc.serviceType === 'bb') entry.bbStatus = svc.status
     if (svc.serviceType === 'whc') entry.whcStatus = svc.status
     if (svc.serviceType === 'nfon') entry.nfonStatus = svc.status
-    if (svc.serviceType === 'mpf') entry.mpfStatus = svc.status
+    if (svc.serviceType === 'mpf_broadband') entry.mpfBbStatus = svc.status
+    if (svc.serviceType === 'mpf_voice') entry.mpfVoiceStatus = svc.status
+    if (svc.serviceType === 'mobile') entry.mobileStatus = svc.status
   }
 
   const rows = allProvisioning.map((p) => ({
@@ -81,7 +89,9 @@ export default async function ProvisioningPage() {
     bbStatus: serviceMap[p.id]?.bbStatus ?? null,
     whcStatus: serviceMap[p.id]?.whcStatus ?? null,
     nfonStatus: serviceMap[p.id]?.nfonStatus ?? null,
-    mpfStatus: serviceMap[p.id]?.mpfStatus ?? null,
+    mpfBbStatus: serviceMap[p.id]?.mpfBbStatus ?? null,
+    mpfVoiceStatus: serviceMap[p.id]?.mpfVoiceStatus ?? null,
+    mobileStatus: serviceMap[p.id]?.mobileStatus ?? null,
     customerType: p.customerType,
   }))
 

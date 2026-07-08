@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { ArrowLeft } from 'lucide-react'
 import { cachedQuery } from '@/lib/cached-query'
+import { getChangeHistory } from '@/lib/change-history'
+import { ChangeHistory } from '@/components/change-history'
 import { DealEdit } from './deal-edit'
 import { DEAL_STATUS_COLOURS } from '@/lib/constants'
 
@@ -62,6 +64,13 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
 
   const customerName = customer.companyName ?? `${customer.firstName} ${customer.lastName}`
 
+  const { logs, userNames } = await getChangeHistory([
+    { table: 'deals', ids: [deal.id] },
+    { table: 'deal_services', parentField: 'deal_id', parentId: deal.id },
+    { table: 'deal_pricing', parentField: 'deal_id', parentId: deal.id },
+    { table: 'deal_billing', parentField: 'deal_id', parentId: deal.id },
+  ])
+
   return (
     <div className="p-6 w-full">
       <div className="flex items-center gap-4 mb-8">
@@ -93,6 +102,19 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
         billing={billing ?? null}
         customer={customer}
       />
+
+      <div className="mt-6">
+        <ChangeHistory
+          logs={logs}
+          userNames={userNames}
+          tableLabels={{
+            deals: 'Deal',
+            deal_services: 'Services',
+            deal_pricing: 'Pricing',
+            deal_billing: 'Billing',
+          }}
+        />
+      </div>
     </div>
   )
 }

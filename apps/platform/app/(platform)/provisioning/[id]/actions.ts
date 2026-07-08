@@ -118,7 +118,7 @@ export async function updateProvisioningService(
 
 export async function addProvisioningServiceAttempt(
   provisioningId: string,
-  serviceType: 'bb' | 'whc' | 'nfon' | 'mpf',
+  serviceType: 'bb' | 'whc' | 'nfon' | 'mpf_broadband' | 'mpf_voice' | 'mobile',
   currentMaxAttempt: number
 ) {
   const user = await requireUser()
