@@ -2,7 +2,14 @@ import { date, integer, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { appSchema } from './tenants'
 import { provisioning } from './provisioning'
 
-export const serviceTypeEnum = appSchema.enum('service_type', ['bb', 'whc', 'nfon', 'mpf'])
+export const serviceTypeEnum = appSchema.enum('service_type', [
+  'bb',
+  'whc',
+  'nfon',
+  'mpf_broadband',
+  'mpf_voice',
+  'mobile',
+])
 
 export const serviceStatusEnum = appSchema.enum('service_status', [
   'not_applied',
