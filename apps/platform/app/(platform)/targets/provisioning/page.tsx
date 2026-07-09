@@ -43,7 +43,7 @@ export default async function TargetsPage({
       dealFilter === 'individual'
         ? and(
             eq(deals.tenantId, user.tenantId),
-            eq(deals.createdBy, user.id),
+            eq(deals.salesAgent, userFullName),
             gte(deals.dealDate, monthStartDate),
             lt(deals.dealDate, monthEndDate)
           )
@@ -59,7 +59,13 @@ export default async function TargetsPage({
     if (totalDeals === 0) {
       return {
         totalDeals: 0,
-        serviceStats: { bb: empty(), whc: empty(), nfon: empty(), mpf: empty() },
+        serviceStats: {
+          bb: empty(),
+          whc: empty(),
+          nfon: empty(),
+          mpf_broadband: empty(),
+          mpf_voice: empty(),
+        },
       }
     }
 
@@ -74,7 +80,13 @@ export default async function TargetsPage({
     if (provIds.length === 0) {
       return {
         totalDeals,
-        serviceStats: { bb: empty(), whc: empty(), nfon: empty(), mpf: empty() },
+        serviceStats: {
+          bb: empty(),
+          whc: empty(),
+          nfon: empty(),
+          mpf_broadband: empty(),
+          mpf_voice: empty(),
+        },
       }
     }
 
@@ -111,7 +123,8 @@ export default async function TargetsPage({
         bb: calcStats('bb'),
         whc: calcStats('whc'),
         nfon: calcStats('nfon'),
-        mpf: calcStats('mpf'),
+        mpf_broadband: calcStats('mpf_broadband'),
+        mpf_voice: calcStats('mpf_voice'),
       },
     }
   }

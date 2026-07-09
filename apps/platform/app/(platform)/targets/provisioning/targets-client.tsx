@@ -19,7 +19,8 @@ type ServiceStats = {
   bb: ServiceStat
   whc: ServiceStat
   nfon: ServiceStat
-  mpf: ServiceStat
+  mpf_broadband: ServiceStat
+  mpf_voice: ServiceStat
 }
 
 type StatsBlock = {
@@ -31,7 +32,16 @@ const serviceColours: Record<string, { bar: string; badge: string }> = {
   bb: { bar: 'bg-blue-500', badge: 'bg-blue-100 text-blue-800' },
   whc: { bar: 'bg-purple-500', badge: 'bg-purple-100 text-purple-800' },
   nfon: { bar: 'bg-indigo-500', badge: 'bg-indigo-100 text-indigo-800' },
-  mpf: { bar: 'bg-orange-500', badge: 'bg-orange-100 text-orange-800' },
+  mpf_broadband: { bar: 'bg-orange-500', badge: 'bg-orange-100 text-orange-800' },
+  mpf_voice: { bar: 'bg-amber-500', badge: 'bg-amber-100 text-amber-800' },
+}
+
+const serviceLabels: Record<string, string> = {
+  bb: 'BB',
+  whc: 'WHC',
+  nfon: 'NFON',
+  mpf_broadband: 'MPF BB',
+  mpf_voice: 'MPF Voice',
 }
 
 function ProgressBar({ pct, colour }: { pct: number; colour: string }) {
@@ -52,7 +62,7 @@ function ServiceCard({ type, stat }: { type: string; stat: ServiceStat }) {
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium flex items-center gap-2">
           <span className={cn('px-2 py-0.5 rounded text-xs font-bold', colours.badge)}>
-            {type.toUpperCase()}
+            {serviceLabels[type] ?? type.toUpperCase()}
           </span>
           <span className="text-muted-foreground font-normal">provisioning</span>
         </CardTitle>
@@ -147,7 +157,8 @@ function StatsView({ stats }: { stats: StatsBlock }) {
         <ServiceCard type="bb" stat={serviceStats.bb} />
         <ServiceCard type="whc" stat={serviceStats.whc} />
         <ServiceCard type="nfon" stat={serviceStats.nfon} />
-        <ServiceCard type="mpf" stat={serviceStats.mpf} />
+        <ServiceCard type="mpf_broadband" stat={serviceStats.mpf_broadband} />
+        <ServiceCard type="mpf_voice" stat={serviceStats.mpf_voice} />
       </div>
 
       {totalDeals === 0 && (

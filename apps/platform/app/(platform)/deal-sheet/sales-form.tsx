@@ -18,19 +18,6 @@ import { cn } from '@/lib/utils'
 import { AlertCircle } from 'lucide-react'
 import { submitDeal } from './actions'
 
-const SALES_AGENTS = [
-  'Tiahh Price',
-  'Jessica Ingram',
-  'Leanna Friend',
-  'Jack Kellcishta',
-  'Robert Woodhams',
-  'Ally Grace',
-  'Nick Burill',
-  'Sinead Whyte',
-  'Rob Rowley',
-  'Katie Stevens',
-  'Bailey Hadley',
-]
 const TITLES = ['Mr', 'Mrs', 'Miss', 'Ms', 'Dr', 'Prof', 'Mx']
 const CALL_TARIFFS = [
   'Unlimited Calls to UK Landlines',
@@ -165,10 +152,12 @@ function PriceBreakdown({ lines }: { lines: { label: string; amount: number }[] 
 export default function SalesForm({
   tenantId,
   createdBy,
+  salesAgents,
   prefilledCustomer,
 }: {
   tenantId: string
   createdBy: string
+  salesAgents: string[]
   prefilledCustomer: {
     id: string
     companyName: string | null
@@ -500,7 +489,7 @@ export default function SalesForm({
             <SelectValue placeholder="Select sales agent" />
           </SelectTrigger>
           <SelectContent>
-            {SALES_AGENTS.map((a) => (
+            {salesAgents.map((a) => (
               <SelectItem key={a} value={a}>
                 {a}
               </SelectItem>
@@ -520,7 +509,7 @@ export default function SalesForm({
             <SelectValue placeholder="Select closing agent" />
           </SelectTrigger>
           <SelectContent>
-            {SALES_AGENTS.map((a) => (
+            {salesAgents.map((a) => (
               <SelectItem key={a} value={a}>
                 {a}
               </SelectItem>
