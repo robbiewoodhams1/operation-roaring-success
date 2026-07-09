@@ -96,6 +96,13 @@ export function ProvisionModal({ data }: { data: ProvisionData }) {
       label: 'Business Number',
       value: data.businessType === 'residential' ? '03300431746' : '01622392476',
     },
+    {
+      label: 'Business Email',
+      value:
+        data.businessType === 'residential'
+          ? 'support@premier-talk.com'
+          : 'support@digitalfibre.uk',
+    },
   ].filter((f) => f.value)
 
   return (
