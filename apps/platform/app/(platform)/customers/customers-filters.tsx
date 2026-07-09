@@ -5,7 +5,8 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { CustomersTable } from './customers-table'
-import { X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Pagination } from '@/components/pagination'
+import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Customer } from '@roaring/db'
 import { capitalise } from '@/components/capitalise'
@@ -76,7 +77,7 @@ export function CustomersFilters({
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search account, name, email, postcode..."
+          placeholder="Search account, name, email, postcode, phone..."
           className="max-w-sm"
         />
         {hasFilters && (
@@ -139,34 +140,12 @@ export function CustomersFilters({
 
       <CustomersTable customers={customers} />
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-2">
-          <p className="text-xs text-muted-foreground">
-            Page {page} of {totalPages}
-          </p>
-          <div className="flex gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page <= 1 || isPending}
-              onClick={() => goToPage(page - 1)}
-            >
-              <ChevronLeft className="size-3.5 mr-1" />
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page >= totalPages || isPending}
-              onClick={() => goToPage(page + 1)}
-            >
-              Next
-              <ChevronRight className="size-3.5 ml-1" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        onPageChange={goToPage}
+        isPending={isPending}
+      />
     </div>
   )
 }

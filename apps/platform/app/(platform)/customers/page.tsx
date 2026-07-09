@@ -29,7 +29,9 @@ export default async function CustomersPage({
         ilike(customers.firstName, `%${query}%`),
         ilike(customers.lastName, `%${query}%`),
         ilike(customers.email, `%${query}%`),
-        ilike(customers.postcode, `%${query}%`)
+        ilike(customers.postcode, `%${query}%`),
+        ilike(customers.mobile, `%${query}%`),
+        ilike(customers.landline, `%${query}%`)
       )!
     )
   }

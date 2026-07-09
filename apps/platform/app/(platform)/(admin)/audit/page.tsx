@@ -24,7 +24,6 @@ export default async function AuditPage() {
     })
     .from(auditLogs)
     .orderBy(desc(auditLogs.changedAt))
-    .limit(200)
 
   // Get user names for changed_by IDs
   const userIds = [...new Set(logs.map((l) => l.changedBy).filter(Boolean))] as string[]

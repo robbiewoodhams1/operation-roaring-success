@@ -59,6 +59,8 @@ export type DealRow = {
   companyName: string | null
   firstName: string | null
   lastName: string | null
+  mobile: string | null
+  landline: string | null
   bundlePrice: string | null
   wholesaleCost: string | null
   monthlyGp: string | null
@@ -81,6 +83,8 @@ export type ProvisioningRow = {
   companyName: string | null
   firstName: string | null
   lastName: string | null
+  mobile: string | null
+  landline: string | null
   salesAgent: string | null
   dealDate: string | null
   bbStatus: string | null

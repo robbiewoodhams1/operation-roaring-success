@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { DebtTable } from './debt-table'
+import { Pagination, usePagination } from '@/components/pagination'
 import { type DebtRow } from '@/lib/types'
 import { DEBT_OUTCOMES, DEBT_OUTCOME_COLOURS, DEBT_OUTCOME_LABELS } from '@/lib/constants'
 
@@ -39,6 +40,8 @@ export function DebtFilters({
     }
     return result
   }, [debts, search, outcomeFilter, userMap, provMap])
+
+  const { pageItems, page, totalPages, setPage } = usePagination(filtered)
 
   function toggleOutcome(o: string) {
     setOutcomeFilter((p) => (p.includes(o) ? p.filter((x) => x !== o) : [...p, o]))
@@ -94,7 +97,9 @@ export function DebtFilters({
       <p className="text-xs text-muted-foreground">
         {filtered.length} of {debts.length} records
       </p>
-      <DebtTable debts={filtered} userMap={userMap} provMap={provMap} />
+      <DebtTable debts={pageItems} userMap={userMap} provMap={provMap} />
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   )
 }

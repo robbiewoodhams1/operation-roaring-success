@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { ChevronDown, ChevronUp } from 'lucide-react'
+import { Pagination, usePagination } from '@/components/pagination'
 import { type AuditLog } from '@/lib/types'
 import { AUDIT_ACTION_COLOURS, AUDIT_TABLE_LABELS } from '@/lib/constants'
 
@@ -227,6 +228,8 @@ export function AuditClient({
     return result
   }, [logs, search, actionFilter, tableFilter, userNames, dateFilter, customDate])
 
+  const { pageItems, page, totalPages, setPage } = usePagination(filtered)
+
   function toggleFilter(value: string, state: string[], setter: (v: string[]) => void) {
     setter(state.includes(value) ? state.filter((x) => x !== value) : [...state, value])
   }
@@ -235,7 +238,7 @@ export function AuditClient({
     <div className="p-6 w-full space-y-4">
       <div>
         <h1 className="text-2xl font-semibold">Audit Log</h1>
-        <p className="text-sm text-muted-foreground mt-1">Last 200 changes across all tables</p>
+        <p className="text-sm text-muted-foreground mt-1">Audit changes across all tables</p>
       </div>
 
       <div className="space-y-3">
@@ -325,7 +328,7 @@ export function AuditClient({
       </div>
 
       <div className="space-y-2">
-        {filtered.map((log) => (
+        {pageItems.map((log) => (
           <LogRow
             key={log.id}
             log={log}
@@ -336,6 +339,8 @@ export function AuditClient({
           <p className="text-center text-sm text-muted-foreground py-8">No entries found.</p>
         )}
       </div>
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   )
 }

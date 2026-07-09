@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { ProvisioningTable } from './provisioning-table'
+import { Pagination, usePagination } from '@/components/pagination'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { capitalise } from '@/components/capitalise'
@@ -95,6 +96,8 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
           r.accountNumber?.toLowerCase().includes(q) ||
           (r.companyName ?? '').toLowerCase().includes(q) ||
           `${r.firstName} ${r.lastName}`.toLowerCase().includes(q) ||
+          r.mobile?.toLowerCase().includes(q) ||
+          r.landline?.toLowerCase().includes(q) ||
           r.provisioner?.toLowerCase().includes(q) ||
           r.salesAgent?.toLowerCase().includes(q)
       )
@@ -157,6 +160,8 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
     customerTypeFilter,
   ])
 
+  const { pageItems, page, totalPages, setPage } = usePagination(filtered)
+
   function toggle(value: string, state: string[], setter: (v: string[]) => void) {
     setter(state.includes(value) ? state.filter((x) => x !== value) : [...state, value])
   }
@@ -197,7 +202,7 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search account, customer, provisioner..."
+          placeholder="Search account, customer, phone, provisioner..."
           className="max-w-sm"
         />
         <div className="flex gap-1">
@@ -345,7 +350,9 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
       <p className="text-xs text-muted-foreground">
         {filtered.length} of {rows.length} orders
       </p>
-      <ProvisioningTable rows={filtered} />
+      <ProvisioningTable rows={pageItems} />
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   )
 }

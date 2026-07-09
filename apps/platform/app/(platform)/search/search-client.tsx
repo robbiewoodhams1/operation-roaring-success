@@ -65,7 +65,7 @@ export function SearchClient({ tenantId }: { tenantId: string }) {
           autoFocus
           value={query}
           onChange={(e) => handleSearch(e.target.value)}
-          placeholder="Search by account number, name, company, postcode, reference..."
+          placeholder="Search by account number, name, company, postcode, phone, reference..."
           className="pl-9 h-11"
         />
         {isPending && (

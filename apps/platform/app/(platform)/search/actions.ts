@@ -23,6 +23,7 @@ export async function search(tenantId: string, query: string): Promise<SearchRes
           ilike(customers.email, q),
           ilike(customers.postcode, q),
           ilike(customers.mobile, q),
+          ilike(customers.landline, q),
           ilike(customers.addressLine1, q)
         )
       )
@@ -65,6 +66,8 @@ export async function search(tenantId: string, query: string): Promise<SearchRes
           ilike(customers.companyName, q),
           ilike(customers.firstName, q),
           ilike(customers.lastName, q),
+          ilike(customers.mobile, q),
+          ilike(customers.landline, q),
           ilike(deals.salesAgent, q),
           ilike(deals.closingAgent, q),
           ilike(deals.softFacts, q)
@@ -108,7 +111,9 @@ export async function search(tenantId: string, query: string): Promise<SearchRes
         ilike(customers.accountNumber, q),
         ilike(customers.companyName, q),
         ilike(customers.firstName, q),
-        ilike(customers.lastName, q)
+        ilike(customers.lastName, q),
+        ilike(customers.mobile, q),
+        ilike(customers.landline, q)
       )
     )
     .limit(20)

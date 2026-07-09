@@ -27,6 +27,8 @@ const getCachedProvisioning = (tenantId: string) =>
           companyName: customers.companyName,
           firstName: customers.firstName,
           lastName: customers.lastName,
+          mobile: customers.mobile,
+          landline: customers.landline,
           salesAgent: deals.salesAgent,
           dealDate: deals.dealDate,
           customerType: customers.type,

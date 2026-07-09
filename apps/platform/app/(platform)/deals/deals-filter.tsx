@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { DealsTable } from './deals-table'
+import { Pagination, usePagination } from '@/components/pagination'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { capitalise } from '@/components/capitalise'
@@ -41,6 +42,8 @@ export function DealsFilters({ deals }: { deals: DealRow[] }) {
           r.accountNumber?.toLowerCase().includes(q) ||
           (r.companyName ?? '').toLowerCase().includes(q) ||
           `${r.firstName} ${r.lastName}`.toLowerCase().includes(q) ||
+          r.mobile?.toLowerCase().includes(q) ||
+          r.landline?.toLowerCase().includes(q) ||
           r.salesAgent?.toLowerCase().includes(q) ||
           r.closingAgent?.toLowerCase().includes(q)
       )
@@ -89,6 +92,8 @@ export function DealsFilters({ deals }: { deals: DealRow[] }) {
     closingAgentFilter,
     sort,
   ])
+
+  const { pageItems, page, totalPages, setPage } = usePagination(filtered)
 
   function toggle(value: string, state: string[], setter: (v: string[]) => void) {
     setter(state.includes(value) ? state.filter((x) => x !== value) : [...state, value])
@@ -144,7 +149,7 @@ export function DealsFilters({ deals }: { deals: DealRow[] }) {
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search account, customer, agent..."
+          placeholder="Search account, customer, phone, agent..."
           className="max-w-sm"
         />
         <div className="flex gap-1">
@@ -260,7 +265,9 @@ export function DealsFilters({ deals }: { deals: DealRow[] }) {
         {filtered.length} of {deals.length} deals
       </p>
 
-      <DealsTable deals={filtered} />
+      <DealsTable deals={pageItems} />
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   )
 }

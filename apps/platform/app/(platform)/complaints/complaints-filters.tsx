@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ComplaintsTable } from './complaints-table'
+import { Pagination, usePagination } from '@/components/pagination'
 import { type ComplaintRow } from '@/lib/types'
 import {
   COMPLAINT_STATUSES,
@@ -55,6 +56,8 @@ export function ComplaintsFilters({
 
     return result
   }, [complaints, search, statusFilter, typeFilter, userMap, provMap])
+
+  const { pageItems, page, totalPages, setPage } = usePagination(filtered)
 
   function toggleStatus(s: string) {
     setStatusFilter((p) => (p.includes(s) ? p.filter((x) => x !== s) : [...p, s]))
@@ -136,7 +139,9 @@ export function ComplaintsFilters({
       <p className="text-xs text-muted-foreground">
         {filtered.length} of {complaints.length} complaints
       </p>
-      <ComplaintsTable complaints={filtered} userMap={userMap} provMap={provMap} />
+      <ComplaintsTable complaints={pageItems} userMap={userMap} provMap={provMap} />
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   )
 }

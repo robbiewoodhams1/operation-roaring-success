@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TransferCeasesTable } from './transfers-table'
+import { Pagination, usePagination } from '@/components/pagination'
 import {
   TRANSFER_CEASE_TYPES,
   TRANSFER_CEASE_STATUSES,
@@ -55,6 +56,8 @@ export function TransferCeasesFilters({
     if (typeFilter.length > 0) result = result.filter((r) => typeFilter.includes(r.type))
     return result
   }, [records, search, statusFilter, typeFilter, userMap, provMap])
+
+  const { pageItems, page, totalPages, setPage } = usePagination(filtered)
 
   function toggleStatus(s: string) {
     setStatusFilter((p) => (p.includes(s) ? p.filter((x) => x !== s) : [...p, s]))
@@ -136,7 +139,9 @@ export function TransferCeasesFilters({
       <p className="text-xs text-muted-foreground">
         {filtered.length} of {records.length} records
       </p>
-      <TransferCeasesTable records={filtered} userMap={userMap} provMap={provMap} />
+      <TransferCeasesTable records={pageItems} userMap={userMap} provMap={provMap} />
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   )
 }

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { FaultsTable } from './faults-table'
+import { Pagination, usePagination } from '@/components/pagination'
 import { type FaultRow } from '@/lib/types'
 import {
   FAULT_STATUSES,
@@ -55,6 +56,8 @@ export function FaultsFilters({
 
     return result
   }, [faults, search, statusFilter, typeFilter, userMap, provMap])
+
+  const { pageItems, page, totalPages, setPage } = usePagination(filtered)
 
   function toggleStatus(s: string) {
     setStatusFilter((p) => (p.includes(s) ? p.filter((x) => x !== s) : [...p, s]))
@@ -136,7 +139,9 @@ export function FaultsFilters({
       <p className="text-xs text-muted-foreground">
         {filtered.length} of {faults.length} faults
       </p>
-      <FaultsTable faults={filtered} userMap={userMap} provMap={provMap} />
+      <FaultsTable faults={pageItems} userMap={userMap} provMap={provMap} />
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   )
 }

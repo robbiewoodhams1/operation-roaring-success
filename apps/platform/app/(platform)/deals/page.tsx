@@ -21,6 +21,8 @@ const getCachedDeals = (tenantId: string) =>
           firstName: customers.firstName,
           lastName: customers.lastName,
           accountNumber: customers.accountNumber,
+          mobile: customers.mobile,
+          landline: customers.landline,
           bundlePrice: dealPricing.bundlePrice,
           wholesaleCost: dealPricing.wholesaleCost,
           monthlyGp: dealPricing.monthlyGp,
