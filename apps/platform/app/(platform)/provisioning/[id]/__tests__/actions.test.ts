@@ -62,6 +62,8 @@ const baseProvData = {
   wc1Comments: null,
   wc2Outcome: null,
   wc2Comments: null,
+  wc3Outcome: null,
+  wc3Comments: null,
   status: 'in_progress',
   proposedLiveDate: null,
   dateOrdered: null,
@@ -70,9 +72,10 @@ const baseProvData = {
   provisioner: null,
   lastCheckedAt: null,
   lastCheckedBy: null,
-  routerDispatched: false,
+  routerDispatched: 'no',
   routerDispatchRef: null,
   routerTrackingNumber: null,
+  routerOrderedDate: null,
 }
 
 const baseServiceData = {

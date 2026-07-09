@@ -190,6 +190,6 @@ describe('search', () => {
 
     const results = await search('tenant-1', 'Jane')
 
-    expect(results[0].title).toBe('Jane Smith')
+    expect(results[0]?.title).toBe('Jane Smith')
   })
 })

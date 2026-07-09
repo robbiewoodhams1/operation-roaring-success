@@ -9,7 +9,7 @@ export default async function InviteUserPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-semibold">Invite user</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          They'll receive an email to set up their account
+          They&apos;ll receive an email to set up their account
         </p>
       </div>
       <InviteUserForm />

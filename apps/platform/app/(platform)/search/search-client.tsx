@@ -75,7 +75,7 @@ export function SearchClient({ tenantId }: { tenantId: string }) {
 
       {hasSearched && results.length === 0 && !isPending && (
         <p className="text-sm text-muted-foreground text-center py-8">
-          No results for <span className="font-medium">"{query}"</span>
+          No results for <span className="font-medium">&quot;{query}&quot;</span>
         </p>
       )}
 
