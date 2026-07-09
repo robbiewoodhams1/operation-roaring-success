@@ -20,6 +20,7 @@ type ProvisionData = {
   postcode: string | null
   broadbandType: string | null
   ontSerialNumber: string | null
+  businessType: string | null
 }
 
 function CopyField({
@@ -87,6 +88,14 @@ export function ProvisionModal({ data }: { data: ProvisionData }) {
     { label: 'Address line 3', value: data.addressLine3 },
     { label: 'Postcode', value: data.postcode },
     { label: 'Broadband type', value: data.broadbandType },
+    {
+      label: 'Business Name',
+      value: data.businessType === 'residential' ? 'Premier Talk' : 'Digital Fibre',
+    },
+    {
+      label: 'Business Number',
+      value: data.businessType === 'residential' ? '03300431746' : '01622392476',
+    },
   ].filter((f) => f.value)
 
   return (

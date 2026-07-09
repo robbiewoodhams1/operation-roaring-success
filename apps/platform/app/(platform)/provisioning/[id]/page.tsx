@@ -181,6 +181,7 @@ export default async function ProvisioningDetailPage({
             postcode: customer.postcode,
             broadbandType: services?.broadbandType ?? null,
             ontSerialNumber: services?.ontSerialNumber ?? null,
+            businessType: customer.type,
           }}
         />
       </div>
