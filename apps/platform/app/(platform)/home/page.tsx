@@ -171,7 +171,9 @@ export default async function HomePage() {
   )
 
   // ── Services applied today ───────────────────────────────────────────────
-  function appliedToday(serviceType: 'bb' | 'whc' | 'mpf' | 'nfon'): number {
+  function appliedToday(
+    serviceType: 'bb' | 'whc' | 'mpf_broadband' | 'mpf_voice' | 'nfon'
+  ): number {
     return countToday(
       serviceIdsChangedTo('applied', serviceType),
       servicesToday
@@ -199,7 +201,8 @@ export default async function HomePage() {
     prov_delayed: { value: String(delayedToday) },
     bb_ordered_today: { value: String(appliedToday('bb')) },
     whc_ordered_today: { value: String(appliedToday('whc')) },
-    mpf_ordered_today: { value: String(appliedToday('mpf')) },
+    mpf_broadband_ordered_today: { value: String(appliedToday('mpf_broadband')) },
+    mpf_voice_ordered_today: { value: String(appliedToday('mpf_voice')) },
     nfon_ordered_today: { value: String(appliedToday('nfon')) },
     routers_ordered_today: { value: String(routerCount) },
     active_customers: { value: String(activeCustomers) },

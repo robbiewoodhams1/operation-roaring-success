@@ -14,7 +14,8 @@ export type StatKey =
   | 'customers_total'
   | 'bb_ordered_today'
   | 'whc_ordered_today'
-  | 'mpf_ordered_today'
+  | 'mpf_broadband_ordered_today'
+  | 'mpf_voice_ordered_today'
   | 'nfon_ordered_today'
   | 'routers_ordered_today'
 
@@ -36,7 +37,8 @@ export const STAT_DEFINITIONS: Record<StatKey, { label: string; category: StatCa
   customers_total: { label: 'Total customers', category: 'customers' },
   bb_ordered_today: { label: 'BB applied today', category: 'provisioning' },
   whc_ordered_today: { label: 'WHC applied today', category: 'provisioning' },
-  mpf_ordered_today: { label: 'MPF applied today', category: 'provisioning' },
+  mpf_broadband_ordered_today: { label: 'MPF Broadband applied today', category: 'provisioning' },
+  mpf_voice_ordered_today: { label: 'MPF Voice applied today', category: 'provisioning' },
   nfon_ordered_today: { label: 'NFON applied today', category: 'provisioning' },
   routers_ordered_today: { label: 'Routers ordered today', category: 'provisioning' },
 }

@@ -189,7 +189,12 @@ export function HomeClient({
   useEffect(() => {
     try {
       const stored = localStorage.getItem(statsKey)
-      if (stored) setActiveStats(JSON.parse(stored))
+      if (stored) {
+        // Drop any keys that no longer exist (e.g. renamed/removed stats) so a
+        // stale saved key can't crash StatCard.
+        const parsed = JSON.parse(stored) as StatKey[]
+        setActiveStats(parsed.filter((k) => k in STAT_DEFINITIONS))
+      }
     } catch {}
   }, [statsKey])
 
