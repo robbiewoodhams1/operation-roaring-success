@@ -184,19 +184,19 @@ export function HomeClient({
   // Stats — persisted in localStorage
   const statsKey = `home-stats-${userId}`
   const [showAddStat, setShowAddStat] = useState(false)
+  const [activeStats, setActiveStats] = useState<StatKey[]>(DEFAULT_STATS)
 
-  const [activeStats, setActiveStats] = useState<StatKey[]>(() => {
-    if (typeof window === 'undefined') return DEFAULT_STATS
+  useEffect(() => {
     try {
-      const stored = localStorage.getItem(`home-stats-${userId}`)
-      if (!stored) return DEFAULT_STATS
+      const stored = localStorage.getItem(statsKey)
+      if (!stored) return
       const parsed = JSON.parse(stored) as StatKey[]
       const filtered = parsed.filter((k) => k in STAT_DEFINITIONS)
-      return filtered.length > 0 ? filtered : DEFAULT_STATS
-    } catch {
-      return DEFAULT_STATS
-    }
-  })
+      if (filtered.length > 0) {
+        setActiveStats(filtered)
+      }
+    } catch {}
+  }, [statsKey])
 
   function saveStats(updated: StatKey[]) {
     setActiveStats(updated)
@@ -216,16 +216,15 @@ export function HomeClient({
 
   // Todo list — persisted in localStorage
   const storageKey = `todos-${userId}`
-  const [todos, setTodos] = useState<Todo[]>(() => {
-    if (typeof window === 'undefined') return []
-    try {
-      const stored = localStorage.getItem(`todos-${userId}`)
-      return stored ? JSON.parse(stored) : []
-    } catch {
-      return []
-    }
-  })
+  const [todos, setTodos] = useState<Todo[]>([])
   const [newTodo, setNewTodo] = useState('')
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(storageKey)
+      if (stored) setTodos(JSON.parse(stored))
+    } catch {}
+  }, [storageKey])
 
   function saveTodos(updated: Todo[]) {
     setTodos(updated)

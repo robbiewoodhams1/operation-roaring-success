@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { ProvisioningTable } from './provisioning-table'
@@ -17,6 +17,40 @@ import {
   WC_COLOURS,
   WC_OUTCOMES,
 } from '@/lib/constants'
+
+const FILTER_STORAGE_KEY = 'provisioning-filters'
+
+type FilterState = {
+  search: string
+  statusFilter: string[]
+  bbStatusFilter: string[]
+  whcStatusFilter: string[]
+  nfonStatusFilter: string[]
+  mpfBbStatusFilter: string[]
+  mpfVoiceStatusFilter: string[]
+  mobileStatusFilter: string[]
+  wc1Filter: string[]
+  routerFilter: 'all' | 'yes' | 'no' | 'not_needed'
+  wcDoneFilter: 'all' | 'done' | 'not_done'
+  sort: SortOption
+  customerTypeFilter: 'all' | 'business' | 'residential'
+}
+
+const DEFAULT_FILTERS: FilterState = {
+  search: '',
+  statusFilter: [],
+  bbStatusFilter: [],
+  whcStatusFilter: [],
+  nfonStatusFilter: [],
+  mpfBbStatusFilter: [],
+  mpfVoiceStatusFilter: [],
+  mobileStatusFilter: [],
+  wc1Filter: [],
+  routerFilter: 'all',
+  wcDoneFilter: 'all',
+  sort: 'newest',
+  customerTypeFilter: 'all',
+}
 
 const FilterChip = ({
   label,
@@ -70,21 +104,98 @@ const ServiceFilter = ({
 )
 
 export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string[]>([])
-  const [bbStatusFilter, setBbStatusFilter] = useState<string[]>([])
-  const [whcStatusFilter, setWhcStatusFilter] = useState<string[]>([])
-  const [nfonStatusFilter, setNfonStatusFilter] = useState<string[]>([])
-  const [mpfBbStatusFilter, setMpfBbStatusFilter] = useState<string[]>([])
-  const [mpfVoiceStatusFilter, setMpfVoiceStatusFilter] = useState<string[]>([])
-  const [mobileStatusFilter, setMobileStatusFilter] = useState<string[]>([])
-  const [wc1Filter, setWc1Filter] = useState<string[]>([])
-  const [routerFilter, setRouterFilter] = useState<'all' | 'yes' | 'no' | 'not_needed'>('all')
-  const [wcDoneFilter, setWcDoneFilter] = useState<'all' | 'done' | 'not_done'>('all')
-  const [sort, setSort] = useState<SortOption>('newest')
-  const [customerTypeFilter, setCustomerTypeFilter] = useState<'all' | 'business' | 'residential'>(
-    'all'
+  const [search, setSearch] = useState(DEFAULT_FILTERS.search)
+  const [statusFilter, setStatusFilter] = useState<string[]>(DEFAULT_FILTERS.statusFilter)
+  const [bbStatusFilter, setBbStatusFilter] = useState<string[]>(DEFAULT_FILTERS.bbStatusFilter)
+  const [whcStatusFilter, setWhcStatusFilter] = useState<string[]>(DEFAULT_FILTERS.whcStatusFilter)
+  const [nfonStatusFilter, setNfonStatusFilter] = useState<string[]>(
+    DEFAULT_FILTERS.nfonStatusFilter
   )
+  const [mpfBbStatusFilter, setMpfBbStatusFilter] = useState<string[]>(
+    DEFAULT_FILTERS.mpfBbStatusFilter
+  )
+  const [mpfVoiceStatusFilter, setMpfVoiceStatusFilter] = useState<string[]>(
+    DEFAULT_FILTERS.mpfVoiceStatusFilter
+  )
+  const [mobileStatusFilter, setMobileStatusFilter] = useState<string[]>(
+    DEFAULT_FILTERS.mobileStatusFilter
+  )
+  const [wc1Filter, setWc1Filter] = useState<string[]>(DEFAULT_FILTERS.wc1Filter)
+  const [routerFilter, setRouterFilter] = useState<FilterState['routerFilter']>(
+    DEFAULT_FILTERS.routerFilter
+  )
+  const [wcDoneFilter, setWcDoneFilter] = useState<FilterState['wcDoneFilter']>(
+    DEFAULT_FILTERS.wcDoneFilter
+  )
+  const [sort, setSort] = useState<SortOption>(DEFAULT_FILTERS.sort)
+  const [customerTypeFilter, setCustomerTypeFilter] = useState<FilterState['customerTypeFilter']>(
+    DEFAULT_FILTERS.customerTypeFilter
+  )
+
+  const [hasLoaded, setHasLoaded] = useState(false)
+
+  // Load persisted filters on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(FILTER_STORAGE_KEY)
+      if (stored) {
+        const parsed = JSON.parse(stored) as Partial<FilterState>
+
+        if (parsed.search !== undefined) setSearch(parsed.search)
+        if (parsed.statusFilter) setStatusFilter(parsed.statusFilter)
+        if (parsed.bbStatusFilter) setBbStatusFilter(parsed.bbStatusFilter)
+        if (parsed.whcStatusFilter) setWhcStatusFilter(parsed.whcStatusFilter)
+        if (parsed.nfonStatusFilter) setNfonStatusFilter(parsed.nfonStatusFilter)
+        if (parsed.mpfBbStatusFilter) setMpfBbStatusFilter(parsed.mpfBbStatusFilter)
+        if (parsed.mpfVoiceStatusFilter) setMpfVoiceStatusFilter(parsed.mpfVoiceStatusFilter)
+        if (parsed.mobileStatusFilter) setMobileStatusFilter(parsed.mobileStatusFilter)
+        if (parsed.wc1Filter) setWc1Filter(parsed.wc1Filter)
+        if (parsed.routerFilter) setRouterFilter(parsed.routerFilter)
+        if (parsed.wcDoneFilter) setWcDoneFilter(parsed.wcDoneFilter)
+        if (parsed.sort) setSort(parsed.sort)
+        if (parsed.customerTypeFilter) setCustomerTypeFilter(parsed.customerTypeFilter)
+      }
+    } catch {}
+    setHasLoaded(true)
+  }, [])
+
+  // Persist filters whenever any of them change — but only after initial load
+  useEffect(() => {
+    if (!hasLoaded) return
+    try {
+      const state: FilterState = {
+        search,
+        statusFilter,
+        bbStatusFilter,
+        whcStatusFilter,
+        nfonStatusFilter,
+        mpfBbStatusFilter,
+        mpfVoiceStatusFilter,
+        mobileStatusFilter,
+        wc1Filter,
+        routerFilter,
+        wcDoneFilter,
+        sort,
+        customerTypeFilter,
+      }
+      localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(state))
+    } catch {}
+  }, [
+    hasLoaded,
+    search,
+    statusFilter,
+    bbStatusFilter,
+    whcStatusFilter,
+    nfonStatusFilter,
+    mpfBbStatusFilter,
+    mpfVoiceStatusFilter,
+    mobileStatusFilter,
+    wc1Filter,
+    routerFilter,
+    wcDoneFilter,
+    sort,
+    customerTypeFilter,
+  ])
 
   const filtered = useMemo(() => {
     let result = [...rows]
@@ -193,6 +304,9 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
     setWcDoneFilter('all')
     setCustomerTypeFilter('all')
     setSort('newest')
+    try {
+      localStorage.removeItem(FILTER_STORAGE_KEY)
+    } catch {}
   }
 
   return (
