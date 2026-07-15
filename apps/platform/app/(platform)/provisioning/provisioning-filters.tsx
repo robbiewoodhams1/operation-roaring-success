@@ -52,6 +52,18 @@ const DEFAULT_FILTERS: FilterState = {
   customerTypeFilter: 'all',
 }
 
+function loadInitialFilters(): FilterState {
+  if (typeof window === 'undefined') return DEFAULT_FILTERS
+  try {
+    const stored = localStorage.getItem(FILTER_STORAGE_KEY)
+    if (!stored) return DEFAULT_FILTERS
+    const parsed = JSON.parse(stored) as Partial<FilterState>
+    return { ...DEFAULT_FILTERS, ...parsed }
+  } catch {
+    return DEFAULT_FILTERS
+  }
+}
+
 const FilterChip = ({
   label,
   active,
@@ -104,84 +116,11 @@ const ServiceFilter = ({
 )
 
 export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
-  const [search, setSearch] = useState(DEFAULT_FILTERS.search)
-  const [statusFilter, setStatusFilter] = useState<string[]>(DEFAULT_FILTERS.statusFilter)
-  const [bbStatusFilter, setBbStatusFilter] = useState<string[]>(DEFAULT_FILTERS.bbStatusFilter)
-  const [whcStatusFilter, setWhcStatusFilter] = useState<string[]>(DEFAULT_FILTERS.whcStatusFilter)
-  const [nfonStatusFilter, setNfonStatusFilter] = useState<string[]>(
-    DEFAULT_FILTERS.nfonStatusFilter
-  )
-  const [mpfBbStatusFilter, setMpfBbStatusFilter] = useState<string[]>(
-    DEFAULT_FILTERS.mpfBbStatusFilter
-  )
-  const [mpfVoiceStatusFilter, setMpfVoiceStatusFilter] = useState<string[]>(
-    DEFAULT_FILTERS.mpfVoiceStatusFilter
-  )
-  const [mobileStatusFilter, setMobileStatusFilter] = useState<string[]>(
-    DEFAULT_FILTERS.mobileStatusFilter
-  )
-  const [wc1Filter, setWc1Filter] = useState<string[]>(DEFAULT_FILTERS.wc1Filter)
-  const [routerFilter, setRouterFilter] = useState<FilterState['routerFilter']>(
-    DEFAULT_FILTERS.routerFilter
-  )
-  const [wcDoneFilter, setWcDoneFilter] = useState<FilterState['wcDoneFilter']>(
-    DEFAULT_FILTERS.wcDoneFilter
-  )
-  const [sort, setSort] = useState<SortOption>(DEFAULT_FILTERS.sort)
-  const [customerTypeFilter, setCustomerTypeFilter] = useState<FilterState['customerTypeFilter']>(
-    DEFAULT_FILTERS.customerTypeFilter
-  )
+  // Single state object loaded via lazy initializer — no useEffect needed for loading,
+  // and hydration mismatch is avoided since typeof window check falls back to defaults on server.
+  const [filters, setFilters] = useState<FilterState>(loadInitialFilters)
 
-  const [hasLoaded, setHasLoaded] = useState(false)
-
-  // Load persisted filters on mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(FILTER_STORAGE_KEY)
-      if (stored) {
-        const parsed = JSON.parse(stored) as Partial<FilterState>
-
-        if (parsed.search !== undefined) setSearch(parsed.search)
-        if (parsed.statusFilter) setStatusFilter(parsed.statusFilter)
-        if (parsed.bbStatusFilter) setBbStatusFilter(parsed.bbStatusFilter)
-        if (parsed.whcStatusFilter) setWhcStatusFilter(parsed.whcStatusFilter)
-        if (parsed.nfonStatusFilter) setNfonStatusFilter(parsed.nfonStatusFilter)
-        if (parsed.mpfBbStatusFilter) setMpfBbStatusFilter(parsed.mpfBbStatusFilter)
-        if (parsed.mpfVoiceStatusFilter) setMpfVoiceStatusFilter(parsed.mpfVoiceStatusFilter)
-        if (parsed.mobileStatusFilter) setMobileStatusFilter(parsed.mobileStatusFilter)
-        if (parsed.wc1Filter) setWc1Filter(parsed.wc1Filter)
-        if (parsed.routerFilter) setRouterFilter(parsed.routerFilter)
-        if (parsed.wcDoneFilter) setWcDoneFilter(parsed.wcDoneFilter)
-        if (parsed.sort) setSort(parsed.sort)
-        if (parsed.customerTypeFilter) setCustomerTypeFilter(parsed.customerTypeFilter)
-      }
-    } catch {}
-    setHasLoaded(true)
-  }, [])
-
-  // Persist filters whenever any of them change — but only after initial load
-  useEffect(() => {
-    if (!hasLoaded) return
-    try {
-      const state: FilterState = {
-        search,
-        statusFilter,
-        bbStatusFilter,
-        whcStatusFilter,
-        nfonStatusFilter,
-        mpfBbStatusFilter,
-        mpfVoiceStatusFilter,
-        mobileStatusFilter,
-        wc1Filter,
-        routerFilter,
-        wcDoneFilter,
-        sort,
-        customerTypeFilter,
-      }
-      localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(state))
-    } catch {}
-  }, [
-    hasLoaded,
+  const {
     search,
     statusFilter,
     bbStatusFilter,
@@ -195,7 +134,18 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
     wcDoneFilter,
     sort,
     customerTypeFilter,
-  ])
+  } = filters
+
+  function updateFilter<K extends keyof FilterState>(key: K, value: FilterState[K]) {
+    setFilters((prev) => ({ ...prev, [key]: value }))
+  }
+
+  // Persist on every change — single effect, single localStorage write, no setState inside it
+  useEffect(() => {
+    try {
+      localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filters))
+    } catch {}
+  }, [filters])
 
   const filtered = useMemo(() => {
     let result = [...rows]
@@ -273,8 +223,9 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
 
   const { pageItems, page, totalPages, setPage } = usePagination(filtered)
 
-  function toggle(value: string, state: string[], setter: (v: string[]) => void) {
-    setter(state.includes(value) ? state.filter((x) => x !== value) : [...state, value])
+  function toggle(value: string, state: string[], key: keyof FilterState) {
+    const next = state.includes(value) ? state.filter((x) => x !== value) : [...state, value]
+    updateFilter(key, next as FilterState[typeof key])
   }
 
   const activeFilterCount =
@@ -291,19 +242,7 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
     (wcDoneFilter !== 'all' ? 1 : 0)
 
   function clearAll() {
-    setSearch('')
-    setStatusFilter([])
-    setBbStatusFilter([])
-    setWhcStatusFilter([])
-    setNfonStatusFilter([])
-    setMpfBbStatusFilter([])
-    setMpfVoiceStatusFilter([])
-    setMobileStatusFilter([])
-    setWc1Filter([])
-    setRouterFilter('all')
-    setWcDoneFilter('all')
-    setCustomerTypeFilter('all')
-    setSort('newest')
+    setFilters(DEFAULT_FILTERS)
     try {
       localStorage.removeItem(FILTER_STORAGE_KEY)
     } catch {}
@@ -315,7 +254,7 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
       <div className="flex flex-wrap gap-3">
         <Input
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => updateFilter('search', e.target.value)}
           placeholder="Search account, customer, phone, provisioner..."
           className="max-w-sm"
         />
@@ -323,14 +262,14 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
           <Button
             variant={sort === 'newest' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => setSort('newest')}
+            onClick={() => updateFilter('sort', 'newest')}
           >
             Newest first
           </Button>
           <Button
             variant={sort === 'oldest' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => setSort('oldest')}
+            onClick={() => updateFilter('sort', 'oldest')}
           >
             Oldest first
           </Button>
@@ -354,30 +293,42 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
               key={s}
               label={PROV_STATUS_LABELS[s]}
               active={statusFilter.includes(s)}
-              onClick={() => toggle(s, statusFilter, setStatusFilter)}
+              onClick={() => toggle(s, statusFilter, 'statusFilter')}
               colour={PROV_STATUS_COLOURS[s]}
             />
           ))}
         </div>
       </div>
 
-      <ServiceFilter label="BB status" state={bbStatusFilter} setter={setBbStatusFilter} />
-      <ServiceFilter label="WHC status" state={whcStatusFilter} setter={setWhcStatusFilter} />
-      <ServiceFilter label="NFON status" state={nfonStatusFilter} setter={setNfonStatusFilter} />
+      <ServiceFilter
+        label="BB status"
+        state={bbStatusFilter}
+        setter={(v) => updateFilter('bbStatusFilter', v)}
+      />
+      <ServiceFilter
+        label="WHC status"
+        state={whcStatusFilter}
+        setter={(v) => updateFilter('whcStatusFilter', v)}
+      />
+      <ServiceFilter
+        label="NFON status"
+        state={nfonStatusFilter}
+        setter={(v) => updateFilter('nfonStatusFilter', v)}
+      />
       <ServiceFilter
         label="MPF BB status"
         state={mpfBbStatusFilter}
-        setter={setMpfBbStatusFilter}
+        setter={(v) => updateFilter('mpfBbStatusFilter', v)}
       />
       <ServiceFilter
         label="MPF Voice status"
         state={mpfVoiceStatusFilter}
-        setter={setMpfVoiceStatusFilter}
+        setter={(v) => updateFilter('mpfVoiceStatusFilter', v)}
       />
       <ServiceFilter
         label="Mobile status"
         state={mobileStatusFilter}
-        setter={setMobileStatusFilter}
+        setter={(v) => updateFilter('mobileStatusFilter', v)}
       />
 
       {/* Welcome call */}
@@ -391,7 +342,7 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
               key={w}
               label={w === 'all' ? 'All' : w === 'done' ? 'Done' : 'Not Done'}
               active={wcDoneFilter === w}
-              onClick={() => setWcDoneFilter(w)}
+              onClick={() => updateFilter('wcDoneFilter', w)}
             />
           ))}
           <div className="w-px bg-border mx-1" />
@@ -400,7 +351,7 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
               key={o}
               label={capitalise(o).replace('_', ' ')}
               active={wc1Filter.includes(o)}
-              onClick={() => toggle(o, wc1Filter, setWc1Filter)}
+              onClick={() => toggle(o, wc1Filter, 'wc1Filter')}
               colour={WC_COLOURS[o]}
             />
           ))}
@@ -416,7 +367,7 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
               key={t}
               label={t === 'all' ? 'All' : capitalise(t)}
               active={customerTypeFilter === t}
-              onClick={() => setCustomerTypeFilter(t)}
+              onClick={() => updateFilter('customerTypeFilter', t)}
               colour={
                 t === 'business'
                   ? 'bg-purple-100 text-purple-800 border-purple-200'
@@ -446,7 +397,7 @@ export function ProvisioningFilters({ rows }: { rows: ProvisioningRow[] }) {
                       : 'Not dispatched'
               }
               active={routerFilter === r}
-              onClick={() => setRouterFilter(r)}
+              onClick={() => updateFilter('routerFilter', r)}
               colour={
                 r === 'yes'
                   ? 'bg-green-100 text-green-800 border-green-200'

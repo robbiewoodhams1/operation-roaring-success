@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useTransition } from 'react'
+import { useState, useEffect, useRef, useTransition } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -13,6 +13,18 @@ import { capitalise } from '@/components/capitalise'
 import { CUSTOMER_STATUS_COLOURS, CUSTOMER_TYPE_COLOURS } from '@/lib/constants'
 
 const FILTER_STORAGE_KEY = 'customers-filters'
+
+function loadStoredSearch(): string {
+  if (typeof window === 'undefined') return ''
+  try {
+    const stored = localStorage.getItem(FILTER_STORAGE_KEY)
+    if (!stored) return ''
+    const parsed = JSON.parse(stored) as { search?: string }
+    return parsed.search ?? ''
+  } catch {
+    return ''
+  }
+}
 
 export function CustomersFilters({
   customers,
@@ -30,13 +42,16 @@ export function CustomersFilters({
   const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
 
-  const [search, setSearch] = useState(searchParams.get('q') ?? '')
+  const [search, setSearch] = useState(() => searchParams.get('q') ?? loadStoredSearch())
   const statusFilter = searchParams.get('status')?.split(',').filter(Boolean) ?? []
   const typeFilter = searchParams.get('type') ?? 'all'
 
-  const [hasLoaded, setHasLoaded] = useState(false)
+  // Ref instead of state — mutating it inside an effect isn't a setState call,
+  // so it doesn't trip react-hooks/set-state-in-effect.
+  const hasLoadedRef = useRef(false)
 
-  // On mount, if there are no URL params at all, fall back to persisted filters
+  // On mount, if there are no URL params at all, redirect to a URL that reflects
+  // the persisted filters. Pure side effect (navigation), no setState involved.
   useEffect(() => {
     const hasAnyParam = searchParams.toString().length > 0
     if (!hasAnyParam) {
@@ -57,22 +72,21 @@ export function CustomersFilters({
           if (params.toString()) {
             router.replace(`${pathname}?${params.toString()}`)
           }
-          if (parsed.search) setSearch(parsed.search)
         }
       } catch {}
     }
-    setHasLoaded(true)
+    hasLoadedRef.current = true
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Persist current filter state whenever it changes (after initial load)
   useEffect(() => {
-    if (!hasLoaded) return
+    if (!hasLoadedRef.current) return
     try {
       localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify({ search, statusFilter, typeFilter }))
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasLoaded, search, searchParams])
+  }, [search, searchParams])
 
   // Debounce search input → update URL
   useEffect(() => {
