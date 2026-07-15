@@ -1,7 +1,7 @@
 // customers/page.tsx
 import { requireUser } from '@roaring/auth/server'
 import { db, customers } from '@roaring/db'
-import { eq, and, asc, or, ilike, sql } from 'drizzle-orm'
+import { eq, and, asc, or, ilike, sql, inArray } from 'drizzle-orm'
 import { CustomersFilters } from './customers-filters'
 
 const PAGE_SIZE = 50
@@ -16,7 +16,7 @@ export default async function CustomersPage({
 
   const page = Number(params.page ?? '1')
   const query = params.q ?? ''
-  const statusFilter = params.status ?? ''
+  const statusFilters = params.status ? params.status.split(',').filter(Boolean) : []
   const typeFilter = params.type ?? ''
 
   const conditions = [eq(customers.tenantId, user.tenantId)]
@@ -36,9 +36,9 @@ export default async function CustomersPage({
     )
   }
 
-  if (statusFilter) {
+  if (statusFilters.length > 0) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    conditions.push(eq(customers.status, statusFilter as any))
+    conditions.push(inArray(customers.status, statusFilters as any))
   }
   if (typeFilter && typeFilter !== 'all') {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

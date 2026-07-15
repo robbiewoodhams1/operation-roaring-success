@@ -184,7 +184,6 @@ export function HomeClient({
   // Stats — persisted in localStorage
   const statsKey = `home-stats-${userId}`
   const [showAddStat, setShowAddStat] = useState(false)
-
   const [activeStats, setActiveStats] = useState<StatKey[]>(() => {
     if (typeof window === 'undefined') return DEFAULT_STATS
     try {
@@ -216,6 +215,7 @@ export function HomeClient({
 
   // Todo list — persisted in localStorage
   const storageKey = `todos-${userId}`
+  const [newTodo, setNewTodo] = useState('')
   const [todos, setTodos] = useState<Todo[]>(() => {
     if (typeof window === 'undefined') return []
     try {
@@ -225,7 +225,6 @@ export function HomeClient({
       return []
     }
   })
-  const [newTodo, setNewTodo] = useState('')
 
   function saveTodos(updated: Todo[]) {
     setTodos(updated)

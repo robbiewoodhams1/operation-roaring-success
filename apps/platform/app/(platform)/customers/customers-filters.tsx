@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useTransition } from 'react'
+import { useState, useEffect, useRef, useTransition } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -11,6 +11,20 @@ import { cn } from '@/lib/utils'
 import type { Customer } from '@roaring/db'
 import { capitalise } from '@/components/capitalise'
 import { CUSTOMER_STATUS_COLOURS, CUSTOMER_TYPE_COLOURS } from '@/lib/constants'
+
+const FILTER_STORAGE_KEY = 'customers-filters'
+
+function loadStoredSearch(): string {
+  if (typeof window === 'undefined') return ''
+  try {
+    const stored = localStorage.getItem(FILTER_STORAGE_KEY)
+    if (!stored) return ''
+    const parsed = JSON.parse(stored) as { search?: string }
+    return parsed.search ?? ''
+  } catch {
+    return ''
+  }
+}
 
 export function CustomersFilters({
   customers,
@@ -28,9 +42,51 @@ export function CustomersFilters({
   const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
 
-  const [search, setSearch] = useState(searchParams.get('q') ?? '')
-  const statusFilter = searchParams.get('status') ?? ''
+  const [search, setSearch] = useState(() => searchParams.get('q') ?? loadStoredSearch())
+  const statusFilter = searchParams.get('status')?.split(',').filter(Boolean) ?? []
   const typeFilter = searchParams.get('type') ?? 'all'
+
+  // Ref instead of state — mutating it inside an effect isn't a setState call,
+  // so it doesn't trip react-hooks/set-state-in-effect.
+  const hasLoadedRef = useRef(false)
+
+  // On mount, if there are no URL params at all, redirect to a URL that reflects
+  // the persisted filters. Pure side effect (navigation), no setState involved.
+  useEffect(() => {
+    const hasAnyParam = searchParams.toString().length > 0
+    if (!hasAnyParam) {
+      try {
+        const stored = localStorage.getItem(FILTER_STORAGE_KEY)
+        if (stored) {
+          const parsed = JSON.parse(stored) as {
+            search?: string
+            statusFilter?: string[]
+            typeFilter?: string
+          }
+          const params = new URLSearchParams()
+          if (parsed.search) params.set('q', parsed.search)
+          if (parsed.statusFilter && parsed.statusFilter.length > 0)
+            params.set('status', parsed.statusFilter.join(','))
+          if (parsed.typeFilter && parsed.typeFilter !== 'all')
+            params.set('type', parsed.typeFilter)
+          if (params.toString()) {
+            router.replace(`${pathname}?${params.toString()}`)
+          }
+        }
+      } catch {}
+    }
+    hasLoadedRef.current = true
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Persist current filter state whenever it changes (after initial load)
+  useEffect(() => {
+    if (!hasLoadedRef.current) return
+    try {
+      localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify({ search, statusFilter, typeFilter }))
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, searchParams])
 
   // Debounce search input → update URL
   useEffect(() => {
@@ -53,7 +109,10 @@ export function CustomersFilters({
   }
 
   function toggleStatus(s: string) {
-    updateParams({ status: statusFilter === s ? null : s, page: null })
+    const next = statusFilter.includes(s)
+      ? statusFilter.filter((x) => x !== s)
+      : [...statusFilter, s]
+    updateParams({ status: next.length > 0 ? next.join(',') : null, page: null })
   }
 
   function setType(t: string) {
@@ -63,13 +122,16 @@ export function CustomersFilters({
   function clearAll() {
     setSearch('')
     router.push(pathname)
+    try {
+      localStorage.removeItem(FILTER_STORAGE_KEY)
+    } catch {}
   }
 
   function goToPage(p: number) {
     updateParams({ page: p === 1 ? null : String(p) })
   }
 
-  const hasFilters = search || statusFilter || typeFilter !== 'all'
+  const hasFilters = search || statusFilter.length > 0 || typeFilter !== 'all'
 
   return (
     <div className="space-y-4">
@@ -98,7 +160,9 @@ export function CustomersFilters({
               className={cn(
                 'inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border transition-all',
                 CUSTOMER_STATUS_COLOURS[s],
-                statusFilter === s ? 'ring-2 ring-offset-1 ring-foreground/30' : 'hover:scale-103'
+                statusFilter.includes(s)
+                  ? 'ring-2 ring-offset-1 ring-foreground/30'
+                  : 'hover:scale-103'
               )}
             >
               {capitalise(s).replace('_', ' ')}
