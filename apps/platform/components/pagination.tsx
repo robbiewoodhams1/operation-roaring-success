@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useConfig } from '@/lib/config-context'
 import { UI } from '@/lib/config'
 
+/** Fallback only — prefer the configured value via `usePagination`. */
 export const PAGE_SIZE = UI.pageSize
 
 /**
@@ -15,7 +17,9 @@ export const PAGE_SIZE = UI.pageSize
  * reset is triggered by a change in reference, following React's "adjust state
  * during render" pattern (no effect, so no cascading re-render).
  */
-export function usePagination<T>(items: T[], pageSize: number = PAGE_SIZE) {
+export function usePagination<T>(items: T[], pageSize?: number) {
+  const { ui } = useConfig()
+  const size = pageSize ?? ui.pageSize
   const [page, setPage] = useState(1)
   const [prevItems, setPrevItems] = useState(items)
 
@@ -24,10 +28,10 @@ export function usePagination<T>(items: T[], pageSize: number = PAGE_SIZE) {
     setPage(1)
   }
 
-  const totalPages = Math.max(1, Math.ceil(items.length / pageSize))
+  const totalPages = Math.max(1, Math.ceil(items.length / size))
   const currentPage = Math.min(page, totalPages)
-  const start = (currentPage - 1) * pageSize
-  const pageItems = items.slice(start, start + pageSize)
+  const start = (currentPage - 1) * size
+  const pageItems = items.slice(start, start + size)
 
   return { pageItems, page: currentPage, totalPages, setPage }
 }

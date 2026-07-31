@@ -3,7 +3,8 @@ import { Geist, Geist_Mono, Inter } from 'next/font/google'
 import './globals.css'
 import { cn } from '@/lib/utils'
 import { ThemeProvider } from '@/components/theme-provider'
-import { APP } from '@/lib/config'
+import { ConfigProvider } from '@/lib/config-context'
+import { getSettings } from '@/lib/settings'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
@@ -17,16 +18,18 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 })
 
-export const metadata: Metadata = {
-  title: APP.title,
-  description: APP.description,
+export async function generateMetadata(): Promise<Metadata> {
+  const { app } = await getSettings()
+  return { title: app.title, description: app.description }
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const config = await getSettings()
+
   return (
     <html
       lang="en"
@@ -41,7 +44,9 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-full flex flex-col">
-        <ThemeProvider>{children}</ThemeProvider>
+        <ConfigProvider config={config}>
+          <ThemeProvider>{children}</ThemeProvider>
+        </ConfigProvider>
       </body>
     </html>
   )

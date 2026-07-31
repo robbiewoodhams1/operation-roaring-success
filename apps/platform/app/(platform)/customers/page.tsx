@@ -3,9 +3,7 @@ import { requireUser } from '@roaring/auth/server'
 import { db, customers } from '@roaring/db'
 import { eq, and, asc, or, ilike, sql, inArray } from 'drizzle-orm'
 import { CustomersFilters } from './customers-filters'
-import { UI } from '@/lib/config'
-
-const PAGE_SIZE = UI.pageSize
+import { getSettings } from '@/lib/settings'
 
 export default async function CustomersPage({
   searchParams,
@@ -14,6 +12,8 @@ export default async function CustomersPage({
 }) {
   const user = await requireUser()
   const params = await searchParams
+  const { ui } = await getSettings()
+  const PAGE_SIZE = ui.pageSize
 
   const page = Number(params.page ?? '1')
   const query = params.q ?? ''

@@ -8,9 +8,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
-import { APP } from '@/lib/config'
+import { useConfig } from '@/lib/config-context'
 
 export default function ConfirmPage() {
+  const { app } = useConfig()
   const router = useRouter()
   const accessTokenRef = useRef<string | null>(null)
   const refreshTokenRef = useRef<string | null>(null)
@@ -86,7 +87,7 @@ export default function ConfirmPage() {
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="w-full max-w-md px-4">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight">{APP.name}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{app.name}</h1>
           <p className="text-sm text-muted-foreground mt-2">Set up your account</p>
         </div>
         <Card>

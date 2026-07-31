@@ -42,6 +42,10 @@ type ChangeRow = {
   action: string
 }
 
+const isBlank = (value: unknown) => value === null || value === undefined || value === ''
+
+// One row per changed field, for every action. A create has no old data so its
+// From column is empty; a delete has no new data so its To column is empty.
 function buildRows(
   logs: AuditLog[],
   ignored: Set<string>,
@@ -50,52 +54,41 @@ function buildRows(
   const rows: ChangeRow[] = []
 
   for (const log of logs) {
-    const data = log.newData ?? log.oldData
-
-    if (log.action === 'INSERT') {
-      rows.push({
-        key: `${log.id}-created`,
-        changedAt: log.changedAt,
-        changedBy: log.changedBy,
-        section: sectionForField(log.tableName, data, ''),
-        field: '__created__',
-        from: null,
-        to: null,
-        action: 'INSERT',
-      })
-      continue
-    }
-
-    if (log.action === 'DELETE') {
-      rows.push({
-        key: `${log.id}-deleted`,
-        changedAt: log.changedAt,
-        changedBy: log.changedBy,
-        section: sectionForField(log.tableName, data, ''),
-        field: '__deleted__',
-        from: null,
-        to: null,
-        action: 'DELETE',
-      })
-      continue
-    }
-
-    // UPDATE — one row per changed field.
     const oldData = log.oldData ?? {}
     const newData = log.newData ?? {}
     const keys = new Set([...Object.keys(oldData), ...Object.keys(newData)])
+
+    let emitted = 0
     for (const field of keys) {
       if (ignored.has(field) || field.endsWith('_id')) continue
       if (JSON.stringify(oldData[field]) === JSON.stringify(newData[field])) continue
+      // Nothing to show either side — e.g. a column created empty.
+      if (isBlank(oldData[field]) && isBlank(newData[field])) continue
       rows.push({
         key: `${log.id}-${field}`,
         changedAt: log.changedAt,
         changedBy: log.changedBy,
-        section: sectionForField(log.tableName, newData, field),
+        section: sectionForField(log.tableName, log.newData ?? log.oldData, field),
         field,
         from: oldData[field],
         to: newData[field],
-        action: 'UPDATE',
+        action: log.action,
+      })
+      emitted++
+    }
+
+    // A create or delete whose every column was filtered out would otherwise
+    // disappear from the history — keep a bare record-level row for it.
+    if (emitted === 0 && log.action !== 'UPDATE') {
+      rows.push({
+        key: `${log.id}-${log.action}`,
+        changedAt: log.changedAt,
+        changedBy: log.changedBy,
+        section: sectionForField(log.tableName, log.newData ?? log.oldData, ''),
+        field: log.action === 'INSERT' ? '__created__' : '__deleted__',
+        from: null,
+        to: null,
+        action: log.action,
       })
     }
   }
@@ -125,7 +118,10 @@ export function ChangeHistory({
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
 
-  const fieldLabel = (field: string): string => fieldLabels[field] ?? prettify(field)
+  const fieldLabel = (field: string): string =>
+    field === '__created__' || field === '__deleted__'
+      ? '—'
+      : (fieldLabels[field] ?? prettify(field))
 
   const rows = useMemo(() => {
     const ignored = new Set([...DEFAULT_IGNORED, ...ignoredFields])
@@ -211,46 +207,46 @@ export function ChangeHistory({
                         {r.changedBy ? (userNames[r.changedBy] ?? 'Unknown') : 'System'}
                       </td>
                       <td className="px-4 py-2 whitespace-nowrap">
-                        <span className="text-xs text-muted-foreground">{r.section}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">{r.section}</span>
+                          {r.action !== 'UPDATE' && (
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                'text-xs',
+                                r.action === 'INSERT'
+                                  ? 'bg-green-100 text-green-800 border-green-200'
+                                  : 'bg-red-100 text-red-800 border-red-200'
+                              )}
+                            >
+                              {r.action === 'INSERT' ? 'Created' : 'Deleted'}
+                            </Badge>
+                          )}
+                        </div>
                       </td>
-                      {r.action !== 'UPDATE' ? (
-                        <td className="px-4 py-2" colSpan={3}>
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              'text-xs',
-                              r.action === 'INSERT'
-                                ? 'bg-green-100 text-green-800 border-green-200'
-                                : 'bg-red-100 text-red-800 border-red-200'
-                            )}
-                          >
-                            {r.action === 'INSERT' ? 'Created' : 'Deleted'}
-                          </Badge>
-                        </td>
-                      ) : (
-                        <>
-                          <td className="px-4 py-2 font-medium whitespace-nowrap">
-                            {fieldLabel(r.field)}
-                          </td>
-                          <td className="px-4 py-2 max-w-[400px] w-[320px]">
-                            <span
-                              className="block truncate font-mono text-xs text-red-600 line-through"
-                              title={formatValue(r.from, userNames)}
-                            >
-                              {formatValue(r.from, userNames)}
-                            </span>
-                          </td>
+                      <td className="px-4 py-2 font-medium whitespace-nowrap">
+                        {fieldLabel(r.field)}
+                      </td>
+                      <td className="px-4 py-2 max-w-[400px] w-[320px]">
+                        <span
+                          className={cn(
+                            'block truncate font-mono text-xs text-red-600',
+                            !isBlank(r.from) && 'line-through'
+                          )}
+                          title={formatValue(r.from, userNames)}
+                        >
+                          {formatValue(r.from, userNames)}
+                        </span>
+                      </td>
 
-                          <td className="px-4 py-2 max-w-[400px] w-[320px]">
-                            <span
-                              className="block truncate font-mono text-xs text-green-700"
-                              title={formatValue(r.to, userNames)}
-                            >
-                              {formatValue(r.to, userNames)}
-                            </span>
-                          </td>
-                        </>
-                      )}
+                      <td className="px-4 py-2 max-w-[400px] w-[320px]">
+                        <span
+                          className="block truncate font-mono text-xs text-green-700"
+                          title={formatValue(r.to, userNames)}
+                        >
+                          {formatValue(r.to, userNames)}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

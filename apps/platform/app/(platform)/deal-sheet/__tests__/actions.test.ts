@@ -41,6 +41,27 @@ vi.mock('@roaring/db', () => ({
   provisioningServices: {},
 }))
 vi.mock('@roaring/auth', () => ({ requireUser: mockRequireUser, setAuditUser: mockSetAuditUser }))
+// Settings come from their own query — stub them so they don't consume the
+// shared db chain mocks, which would shift every mockResolvedValueOnce below.
+vi.mock('@/lib/settings', () => ({
+  SETTINGS_TAG: 'platform-settings',
+  // A plain function, not a spy — the suite resets mocks between tests.
+  getSettings: async () => ({
+    app: {
+      name: 'Roaring Success',
+      version: '1.0.6',
+      title: 'T',
+      description: 'D',
+      loginTagline: 'L',
+    },
+    support: {
+      residential: { businessName: 'R', phone: '1', email: 'r@example.com' },
+      business: { businessName: 'B', phone: '2', email: 'b@example.com' },
+    },
+    accountNumber: { prefix: 'DFB', startNumber: 20001 },
+    ui: { pageSize: 50 },
+  }),
+}))
 vi.mock('next/navigation', () => ({ redirect: mockRedirect }))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }))
 vi.mock('drizzle-orm', () => ({

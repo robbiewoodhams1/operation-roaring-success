@@ -28,7 +28,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const { logs, userNames } = await getChangeHistory([{ table: 'customers', ids: [customer.id] }])
 
   return (
-    <div className="px-6 w-full">
+    <div className="p-6 w-full">
       <div className="w-full flex flex-row justify-between">
         <div className="flex items-center gap-4 mb-8">
           <Link href="/customers">

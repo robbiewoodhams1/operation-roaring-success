@@ -15,16 +15,18 @@ import { eq, desc, sql, gte } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 import { revalidateTag } from 'next/cache'
 import { requireUser, setAuditUser } from '@roaring/auth'
-import { ACCOUNT_NUMBER } from '@/lib/config'
+import { getSettings } from '@/lib/settings'
 
-const { prefix: ACCOUNT_PREFIX, startNumber: ACCOUNT_START } = ACCOUNT_NUMBER
-
-function generateNextAccountNumber(latest: string | null): string {
-  const first = `${ACCOUNT_PREFIX}${ACCOUNT_START}`
+function generateNextAccountNumber(
+  latest: string | null,
+  prefix: string,
+  startNumber: number
+): string {
+  const first = `${prefix}${startNumber}`
   if (!latest) return first
-  const num = parseInt(latest.slice(ACCOUNT_PREFIX.length))
+  const num = parseInt(latest.slice(prefix.length))
   if (isNaN(num)) return first
-  return `${ACCOUNT_PREFIX}${num + 1}`
+  return `${prefix}${num + 1}`
 }
 
 function parseConnectionFee(fee: string, other: string): string | null {
@@ -132,6 +134,7 @@ export async function submitDeal(data: {
 
   const parsedConnectionFee = parseConnectionFee(data.connectionFee, data.connectionFeeOther)
   const user = await requireUser()
+  const { accountNumber: accountFormat } = await getSettings()
 
   // Manual account numbers are normalised to match the generated format
   const manualAccountNumber = (data.customerAccountNumber ?? '').trim().toUpperCase()
@@ -165,16 +168,20 @@ export async function submitDeal(data: {
         // Only count account numbers that are prefix + digits. Manual ones can
         // carry a non-numeric suffix, and the CASE keeps the cast from seeing
         // those rows at all — an unguarded CAST would error on them.
-        const sequenceNumber = sql`CASE WHEN ${customers.accountNumber} ~ ${`^${ACCOUNT_PREFIX}[0-9]+$`} THEN CAST(SUBSTRING(${customers.accountNumber} FROM ${ACCOUNT_PREFIX.length + 1}) AS INTEGER) END`
+        const sequenceNumber = sql`CASE WHEN ${customers.accountNumber} ~ ${`^${accountFormat.prefix}[0-9]+$`} THEN CAST(SUBSTRING(${customers.accountNumber} FROM ${accountFormat.prefix.length + 1}) AS INTEGER) END`
 
         const latest = await tx
           .select({ accountNumber: customers.accountNumber })
           .from(customers)
-          .where(gte(sequenceNumber, ACCOUNT_START))
+          .where(gte(sequenceNumber, accountFormat.startNumber))
           .orderBy(desc(sequenceNumber))
           .limit(1)
 
-        accountNumber = generateNextAccountNumber(latest[0]?.accountNumber ?? null)
+        accountNumber = generateNextAccountNumber(
+          latest[0]?.accountNumber ?? null,
+          accountFormat.prefix,
+          accountFormat.startNumber
+        )
       }
 
       const [newCustomer] = await tx

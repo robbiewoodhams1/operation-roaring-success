@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Check, Copy, X, Zap } from 'lucide-react'
-import { supportFor } from '@/lib/config'
+import { useSupportFor } from '@/lib/config-context'
 
 type ProvisionData = {
   accountNumber: string
@@ -67,7 +67,7 @@ function CopyField({
 export function ProvisionModal({ data }: { data: ProvisionData }) {
   const [open, setOpen] = useState(false)
 
-  const support = supportFor(data.businessType)
+  const support = useSupportFor(data.businessType)
 
   const fields = [
     { label: 'Account number', value: data.accountNumber },

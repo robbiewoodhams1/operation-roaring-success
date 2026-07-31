@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/sidebar'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { UserNav } from '@/components/user-nav'
-import { APP } from '@/lib/config'
+import { useConfig } from '@/lib/config-context'
 import type { AuthUser, UserRole } from '@roaring/auth'
 import {
   House,
@@ -39,6 +39,7 @@ import {
   Logs,
   Unplug,
   Pencil,
+  Settings,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -215,6 +216,13 @@ const navItems: NavGroup[] = [
         roles: ['admin'],
         active: true,
       },
+      {
+        title: 'Platform',
+        href: '/platform',
+        icon: Settings,
+        roles: ['admin'],
+        active: true,
+      },
     ],
   },
 ]
@@ -225,13 +233,14 @@ function hasAccess(roles: string[], userRole: UserRole) {
 
 export function AppSidebar({ user }: { user: AuthUser }) {
   const pathname = usePathname()
+  const { app } = useConfig()
 
   return (
     <Sidebar variant="inset">
       <SidebarHeader>
         <div className="px-2 py-2">
-          <p className="text-sm font-semibold">{APP.name}</p>
-          <p className="text-xs text-muted-foreground">v{APP.version}</p>
+          <p className="text-sm font-semibold">{app.name}</p>
+          <p className="text-xs text-muted-foreground">v{app.version}</p>
         </div>
       </SidebarHeader>
 
