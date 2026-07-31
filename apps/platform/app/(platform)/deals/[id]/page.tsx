@@ -11,14 +11,14 @@ import { ChangeHistory } from '@/components/change-history'
 import { DealEdit } from './deal-edit'
 import { DEAL_STATUS_COLOURS } from '@/lib/constants'
 
-const getCachedCustomer = (tenantId: string, id: string) =>
-  cachedQuery([`customers-${tenantId}`, id], [`customers-${tenantId}`], () =>
-    db.select().from(customers).where(eq(customers.accountNumber, id)).limit(1)
+const getCachedDeal = (tenantId: string, id: string) =>
+  cachedQuery([`deals-${tenantId}`, id], [`deals-${tenantId}`], () =>
+    db.select().from(deals).where(eq(deals.id, id)).limit(1)
   )
 
-const getCachedDeal = (tenantId: string, customerId: string) =>
-  cachedQuery([`deals-${tenantId}`, customerId], [`deals-${tenantId}`], () =>
-    db.select().from(deals).where(eq(deals.customerId, customerId)).limit(1)
+const getCachedCustomer = (tenantId: string, customerId: string) =>
+  cachedQuery([`customers-${tenantId}`, customerId], [`customers-${tenantId}`], () =>
+    db.select().from(customers).where(eq(customers.id, customerId)).limit(1)
   )
 
 const getCachedDealServices = (tenantId: string, dealId: string) =>
@@ -40,15 +40,15 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
   const { id } = await params
   const user = await requireUser()
 
-  const customerResult = await getCachedCustomer(user.tenantId, id)
+  const dealResult = await getCachedDeal(user.tenantId, id)
+
+  const deal = dealResult[0]
+  if (!deal || deal.tenantId !== user.tenantId) notFound()
+
+  const customerResult = await getCachedCustomer(user.tenantId, deal.customerId)
 
   const customer = customerResult[0]
   if (!customer || customer.tenantId !== user.tenantId) notFound()
-
-  const dealResult = await getCachedDeal(user.tenantId, customer.id)
-
-  const deal = dealResult[0]
-  if (!deal) notFound()
 
   const servicesResult = await getCachedDealServices(user.tenantId, deal.id)
 
@@ -79,7 +79,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
         </Link>
         <div>
           <div className="flex items-center gap-3">
-            <Link href={`/customers/${customer.accountNumber}`}>
+            <Link href={`/customers/${customer.id}`}>
               <h1 className="text-2xl font-semibold">{customerName}</h1>
             </Link>
             <Badge variant="outline" className={DEAL_STATUS_COLOURS[deal.status]}>

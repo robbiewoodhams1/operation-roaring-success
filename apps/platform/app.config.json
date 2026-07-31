@@ -1,0 +1,28 @@
+{
+  "app": {
+    "name": "Roaring Success",
+    "version": "1.0.6",
+    "title": "Roaring Success Dashboard",
+    "description": "Roaring Success Dashboard",
+    "loginTagline": "Sign in to your account"
+  },
+  "support": {
+    "residential": {
+      "businessName": "Premier Talk",
+      "phone": "03300431746",
+      "email": "support@premier-talk.com"
+    },
+    "business": {
+      "businessName": "Digital Fibre",
+      "phone": "01622392476",
+      "email": "support@digitalfibre.uk"
+    }
+  },
+  "accountNumber": {
+    "prefix": "DFB",
+    "startNumber": 20001
+  },
+  "ui": {
+    "pageSize": 50
+  }
+}

@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { UI } from '@/lib/config'
 
-export const PAGE_SIZE = 50
+export const PAGE_SIZE = UI.pageSize
 
 /**
  * Client-side pagination for an already-filtered list. Resets to the first page

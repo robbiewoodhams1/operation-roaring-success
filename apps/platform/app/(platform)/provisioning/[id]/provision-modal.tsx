@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Check, Copy, X, Zap } from 'lucide-react'
+import { supportFor } from '@/lib/config'
 
 type ProvisionData = {
   accountNumber: string
@@ -66,6 +67,8 @@ function CopyField({
 export function ProvisionModal({ data }: { data: ProvisionData }) {
   const [open, setOpen] = useState(false)
 
+  const support = supportFor(data.businessType)
+
   const fields = [
     { label: 'Account number', value: data.accountNumber },
     { label: 'Company / Name', value: data.companyName ?? `${data.firstName} ${data.lastName}` },
@@ -88,21 +91,9 @@ export function ProvisionModal({ data }: { data: ProvisionData }) {
     { label: 'Address line 3', value: data.addressLine3 },
     { label: 'Postcode', value: data.postcode },
     { label: 'Broadband type', value: data.broadbandType },
-    {
-      label: 'Business Name',
-      value: data.businessType === 'residential' ? 'Premier Talk' : 'Digital Fibre',
-    },
-    {
-      label: 'Business Number',
-      value: data.businessType === 'residential' ? '03300431746' : '01622392476',
-    },
-    {
-      label: 'Business Email',
-      value:
-        data.businessType === 'residential'
-          ? 'support@premier-talk.com'
-          : 'support@digitalfibre.uk',
-    },
+    { label: 'Business Name', value: support.businessName },
+    { label: 'Business Number', value: support.phone },
+    { label: 'Business Email', value: support.email },
   ].filter((f) => f.value)
 
   return (

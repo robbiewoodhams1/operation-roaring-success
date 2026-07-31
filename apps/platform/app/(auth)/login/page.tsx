@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getUser } from '@roaring/auth/server'
 import { LoginForm } from './login-form'
+import { APP } from '@/lib/config'
 
 export default async function LoginPage({
   searchParams,
@@ -18,8 +19,8 @@ export default async function LoginPage({
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="w-full max-w-md px-4">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight">Roaring Success</h1>
-          <p className="text-sm text-muted-foreground mt-2">Sign in to your account</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{APP.name}</h1>
+          <p className="text-sm text-muted-foreground mt-2">{APP.loginTagline}</p>
         </div>
         {activated && (
           <p className="text-sm text-center text-green-600 mb-4">

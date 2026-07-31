@@ -53,7 +53,7 @@ export function ProvisioningTable({ rows }: { rows: ProvisioningRow[] }) {
             <TableRow
               key={row.id}
               className="cursor-pointer hover:bg-muted/50"
-              onClick={() => router.push(`/provisioning/${row.accountNumber}`)}
+              onClick={() => router.push(`/provisioning/${row.id}`)}
             >
               <TableCell className="font-mono text-sm">{row.accountNumber ?? '—'}</TableCell>
               <TableCell className="font-medium">

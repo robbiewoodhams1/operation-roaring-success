@@ -11,16 +11,20 @@ import {
   provisioningServices,
 } from '@roaring/db'
 import type { Title } from '@roaring/db'
-import { eq, desc, like, sql, and, gte } from 'drizzle-orm'
+import { eq, desc, sql, gte } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 import { revalidateTag } from 'next/cache'
 import { requireUser, setAuditUser } from '@roaring/auth'
+import { ACCOUNT_NUMBER } from '@/lib/config'
+
+const { prefix: ACCOUNT_PREFIX, startNumber: ACCOUNT_START } = ACCOUNT_NUMBER
 
 function generateNextAccountNumber(latest: string | null): string {
-  if (!latest) return 'DFB20001'
-  const num = parseInt(latest.replace(/^[A-Z]+/, ''))
-  if (isNaN(num)) return 'DFB20001'
-  return `DFB${num + 1}`
+  const first = `${ACCOUNT_PREFIX}${ACCOUNT_START}`
+  if (!latest) return first
+  const num = parseInt(latest.slice(ACCOUNT_PREFIX.length))
+  if (isNaN(num)) return first
+  return `${ACCOUNT_PREFIX}${num + 1}`
 }
 
 function parseConnectionFee(fee: string, other: string): string | null {
@@ -60,6 +64,8 @@ const billingTypeMap: Record<string, string> = {
 
 export async function submitDeal(data: {
   existingCustomerId: string | null
+  /** Optional manual account number; blank means auto-generate the next in sequence. */
+  customerAccountNumber?: string
   tenantId: string
   createdBy: string
   businessName: string
@@ -122,10 +128,29 @@ export async function submitDeal(data: {
   bankChecked: boolean
 }) {
   let customerId: string = ''
-  let accountNumber: string = ''
+  let createdDealId: string = ''
 
   const parsedConnectionFee = parseConnectionFee(data.connectionFee, data.connectionFeeOther)
   const user = await requireUser()
+
+  // Manual account numbers are normalised to match the generated format
+  const manualAccountNumber = (data.customerAccountNumber ?? '').trim().toUpperCase()
+
+  if (manualAccountNumber && !data.existingCustomerId) {
+    if (!/^[A-Z0-9-]{3,32}$/.test(manualAccountNumber)) {
+      return { error: 'Account number must be 3–32 letters, numbers or hyphens, with no spaces.' }
+    }
+
+    const clash = await db
+      .select({ id: customers.id })
+      .from(customers)
+      .where(eq(customers.accountNumber, manualAccountNumber))
+      .limit(1)
+
+    if (clash.length > 0) {
+      return { error: `Account number ${manualAccountNumber} is already in use.` }
+    }
+  }
 
   await db.transaction(async (tx) => {
     await setAuditUser(tx, user.id)
@@ -133,26 +158,24 @@ export async function submitDeal(data: {
     // Step 1 — use existing customer, or create a new one
     if (data.existingCustomerId) {
       customerId = data.existingCustomerId
-      const existing = await tx
-        .select({ accountNumber: customers.accountNumber })
-        .from(customers)
-        .where(eq(customers.id, data.existingCustomerId))
-        .limit(1)
-      accountNumber = existing[0]?.accountNumber ?? ''
     } else {
-      const latest = await tx
-        .select({ accountNumber: customers.accountNumber })
-        .from(customers)
-        .where(
-          and(
-            like(customers.accountNumber, 'DFB2%'),
-            gte(sql`CAST(SUBSTRING(${customers.accountNumber} FROM 4) AS INTEGER)`, 20001)
-          )
-        )
-        .orderBy(desc(sql`CAST(SUBSTRING(${customers.accountNumber} FROM 4) AS INTEGER)`))
-        .limit(1)
+      let accountNumber = manualAccountNumber
 
-      accountNumber = generateNextAccountNumber(latest[0]?.accountNumber ?? null)
+      if (!accountNumber) {
+        // Only count account numbers that are prefix + digits. Manual ones can
+        // carry a non-numeric suffix, and the CASE keeps the cast from seeing
+        // those rows at all — an unguarded CAST would error on them.
+        const sequenceNumber = sql`CASE WHEN ${customers.accountNumber} ~ ${`^${ACCOUNT_PREFIX}[0-9]+$`} THEN CAST(SUBSTRING(${customers.accountNumber} FROM ${ACCOUNT_PREFIX.length + 1}) AS INTEGER) END`
+
+        const latest = await tx
+          .select({ accountNumber: customers.accountNumber })
+          .from(customers)
+          .where(gte(sequenceNumber, ACCOUNT_START))
+          .orderBy(desc(sequenceNumber))
+          .limit(1)
+
+        accountNumber = generateNextAccountNumber(latest[0]?.accountNumber ?? null)
+      }
 
       const [newCustomer] = await tx
         .insert(customers)
@@ -200,6 +223,7 @@ export async function submitDeal(data: {
 
     if (!newDeal) throw new Error('Failed to create deal')
     const dealId = newDeal.id
+    createdDealId = dealId
 
     // Step 3 — deal services
     await tx.insert(dealServices).values({
@@ -331,5 +355,5 @@ export async function submitDeal(data: {
   revalidateTag(`deals-${data.tenantId}`, 'max')
   revalidateTag(`provisioning-${data.tenantId}`, 'max')
 
-  redirect(`/deals/${accountNumber}`)
+  redirect(`/deals/${createdDealId}`)
 }

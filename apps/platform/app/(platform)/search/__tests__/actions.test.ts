@@ -78,7 +78,7 @@ describe('search', () => {
       id: 'cust-1',
       accountNumber: 'DFB20001',
       title: 'ACME Corp',
-      href: '/customers/DFB20001',
+      href: '/customers/cust-1',
       status: 'active',
     })
   })
@@ -107,7 +107,7 @@ describe('search', () => {
       id: 'deal-1',
       accountNumber: 'DFB20001',
       title: 'ACME Corp',
-      href: '/deals/DFB20001',
+      href: '/deals/deal-1',
       status: 'pending',
     })
   })
@@ -136,7 +136,7 @@ describe('search', () => {
       type: 'provisioning',
       id: 'prov-1',
       accountNumber: 'DFB20001',
-      href: '/provisioning/DFB20001',
+      href: '/provisioning/prov-1',
     })
   })
 

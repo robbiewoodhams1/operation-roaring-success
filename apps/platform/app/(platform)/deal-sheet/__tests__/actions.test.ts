@@ -169,7 +169,6 @@ describe('submitDeal', () => {
   })
 
   it('skips customer insert when existingCustomerId is provided', async () => {
-    chain.limit.mockResolvedValueOnce([{ accountNumber: 'DFB20001' }]) // existing customer lookup
     chain.returning
       .mockResolvedValueOnce([{ id: 'deal-id' }])
       .mockResolvedValueOnce([{ id: 'prov-id' }])
@@ -180,25 +179,89 @@ describe('submitDeal', () => {
     expect(mockTx.insert).toHaveBeenCalledTimes(6)
   })
 
-  it('redirects to /deals/<accountNumber> after success', async () => {
-    // latest account number query returns [] → generates DFB20001
+  it('redirects to /deals/<dealId> after success', async () => {
     chain.returning
       .mockResolvedValueOnce([{ id: 'cust-id' }])
       .mockResolvedValueOnce([{ id: 'deal-id' }])
       .mockResolvedValueOnce([{ id: 'prov-id' }])
 
     await submitDeal(baseData)
-    expect(mockRedirect).toHaveBeenCalledWith('/deals/DFB20001')
+    expect(mockRedirect).toHaveBeenCalledWith('/deals/deal-id')
   })
 
-  it('redirects to existing customer account number when using existing customer', async () => {
-    chain.limit.mockResolvedValueOnce([{ accountNumber: 'DFB20042' }])
+  it('redirects to the new deal id when using an existing customer', async () => {
     chain.returning
       .mockResolvedValueOnce([{ id: 'deal-id' }])
       .mockResolvedValueOnce([{ id: 'prov-id' }])
 
     await submitDeal({ ...baseData, existingCustomerId: 'existing-cust-id' })
-    expect(mockRedirect).toHaveBeenCalledWith('/deals/DFB20042')
+    expect(mockRedirect).toHaveBeenCalledWith('/deals/deal-id')
+  })
+
+  it('uses a manual account number when one is supplied', async () => {
+    chain.returning
+      .mockResolvedValueOnce([{ id: 'cust-id' }])
+      .mockResolvedValueOnce([{ id: 'deal-id' }])
+      .mockResolvedValueOnce([{ id: 'prov-id' }])
+
+    await submitDeal({ ...baseData, customerAccountNumber: 'ACME-99' })
+
+    expect(chain.values.mock.calls[0]?.[0]).toMatchObject({ accountNumber: 'ACME-99' })
+  })
+
+  it('uppercases and trims a manual account number', async () => {
+    chain.returning
+      .mockResolvedValueOnce([{ id: 'cust-id' }])
+      .mockResolvedValueOnce([{ id: 'deal-id' }])
+      .mockResolvedValueOnce([{ id: 'prov-id' }])
+
+    await submitDeal({ ...baseData, customerAccountNumber: '  acme-99  ' })
+
+    expect(chain.values.mock.calls[0]?.[0]).toMatchObject({ accountNumber: 'ACME-99' })
+  })
+
+  it('falls back to the generated sequence when left blank', async () => {
+    chain.returning
+      .mockResolvedValueOnce([{ id: 'cust-id' }])
+      .mockResolvedValueOnce([{ id: 'deal-id' }])
+      .mockResolvedValueOnce([{ id: 'prov-id' }])
+
+    await submitDeal({ ...baseData, customerAccountNumber: '' })
+
+    expect(chain.values.mock.calls[0]?.[0]).toMatchObject({ accountNumber: 'DFB20001' })
+  })
+
+  it('rejects a manual account number that is already in use', async () => {
+    chain.limit.mockResolvedValueOnce([{ id: 'existing-cust' }]) // clash lookup
+
+    const result = await submitDeal({ ...baseData, customerAccountNumber: 'DFB20001' })
+
+    expect(result).toEqual({ error: 'Account number DFB20001 is already in use.' })
+    expect(mockDb.transaction).not.toHaveBeenCalled()
+    expect(mockRedirect).not.toHaveBeenCalled()
+  })
+
+  it('rejects a malformed manual account number', async () => {
+    const result = await submitDeal({ ...baseData, customerAccountNumber: 'has spaces' })
+
+    expect(result?.error).toMatch(/3–32 letters/)
+    expect(mockDb.transaction).not.toHaveBeenCalled()
+  })
+
+  it('ignores a manual account number when using an existing customer', async () => {
+    chain.returning
+      .mockResolvedValueOnce([{ id: 'deal-id' }])
+      .mockResolvedValueOnce([{ id: 'prov-id' }])
+
+    await submitDeal({
+      ...baseData,
+      existingCustomerId: 'existing-cust-id',
+      customerAccountNumber: 'ACME-99',
+    })
+
+    // no customer insert, so no account number is written
+    expect(mockTx.insert).toHaveBeenCalledTimes(6)
+    expect(mockRedirect).toHaveBeenCalledWith('/deals/deal-id')
   })
 
   it('propagates requireUser errors without starting the transaction', async () => {

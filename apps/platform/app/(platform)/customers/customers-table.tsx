@@ -33,7 +33,7 @@ export function CustomersTable({ customers }: { customers: Customer[] }) {
             <TableRow
               key={customer.id}
               className="cursor-pointer hover:bg-muted/50"
-              onClick={() => router.push(`/customers/${customer.accountNumber}`)}
+              onClick={() => router.push(`/customers/${customer.id}`)}
             >
               <TableCell className="font-mono text-sm">{customer.accountNumber}</TableCell>
               <TableCell className="font-medium">

@@ -38,7 +38,7 @@ export async function search(tenantId: string, query: string): Promise<SearchRes
       title: c.companyName ?? `${c.firstName} ${c.lastName}`,
       subtitle: [c.addressLine1, c.addressLine2, c.postcode].filter(Boolean).join(', '),
       status: c.status,
-      href: `/customers/${c.accountNumber}`,
+      href: `/customers/${c.id}`,
     })
   }
 
@@ -84,7 +84,7 @@ export async function search(tenantId: string, query: string): Promise<SearchRes
       title: d.companyName ?? `${d.firstName} ${d.lastName}`,
       subtitle: `${d.salesAgent} · ${d.dealDate ? new Date(d.dealDate).toLocaleDateString('en-GB') : ''}`,
       status: d.status,
-      href: `/deals/${d.accountNumber}`,
+      href: `/deals/${d.id}`,
     })
   }
 
@@ -126,7 +126,7 @@ export async function search(tenantId: string, query: string): Promise<SearchRes
       title: p.companyName ?? `${p.firstName} ${p.lastName}`,
       subtitle: p.provisioner ? `Provisioner: ${p.provisioner}` : '',
       status: p.status,
-      href: `/provisioning/${p.accountNumber}`,
+      href: `/provisioning/${p.id}`,
     })
   }
 
@@ -175,7 +175,7 @@ export async function search(tenantId: string, query: string): Promise<SearchRes
             .map((s) => `${s.serviceType.toUpperCase()}: ${s.reference}`)
             .join(' · '),
           status: prov[0].status,
-          href: `/provisioning/${prov[0].accountNumber}`,
+          href: `/provisioning/${prov[0].id}`,
         })
       }
     }

@@ -13,7 +13,7 @@ import { Plus } from 'lucide-react'
 
 const getCachedCustomer = (tenantId: string, id: string) =>
   cachedQuery([`customers-${tenantId}`, id], [`customers-${tenantId}`], () =>
-    db.select().from(customers).where(eq(customers.accountNumber, id)).limit(1)
+    db.select().from(customers).where(eq(customers.id, id)).limit(1)
   )
 
 export default async function CustomerPage({ params }: { params: Promise<{ id: string }> }) {

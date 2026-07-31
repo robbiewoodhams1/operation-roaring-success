@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Inter } from 'next/font/google'
 import './globals.css'
 import { cn } from '@/lib/utils'
 import { ThemeProvider } from '@/components/theme-provider'
+import { APP } from '@/lib/config'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
@@ -17,8 +18,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Roaring Success Dashboard',
-  description: 'Roaring Success Dashboard',
+  title: APP.title,
+  description: APP.description,
 }
 
 export default function RootLayout({

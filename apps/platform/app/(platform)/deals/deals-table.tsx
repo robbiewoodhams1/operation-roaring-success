@@ -38,7 +38,7 @@ export function DealsTable({ deals }: { deals: DealRow[] }) {
             <TableRow
               key={deal.id}
               className="cursor-pointer hover:bg-muted/50"
-              onClick={() => router.push(`/deals/${deal.accountNumber}`)}
+              onClick={() => router.push(`/deals/${deal.id}`)}
             >
               <TableCell className="font-mono text-sm">{deal.accountNumber ?? '—'}</TableCell>
               <TableCell className="font-medium">

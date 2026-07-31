@@ -74,11 +74,13 @@ function QuestionCard({
   label,
   required,
   error,
+  errorMessage,
   children,
 }: {
   label: string
   required?: boolean
   error?: boolean
+  errorMessage?: string
   children: React.ReactNode
 }) {
   return (
@@ -91,7 +93,7 @@ function QuestionCard({
         {error && (
           <p className="text-xs text-destructive flex items-center gap-1">
             <AlertCircle className="size-3" />
-            This field is required.
+            {errorMessage ?? 'This field is required.'}
           </p>
         )}
         {children}
@@ -176,6 +178,7 @@ export default function SalesForm({
   const [submitted, setSubmitted] = useState(false)
   const [errors, setErrors] = useState<Errors>({})
   const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
   const [businessName, setBusinessName] = useState(prefilledCustomer?.companyName ?? '')
   const [customerTitle, setCustomerTitle] = useState(prefilledCustomer?.title ?? '')
@@ -233,6 +236,7 @@ export default function SalesForm({
   const [accountNumber, setAccountNumber] = useState('')
   const [bankChecked, setBankChecked] = useState('')
   const [dealType, setDealType] = useState('')
+  const [customerAccountNumber, setCustomerAccountNumber] = useState('')
   const [welcomeCall, setWelcomeCall] = useState('')
 
   // Wholesale lines
@@ -341,6 +345,13 @@ export default function SalesForm({
       if (!bankChecked) e.bankChecked = true
     }
     if (!dealType) e.dealType = true
+    // Optional — only validated when the user supplies one
+    if (
+      customerAccountNumber.trim() &&
+      !/^[A-Za-z0-9-]{3,32}$/.test(customerAccountNumber.trim())
+    ) {
+      e.customerAccountNumber = true
+    }
     if (!welcomeCall) e.welcomeCall = true
     return e
   }
@@ -348,6 +359,7 @@ export default function SalesForm({
   const handleSubmit = async () => {
     if (submitting) return
     setSubmitting(true)
+    setSubmitError('')
     const e = validate()
     setErrors(e)
     setSubmitted(true)
@@ -366,8 +378,9 @@ export default function SalesForm({
       (item) => ({ item: item.label, qty: phoneQtys[item.key]!, wholesale: item.wholesale })
     )
 
-    await submitDeal({
+    const result = await submitDeal({
       existingCustomerId: prefilledCustomer?.id ?? null,
+      customerAccountNumber: customerAccountNumber.trim(),
       tenantId,
       createdBy,
       businessName,
@@ -429,6 +442,17 @@ export default function SalesForm({
       accountNumber,
       bankChecked: bankChecked === 'Yes',
     })
+
+    // Only returns on failure — success redirects to the new deal
+    if (result?.error) {
+      setSubmitError(result.error)
+      setSubmitting(false)
+      setTimeout(() => {
+        document
+          .querySelector('[data-submit-error="true"]')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 50)
+    }
   }
 
   const e = errors
@@ -466,6 +490,53 @@ export default function SalesForm({
       )}
 
       <SectionHeader title="Deal Information" />
+      <QuestionCard label="Deal Type" required error={!!e.dealType}>
+        <Select
+          value={dealType}
+          onValueChange={(v) => {
+            setDealType(v ?? '')
+            clear('dealType')
+          }}
+        >
+          <SelectTrigger className={cn(e.dealType && 'border-destructive')}>
+            <SelectValue placeholder="Select deal type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Business">Business</SelectItem>
+            <SelectItem value="Residential">Residential</SelectItem>
+          </SelectContent>
+        </Select>
+      </QuestionCard>
+
+      {prefilledCustomer ? (
+        <QuestionCard label="Account Number">
+          <Input value={prefilledCustomer.accountNumber} disabled className="font-mono" />
+          <p className="text-xs text-muted-foreground">
+            Existing customer — this deal will be added to their account.
+          </p>
+        </QuestionCard>
+      ) : (
+        <QuestionCard
+          label="Account Number"
+          error={!!e.customerAccountNumber}
+          errorMessage="Use 3–32 letters, numbers or hyphens, with no spaces."
+        >
+          <Input
+            value={customerAccountNumber}
+            onChange={(ev) => {
+              setCustomerAccountNumber(ev.target.value)
+              clear('customerAccountNumber')
+              setSubmitError('')
+            }}
+            placeholder="Leave blank to generate automatically"
+            className={cn('font-mono', e.customerAccountNumber && 'border-destructive')}
+          />
+          <p className="text-xs text-muted-foreground">
+            Optional — leave blank and the next number in the sequence (e.g. DFB20001) is assigned.
+          </p>
+        </QuestionCard>
+      )}
+
       <QuestionCard label="Date" required error={!!e.date}>
         <Input
           type="date"
@@ -1220,23 +1291,7 @@ export default function SalesForm({
       )}
 
       <SectionHeader title="Deal & Welcome" />
-      <QuestionCard label="Deal Type" required error={!!e.dealType}>
-        <Select
-          value={dealType}
-          onValueChange={(v) => {
-            setDealType(v ?? '')
-            clear('dealType')
-          }}
-        >
-          <SelectTrigger className={cn(e.dealType && 'border-destructive')}>
-            <SelectValue placeholder="Select deal type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Business">Business</SelectItem>
-            <SelectItem value="Residential">Residential</SelectItem>
-          </SelectContent>
-        </Select>
-      </QuestionCard>
+
       <QuestionCard label="Welcome Call" required error={!!e.welcomeCall}>
         <SRadioGroup
           options={['AM', 'PM']}
@@ -1251,6 +1306,14 @@ export default function SalesForm({
 
       {/* Submit */}
       <div className="pt-4 space-y-3">
+        {submitError && (
+          <Card className="border-destructive bg-destructive/5" data-submit-error="true">
+            <CardContent className="pt-4 flex items-start gap-3">
+              <AlertCircle className="size-4 text-destructive mt-0.5 shrink-0" />
+              <p className="text-sm font-medium text-destructive">{submitError}</p>
+            </CardContent>
+          </Card>
+        )}
         {submitted && errorCount > 0 && (
           <p className="text-center text-sm text-destructive font-medium">
             {errorCount} field{errorCount !== 1 ? 's' : ''} still incomplete — review above.

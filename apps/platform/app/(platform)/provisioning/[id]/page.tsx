@@ -29,42 +29,39 @@ export default async function ProvisioningDetailPage({
   const { id } = await params
   const user = await requireUser()
 
-  // Find customer by account number
-  const customerResult = await cachedQuery(
-    [`customers-${user.tenantId}`, id],
-    [`customers-${user.tenantId}`],
-    () => db.select().from(customers).where(eq(customers.accountNumber, id)).limit(1)
-  )
-
-  const customer = customerResult[0]
-  if (!customer || customer.tenantId !== user.tenantId) notFound()
-
-  // Find deal — optional now
-  const dealResult = await cachedQuery(
-    [`deals-${user.tenantId}`, customer.id],
-    [`deals-${user.tenantId}`],
-    () => db.select().from(deals).where(eq(deals.customerId, customer.id)).limit(1)
-  )
-  const deal = dealResult[0] ?? null
-
-  // Find provisioning via deal OR directly via customer
+  // Find provisioning by id
   const provResult = await cachedQuery(
-    [`provisioning-${user.tenantId}`, customer.id],
+    [`provisioning-${user.tenantId}`, id],
     [`provisioning-${user.tenantId}`],
-    () =>
-      db
-        .select()
-        .from(provisioning)
-        .where(
-          deal
-            ? or(eq(provisioning.dealId, deal.id), eq(provisioning.customerId, customer.id))
-            : eq(provisioning.customerId, customer.id)
-        )
-        .limit(1)
+    () => db.select().from(provisioning).where(eq(provisioning.id, id)).limit(1)
   )
 
   const prov = provResult[0]
-  if (!prov) notFound()
+  if (!prov || prov.tenantId !== user.tenantId) notFound()
+
+  // Find deal — optional now
+  const deal = prov.dealId
+    ? await cachedQuery([`deals-${user.tenantId}`, prov.dealId], [`deals-${user.tenantId}`], () =>
+        db
+          .select()
+          .from(deals)
+          .where(eq(deals.id, prov.dealId as string))
+          .limit(1)
+      ).then((r) => r[0] ?? null)
+    : null
+
+  // Customer comes from the deal, or directly off the provisioning record
+  const customerId = deal?.customerId ?? prov.customerId
+  const customerResult = customerId
+    ? await cachedQuery(
+        [`customers-${user.tenantId}`, customerId],
+        [`customers-${user.tenantId}`],
+        () => db.select().from(customers).where(eq(customers.id, customerId)).limit(1)
+      )
+    : []
+
+  const customer = customerResult[0]
+  if (!customer || customer.tenantId !== user.tenantId) notFound()
 
   // Deal services — only if deal exists
   const services = deal
@@ -148,7 +145,7 @@ export default async function ProvisioningDetailPage({
         </Link>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <Link href={`/customers/${customer.accountNumber}`}>
+            <Link href={`/customers/${customer.id}`}>
               <h1 className="text-2xl font-semibold">{customerName}</h1>
             </Link>
             <Badge variant="outline" className={PROV_STATUS_COLOURS[prov.status]}>
