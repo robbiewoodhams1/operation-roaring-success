@@ -2,6 +2,9 @@
 
 import { activateUser } from '@roaring/auth/server'
 import { createAdminClient } from '@roaring/auth/server'
+import { db, users } from '@roaring/db'
+import { eq } from 'drizzle-orm'
+import { revalidateTag } from 'next/cache'
 
 export async function setPasswordAndActivate({
   password,
@@ -12,10 +15,8 @@ export async function setPasswordAndActivate({
   accessToken: string
   refreshToken: string
 }): Promise<{ error: string | null }> {
-  // Use the admin client to set the session from the invite tokens
   const supabase = createAdminClient()
 
-  // Exchange the invite tokens for a real session
   const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
     access_token: accessToken,
     refresh_token: refreshToken,
@@ -25,7 +26,6 @@ export async function setPasswordAndActivate({
     return { error: sessionError?.message ?? 'Invalid invite link' }
   }
 
-  // Update the password
   const { error: updateError } = await supabase.auth.admin.updateUserById(sessionData.user.id, {
     password,
   })
@@ -34,11 +34,21 @@ export async function setPasswordAndActivate({
     return { error: updateError.message }
   }
 
-  // Activate in app.users
   const { error: activateError } = await activateUser(sessionData.user.id)
 
   if (activateError) {
     return { error: activateError }
+  }
+
+  // Bust the users cache so the admin users list reflects the new active status immediately
+  const userRow = await db
+    .select({ tenantId: users.tenantId })
+    .from(users)
+    .where(eq(users.id, sessionData.user.id))
+    .limit(1)
+
+  if (userRow[0]) {
+    revalidateTag(`users-${userRow[0].tenantId}`, 'max')
   }
 
   return { error: null }

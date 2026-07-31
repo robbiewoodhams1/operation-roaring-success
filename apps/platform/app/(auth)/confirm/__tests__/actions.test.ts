@@ -1,29 +1,65 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setPasswordAndActivate } from '../actions'
 
-const { mockCreateAdminClient, mockActivateUser, mockSetSession, mockUpdateUserById } = vi.hoisted(
-  () => {
-    const mockSetSession = vi.fn().mockResolvedValue({
-      data: { user: { id: 'user-id' } },
-      error: null,
-    })
-    const mockUpdateUserById = vi.fn().mockResolvedValue({ error: null })
-    const mockSupabase = {
-      auth: {
-        setSession: mockSetSession,
-        admin: { updateUserById: mockUpdateUserById },
-      },
-    }
-    const mockCreateAdminClient = vi.fn().mockReturnValue(mockSupabase)
-    const mockActivateUser = vi.fn().mockResolvedValue({ error: null })
-
-    return { mockCreateAdminClient, mockActivateUser, mockSetSession, mockUpdateUserById }
+const {
+  mockCreateAdminClient,
+  mockActivateUser,
+  mockSetSession,
+  mockUpdateUserById,
+  chain,
+  mockDb,
+  mockRevalidateTag,
+} = vi.hoisted(() => {
+  const mockSetSession = vi.fn().mockResolvedValue({
+    data: { user: { id: 'user-id' } },
+    error: null,
+  })
+  const mockUpdateUserById = vi.fn().mockResolvedValue({ error: null })
+  const mockSupabase = {
+    auth: {
+      setSession: mockSetSession,
+      admin: { updateUserById: mockUpdateUserById },
+    },
   }
-)
+  const mockCreateAdminClient = vi.fn().mockReturnValue(mockSupabase)
+  const mockActivateUser = vi.fn().mockResolvedValue({ error: null })
+
+  const chain: any = {}
+  for (const m of ['select', 'from', 'where']) {
+    chain[m] = vi.fn().mockReturnValue(chain)
+  }
+  chain.limit = vi.fn().mockResolvedValue([{ tenantId: 'tenant-1' }])
+
+  const mockDb = {
+    select: vi.fn().mockReturnValue(chain),
+  }
+
+  const mockRevalidateTag = vi.fn()
+
+  return {
+    mockCreateAdminClient,
+    mockActivateUser,
+    mockSetSession,
+    mockUpdateUserById,
+    chain,
+    mockDb,
+    mockRevalidateTag,
+  }
+})
 
 vi.mock('@roaring/auth/server', () => ({
   createAdminClient: mockCreateAdminClient,
   activateUser: mockActivateUser,
+}))
+vi.mock('@roaring/db', () => ({
+  db: mockDb,
+  users: {},
+}))
+vi.mock('drizzle-orm', () => ({
+  eq: vi.fn((...a: any[]) => ({ op: 'eq', a })),
+}))
+vi.mock('next/cache', () => ({
+  revalidateTag: mockRevalidateTag,
 }))
 
 const validTokens = {
@@ -45,6 +81,12 @@ describe('setPasswordAndActivate', () => {
       },
     }
     mockCreateAdminClient.mockReturnValue(mockSupabase)
+
+    chain.select.mockReturnValue(chain)
+    chain.from.mockReturnValue(chain)
+    chain.where.mockReturnValue(chain)
+    chain.limit.mockResolvedValue([{ tenantId: 'tenant-1' }])
+    mockDb.select.mockReturnValue(chain)
   })
 
   it('returns { error: null } on success', async () => {
@@ -93,5 +135,17 @@ describe('setPasswordAndActivate', () => {
   it('calls updateUserById with the correct user id and password', async () => {
     await setPasswordAndActivate(validTokens)
     expect(mockUpdateUserById).toHaveBeenCalledWith('user-id', { password: 'NewPass123!' })
+  })
+
+  it('revalidates the users cache tag with the tenant id on success', async () => {
+    await setPasswordAndActivate(validTokens)
+    expect(mockRevalidateTag).toHaveBeenCalledWith('users-tenant-1', 'max')
+  })
+
+  it('does not revalidate if the user row lookup returns nothing', async () => {
+    chain.limit.mockResolvedValue([])
+    const result = await setPasswordAndActivate(validTokens)
+    expect(result).toEqual({ error: null })
+    expect(mockRevalidateTag).not.toHaveBeenCalled()
   })
 })
