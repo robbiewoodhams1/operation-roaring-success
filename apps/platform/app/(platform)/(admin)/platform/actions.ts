@@ -23,7 +23,6 @@ const supportSchema = z.object({
 const settingsSchema = z.object({
   app: z.object({
     name: trimmed('App name', 60),
-    version: trimmed('Version', 20),
     title: trimmed('Browser title', 120),
     description: trimmed('Description', 300),
     loginTagline: trimmed('Login tagline', 120),

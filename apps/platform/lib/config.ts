@@ -15,7 +15,6 @@ export type SupportContact = {
 export type AppConfig = {
   app: {
     name: string
-    version: string
     title: string
     description: string
     loginTagline: string

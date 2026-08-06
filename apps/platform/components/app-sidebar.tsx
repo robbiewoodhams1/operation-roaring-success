@@ -19,6 +19,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { UserNav } from '@/components/user-nav'
 import { useConfig } from '@/lib/config-context'
+import { APP_VERSION } from '@/lib/version'
 import type { AuthUser, UserRole } from '@roaring/auth'
 import {
   House,
@@ -240,7 +241,7 @@ export function AppSidebar({ user }: { user: AuthUser }) {
       <SidebarHeader>
         <div className="px-2 py-2">
           <p className="text-sm font-semibold">{app.name}</p>
-          <p className="text-xs text-muted-foreground">v{app.version}</p>
+          <p className="text-xs text-muted-foreground">v{APP_VERSION}</p>
         </div>
       </SidebarHeader>
 

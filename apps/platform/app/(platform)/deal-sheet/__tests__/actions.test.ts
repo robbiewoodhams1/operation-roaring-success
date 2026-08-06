@@ -49,7 +49,6 @@ vi.mock('@/lib/settings', () => ({
   getSettings: async () => ({
     app: {
       name: 'Roaring Success',
-      version: '1.0.6',
       title: 'T',
       description: 'D',
       loginTagline: 'L',

@@ -85,12 +85,6 @@ export function SettingsForm({ initial }: { initial: AppConfig }) {
             onChange={(v) => setApp({ name: v })}
           />
           <Field
-            label="Version"
-            hint="Displayed under the app name in the sidebar."
-            value={form.app.version}
-            onChange={(v) => setApp({ version: v })}
-          />
-          <Field
             label="Browser title"
             value={form.app.title}
             onChange={(v) => setApp({ title: v })}
