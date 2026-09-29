@@ -65,17 +65,21 @@ Uses Next.js App Router with route groups:
 ### Authentication & Authorization
 
 - **Supabase Auth** for identity; session cookie managed via `@supabase/ssr`
-- Middleware in `packages/auth` validates sessions and injects user context on every request
-- Roles: `agent | team_leader | manager | director | admin` — stored on the `users` table
-- Users have an `approval_status` (`pending → approved → active`) — users must be approved before accessing the platform
-- Multi-tenant isolation via a `tenants` table; Supabase RLS enforces row-level access
+- Middleware in `packages/auth` redirects unauthenticated requests to `/login`; it does NOT check role or approval status
+- `requireUser()` / `requireRole()` (`packages/auth/src/actions.server.ts`) are the actual authorization gate — **every Server Action must call one of these itself**, since a parent layout's check does not protect Server Actions (they're independent POST endpoints in Next.js)
+- Roles (live DB enum): `agent | team_leader | manager | director | admin | sales` — stored on `app.users.role`
+- Users have an `approval_status`: `pending | approved | rejected` (not `active` — that's a separate `is_active` boolean column)
+- `tenants` table exists and every domain table has a `tenant_id`, but the deployment is currently single-tenant (one row) in practice
+- **RLS is enabled on every table but is not a real enforcement layer for this app** — the app's own DB connection bypasses it entirely (see `docs/SECURITY.md`). Authorization is 100% application-code responsibility. Read `docs/SECURITY.md` and `docs/decisions/001-authorization-lives-in-app-code-not-rls.md` before touching anything auth- or RLS-related.
 
 ### Database
 
-- **Drizzle ORM** over **Supabase PostgreSQL**; all schema lives in `packages/db/src/schema/`
-- Key tables: `tenants`, `users`, `customers`, `deals`, `audit_logs`, `user_invitations`, `provisioning`, `provisioning_services`
+- **Drizzle ORM** over **Supabase PostgreSQL**; schema lives in `packages/db/src/schema/`, but **the live schema is the source of truth, not the Drizzle files** — they have known drift (see `docs/AUDIT.md`). When correctness matters, verify against the live database via the Supabase MCP.
+- The real schema is in the **`app`** Postgres schema, not `public`.
+- Key tables: `tenants`, `users`, `customers`, `deals` (+ `deal_services`/`deal_pricing`/`deal_billing`), `provisioning` (+ `provisioning_services`), `faults`, `complaints`, `debts`, `transfer_ceases` (each with a `*_comments` child table), `todos`, `audit_logs`, `user_invitations`
 - Customers have a `type` (`residential | business`) and `status` (`prospect | active | at_risk | churned`)
-- Run migrations with `drizzle-kit` via the `@roaring/db` package scripts
+- **There is no real migration history.** Only one migration file exists (`packages/db/migrations/0001_platform_settings.sql`, a manually-pasted script) — the other 18 tables were built directly against the live database with no tracked migrations. Read `docs/decisions/002-schema-managed-live-not-via-migrations.md` before assuming `drizzle-kit migrate` reflects reality, and treat any schema change as a careful, manual, live-database operation until that's remediated.
+- `app.audit_logs` is populated automatically by a trigger (`app.audit_trigger()`) on 18 of 19 tables — every mutating Server Action must call `setAuditUser(tx, user.id)` (`packages/auth/src/audit.ts`) inside its transaction _before_ the write, or the audit entry's `changed_by` will be `NULL`.
 
 ### Environment Variables
 
@@ -85,5 +89,64 @@ Each app has a `lib/env.ts` that calls `createEnv()` from `@roaring/config/env` 
 
 - **React 19**, **Next.js 16** (App Router, RSC by default), **TypeScript 5** strict mode
 - **TailwindCSS 4**, **shadcn/ui** components, **base-ui/react** headless primitives
-- **Zod 4** for all validation (forms, env vars, server actions)
+- **Zod 4** is the intended validation approach, but in practice is only used for env-var validation and one Server Action — most Server Actions have no runtime input validation (see `docs/AUDIT.md` H5). Don't assume an action's input is validated just because Zod is "the convention."
 - All package imports use the `@roaring/*` workspace alias
+- `packages/algorithms` and `packages/telephony` are currently empty stubs (`export {}`) despite being described as holding business logic — target-scoring logic actually lives duplicated inside each `targets/*/targets-client.tsx` component. Don't add code to these packages assuming existing logic is there to build on; there isn't any yet.
+- `apps/admin` is largely unbuilt (`dashboard/page.tsx` is a placeholder, `payments/page.tsx` is a 0-byte empty file, zero Stripe code exists anywhere). Admin functionality (user management, platform settings) currently lives in `apps/platform`'s `(admin)` route group instead.
+
+## Persistent Documentation
+
+This repo has a `/docs` directory that is the source of truth for architecture,
+database, and security context beyond what fits here. **Read these before starting
+non-trivial work:**
+
+- `docs/PROJECT_CONTEXT.md` — what this system is, architecture, workflows, start here
+- `docs/DATABASE.md` — the actual live schema, enums, indexes, RLS, migrations status
+- `docs/SECURITY.md` — the real authentication/authorization model and known gaps
+- `docs/WORKFLOWS.md` — traced end-to-end request flows for key features
+- `docs/AUDIT.md` — dated findings log (CRITICAL/HIGH/MEDIUM/LOW), updated per audit pass
+- `docs/decisions/` — ADRs for things that look like bugs but are documented, intentional (or at least observed-and-flagged) tradeoffs — check here before "fixing" something that might be load-bearing
+
+These describe the system **as it actually is**, verified against the live
+codebase and database — not an idealized version. If this file (`CLAUDE.md`) and
+`/docs` ever disagree, trust `/docs` and flag the discrepancy; `/docs` is updated
+per-audit, this file is a summary that can lag.
+
+## Things Claude should NOT change casually
+
+- **RLS policies** — don't weaken or remove them, even though they're not currently
+  load-bearing for the app's own traffic (see `docs/SECURITY.md`). Only tighten them,
+  and only with the full picture in `docs/decisions/001-*.md` in mind.
+- **`requireUser`/`requireRole` semantics** — many pages depend on their specific
+  redirect targets (`/pending-approval`, `/rejected`, `/login?suspended=true`,
+  `/unauthorised`). Check every call site before changing behavior.
+- **`packages/db/src/schema/*.ts`** — don't "fix" a live/Drizzle mismatch by
+  guessing which side is right; verify against the live database via the Supabase
+  MCP and check `docs/AUDIT.md` for known drift first.
+- **The `app.audit_trigger()` pattern** — don't remove `setAuditUser(tx, user.id)`
+  calls or the `db.transaction` wrapper around mutations without understanding the
+  audit-log dependency on it (`docs/DATABASE.md` → "Audit trail mechanism").
+- **This is a live database with real operational data** — 4,564 customers, 240
+  deals, not seed/demo data. Treat any destructive DB operation with real caution,
+  and never run schema changes or data mutations against it without the user's
+  explicit go-ahead.
+
+## Known technical debt (see `docs/AUDIT.md` for full detail)
+
+Top priority items as of the 2026-09-28 audit: no auth check on the `search` Server
+Action (CRITICAL), RLS policies provide no real isolation though not currently
+reachable (CRITICAL), a handful of Drizzle enum definitions missing values that
+exist live (HIGH), no tracked migration history (HIGH), 43 foreign keys with no
+covering index (HIGH), minimal Zod validation coverage (HIGH). Full list with
+evidence and recommended fixes in `docs/AUDIT.md`.
+
+## How to verify changes
+
+- `pnpm lint` / `pnpm type-check` / `pnpm --filter @roaring/platform test` before
+  considering any change done.
+- For anything touching the database, cross-check the live schema/RLS/data via the
+  Supabase MCP tools (`mcp__supabase__*`) rather than trusting `packages/db/src/schema/*.ts`
+  alone — see `docs/decisions/002-*.md` for why.
+- For anything touching auth/authorization, re-grep every `'use server'` file for
+  `requireUser`/`requireRole` after the change to confirm coverage didn't regress
+  (this is exactly how the `search` action's missing check was found).

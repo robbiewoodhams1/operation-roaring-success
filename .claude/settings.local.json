@@ -9,5 +9,7 @@
       "c:\\Users\\RobertWoodhams\\Documents\\operation-roaring-success\\packages\\algorithms",
       "c:\\Users\\RobertWoodhams\\Documents\\operation-roaring-success\\packages\\telephony"
     ]
-  }
+  },
+  "enabledMcpjsonServers": ["supabase"],
+  "enableAllProjectMcpServers": true
 }
