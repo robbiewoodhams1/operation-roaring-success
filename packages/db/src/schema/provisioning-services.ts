@@ -45,6 +45,8 @@ export const provisioningServices = appSchema.table('provisioning_services', {
   presumedSolveDate: date('presumed_solve_date'),
   delayReason: text('delay_reason'),
   notes: text('notes'),
+  /** Who last changed the row — set by the database from the session actor. */
+  updatedBy: uuid('updated_by'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })

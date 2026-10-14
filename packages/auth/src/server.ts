@@ -2,8 +2,10 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { assertCrmEnvironment } from '@roaring/config/environments'
 
 export async function createClient() {
+  assertCrmEnvironment()
   const cookieStore = await cookies()
 
   return createServerClient(
@@ -30,6 +32,7 @@ export async function createClient() {
 }
 
 export function createAdminClient() {
+  assertCrmEnvironment()
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set')
   }

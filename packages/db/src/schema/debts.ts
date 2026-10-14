@@ -1,4 +1,4 @@
-import { boolean, date, numeric, pgEnum, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { boolean, date, numeric, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { appSchema, tenants } from './tenants'
 import { users } from './users'
 import { provisioning } from './provisioning'

@@ -1,16 +1,17 @@
 'use server'
 
-import { db, deals, dealServices, dealPricing, dealBilling, customers } from '@roaring/db'
+import { db, deals, dealServices, dealPricing, dealBilling, customers, users } from '@roaring/db'
 import type { Title } from '@roaring/db'
-import { eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { requireUser, setAuditUser } from '@roaring/auth'
 
 export async function updateDeal(data: {
   dealId: string
   customerId: string
-  salesAgent: string
-  closingAgent: string
+  /** User ids; null keeps a legacy deal's unlinked free-text agent as it is. */
+  salesAgentId: string | null
+  closingAgentId: string | null
   dealType: string
   dealDate: string
   welcomeCall: string | null
@@ -69,6 +70,46 @@ export async function updateDeal(data: {
 }) {
   const user = await requireUser()
 
+  const [deal] = await db
+    .select({
+      tenantId: deals.tenantId,
+      customerId: deals.customerId,
+      salesAgentId: deals.salesAgentId,
+      closingAgentId: deals.closingAgentId,
+    })
+    .from(deals)
+    .where(eq(deals.id, data.dealId))
+    .limit(1)
+  if (!deal || deal.tenantId !== user.tenantId) throw new Error('Deal not found')
+
+  // A changed agent must be an active, approved employee of this tenant; an
+  // unchanged one is kept even if they have since left. Names are stored
+  // alongside as a display snapshot. Stats credit is not touched here — it was
+  // awarded at submission and the reassignment policy isn't agreed yet.
+  const requested = [data.salesAgentId, data.closingAgentId].filter((v): v is string => !!v)
+  const known =
+    requested.length > 0
+      ? await db
+          .select({
+            id: users.id,
+            fullName: users.fullName,
+            isActive: users.isActive,
+            approvalStatus: users.approvalStatus,
+          })
+          .from(users)
+          .where(and(inArray(users.id, requested), eq(users.tenantId, user.tenantId)))
+      : []
+  function resolveAgent(id: string | null, currentId: string | null) {
+    if (!id) return null
+    const agent = known.find((k) => k.id === id)
+    const eligible =
+      agent && (id === currentId || (agent.isActive && agent.approvalStatus === 'approved'))
+    if (!eligible) throw new Error('Choose agents from the list')
+    return agent
+  }
+  const salesAgent = resolveAgent(data.salesAgentId, deal.salesAgentId)
+  const closingAgent = resolveAgent(data.closingAgentId, deal.closingAgentId)
+
   await db.transaction(async (tx) => {
     await setAuditUser(tx, user.id)
 
@@ -76,8 +117,11 @@ export async function updateDeal(data: {
       tx
         .update(deals)
         .set({
-          salesAgent: data.salesAgent,
-          closingAgent: data.closingAgent,
+          ...(salesAgent && { salesAgentId: salesAgent.id, salesAgent: salesAgent.fullName }),
+          ...(closingAgent && {
+            closingAgentId: closingAgent.id,
+            closingAgent: closingAgent.fullName,
+          }),
           dealType: data.dealType as any,
           dealDate: data.dealDate,
           welcomeCall: (data.welcomeCall || null) as any,
@@ -108,7 +152,7 @@ export async function updateDeal(data: {
           intlLocation: data.intlLocation || null,
           premiumPackage: data.premiumPackage || null,
         })
-        .where(eq(dealServices.id, data.servicesId)),
+        .where(and(eq(dealServices.id, data.servicesId), eq(dealServices.dealId, data.dealId))),
 
       tx
         .update(dealPricing)
@@ -121,7 +165,7 @@ export async function updateDeal(data: {
           contractLength: (data.contractLength || null) as any,
           contractLengthOther: data.contractLengthOther || null,
         })
-        .where(eq(dealPricing.id, data.pricingId)),
+        .where(and(eq(dealPricing.id, data.pricingId), eq(dealPricing.dealId, data.dealId))),
 
       tx
         .update(dealBilling)
@@ -136,7 +180,7 @@ export async function updateDeal(data: {
           accountNumber: data.accountNumberBilling || null,
           bankChecked: data.bankChecked,
         })
-        .where(eq(dealBilling.id, data.billingId)),
+        .where(and(eq(dealBilling.id, data.billingId), eq(dealBilling.dealId, data.dealId))),
 
       tx
         .update(customers)
@@ -155,7 +199,7 @@ export async function updateDeal(data: {
           type: data.customerType as any,
           status: data.customerStatus as any,
         })
-        .where(eq(customers.id, data.customerId)),
+        .where(and(eq(customers.id, deal.customerId), eq(customers.tenantId, user.tenantId))),
     ])
   })
 

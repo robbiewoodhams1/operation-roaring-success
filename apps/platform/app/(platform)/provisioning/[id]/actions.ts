@@ -1,6 +1,6 @@
 'use server'
 
-import { db, provisioning, provisioningServices } from '@roaring/db'
+import { db, provisioning, provisioningServices, users } from '@roaring/db'
 import type {
   WcOutcome,
   RouterDispatched,
@@ -8,9 +8,34 @@ import type {
   ServiceStatus,
   CancelledBy,
 } from '@roaring/db'
-import { eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { requireUser, setAuditUser } from '@roaring/auth'
+
+/** The provisioning record's tenant check — every write goes through this. */
+async function provisioningInTenant(id: string, tenantId: string) {
+  const [row] = await db
+    .select({
+      id: provisioning.id,
+      provisionerUserId: provisioning.provisionerUserId,
+      routerAssignedUserId: provisioning.routerAssignedUserId,
+    })
+    .from(provisioning)
+    .where(and(eq(provisioning.id, id), eq(provisioning.tenantId, tenantId)))
+    .limit(1)
+  if (!row) throw new Error('Provisioning record not found')
+  return row
+}
+
+async function serviceInTenant(serviceId: string, tenantId: string) {
+  const [row] = await db
+    .select({ id: provisioningServices.id })
+    .from(provisioningServices)
+    .innerJoin(provisioning, eq(provisioning.id, provisioningServices.provisioningId))
+    .where(and(eq(provisioningServices.id, serviceId), eq(provisioning.tenantId, tenantId)))
+    .limit(1)
+  if (!row) throw new Error('Provisioning service not found')
+}
 
 export async function updateProvisioning(
   id: string,
@@ -26,7 +51,9 @@ export async function updateProvisioning(
     dateOrdered: string | null
     orderFaultRef: string | null
     orderComments: string | null
-    provisioner: string | null
+    /** User ids. Stats credit for service milestones goes to the provisioner. */
+    provisionerUserId: string | null
+    routerAssignedUserId: string | null
     lastCheckedAt: string | null
     lastCheckedBy: string | null
     routerDispatched: string | null
@@ -36,6 +63,35 @@ export async function updateProvisioning(
   }
 ) {
   const user = await requireUser()
+  const current = await provisioningInTenant(id, user.tenantId)
+
+  // A newly chosen user must be an active, approved employee of this tenant;
+  // an unchanged assignment is kept even if that person has since left.
+  const requested = [data.provisionerUserId, data.routerAssignedUserId].filter(
+    (v): v is string => !!v
+  )
+  const known =
+    requested.length > 0
+      ? await db
+          .select({
+            id: users.id,
+            fullName: users.fullName,
+            isActive: users.isActive,
+            approvalStatus: users.approvalStatus,
+          })
+          .from(users)
+          .where(and(inArray(users.id, requested), eq(users.tenantId, user.tenantId)))
+      : []
+  function resolve(id: string | null, currentId: string | null) {
+    if (!id) return null
+    const person = known.find((k) => k.id === id)
+    const eligible =
+      person && (id === currentId || (person.isActive && person.approvalStatus === 'approved'))
+    if (!eligible) throw new Error('Choose an employee from the list')
+    return person
+  }
+  const provisioner = resolve(data.provisionerUserId, current.provisionerUserId)
+  const routerAssignee = resolve(data.routerAssignedUserId, current.routerAssignedUserId)
 
   await db.transaction(async (tx) => {
     await setAuditUser(tx, user.id)
@@ -54,7 +110,10 @@ export async function updateProvisioning(
         dateOrdered: data.dateOrdered || null,
         orderFaultRef: data.orderFaultRef || null,
         orderComments: data.orderComments || null,
-        provisioner: data.provisioner || null,
+        provisionerUserId: provisioner?.id ?? null,
+        // Display snapshot; a legacy free-text name is kept until someone is linked.
+        ...(provisioner && { provisioner: provisioner.fullName }),
+        routerAssignedUserId: routerAssignee?.id ?? null,
         lastCheckedAt: data.lastCheckedAt ? new Date(data.lastCheckedAt) : null,
         lastCheckedBy: data.lastCheckedBy || null,
         routerDispatched: (data.routerDispatched || 'no') as RouterDispatched,
@@ -62,7 +121,7 @@ export async function updateProvisioning(
         routerTrackingNumber: data.routerTrackingNumber || null,
         routerOrderedDate: data.routerOrderedDate || null,
       })
-      .where(eq(provisioning.id, id))
+      .where(and(eq(provisioning.id, id), eq(provisioning.tenantId, user.tenantId)))
   })
 
   revalidateTag(`provisioning-${user.tenantId}`, 'max')
@@ -88,6 +147,7 @@ export async function updateProvisioningService(
   }
 ) {
   const user = await requireUser()
+  await serviceInTenant(id, user.tenantId)
 
   await db.transaction(async (tx) => {
     await setAuditUser(tx, user.id)
@@ -122,6 +182,7 @@ export async function addProvisioningServiceAttempt(
   currentMaxAttempt: number
 ) {
   const user = await requireUser()
+  await provisioningInTenant(provisioningId, user.tenantId)
 
   await db.transaction(async (tx) => {
     await setAuditUser(tx, user.id)

@@ -16,6 +16,26 @@ pnpm format:check     # Prettier check only
 pnpm clean            # Remove build artifacts + node_modules
 ```
 
+Environment-aware entry point (see `docs/ENVIRONMENTS.md`):
+
+```bash
+pnpm crm --local                       # Start local Supabase (Docker) if needed, run platform on it (--dev = alias)
+pnpm crm --staging                     # Run platform on hosted Staging (gqkugpjmguufavbladxt), apps/platform/.env.staging.local
+pnpm crm --local --test                # DB integration tests against Local (--staging --test for Staging; never Production)
+pnpm crm --prod --credentials <file>   # Production build + validation only — no server, deploy, DB session or migrations
+pnpm crm --status                      # All three environments' state (never prints secrets)
+```
+
+Database (see `docs/MIGRATIONS.md`, `docs/LOCAL_DEVELOPMENT.md`):
+
+```bash
+pnpm db:start | db:stop | db:status    # Local Supabase stack (Docker)
+pnpm db:reset                          # Rebuild Local from supabase/migrations + seed.sql, run supabase/checks
+pnpm db new <name> / pnpm db:migrate   # New migration / apply pending to Local
+pnpm db:verify                         # Docker-free replay of all migrations + seed + checks (CI runs this)
+pnpm db staging:status | staging:push [--apply] | staging:adopt   # Staging: read-only / dry-run / gated
+```
+
 To run a single app:
 
 ```bash
@@ -74,16 +94,20 @@ Uses Next.js App Router with route groups:
 
 ### Database
 
-- **Drizzle ORM** over **Supabase PostgreSQL**; schema lives in `packages/db/src/schema/`, but **the live schema is the source of truth, not the Drizzle files** — they have known drift (see `docs/AUDIT.md`). When correctness matters, verify against the live database via the Supabase MCP.
+- **Drizzle ORM** over **Supabase PostgreSQL**. **The schema is defined by `supabase/migrations/`**, not by the Drizzle files in `packages/db/src/schema/` — those are a hand-maintained ORM description with known drift (see `docs/AUDIT.md`). When correctness matters, check the migrations and the local DB (`supabase-local` MCP), or Staging read-only (`supabase-staging` MCP).
 - The real schema is in the **`app`** Postgres schema, not `public`.
 - Key tables: `tenants`, `users`, `customers`, `deals` (+ `deal_services`/`deal_pricing`/`deal_billing`), `provisioning` (+ `provisioning_services`), `faults`, `complaints`, `debts`, `transfer_ceases` (each with a `*_comments` child table), `todos`, `audit_logs`, `user_invitations`
 - Customers have a `type` (`residential | business`) and `status` (`prospect | active | at_risk | churned`)
-- **There is no real migration history.** Only one migration file exists (`packages/db/migrations/0001_platform_settings.sql`, a manually-pasted script) — the other 18 tables were built directly against the live database with no tracked migrations. Read `docs/decisions/002-schema-managed-live-not-via-migrations.md` before assuming `drizzle-kit migrate` reflects reality, and treat any schema change as a careful, manual, live-database operation until that's remediated.
+- **One migration history: `supabase/migrations/`** (Supabase CLI), starting from a baseline reconstructed from Staging and verified by schema fingerprint (ADR 004, `docs/MIGRATIONS.md`). Every schema change is a new migration file created with `pnpm db new`, proven with `pnpm db:reset` + tests + `pnpm db:verify`, promoted to Staging only with `pnpm db staging:push --apply`, and to Production only via `docs/RELEASE.md`. Never use `drizzle-kit push/migrate`, a dashboard SQL editor or an MCP `apply_migration`/DDL `execute_sql` against a hosted project. `supabase/seed.sql` is synthetic and local-only.
 - `app.audit_logs` is populated automatically by a trigger (`app.audit_trigger()`) on 18 of 19 tables — every mutating Server Action must call `setAuditUser(tx, user.id)` (`packages/auth/src/audit.ts`) inside its transaction _before_ the write, or the audit entry's `changed_by` will be `NULL`.
 
 ### Environment Variables
 
-Each app has a `lib/env.ts` that calls `createEnv()` from `@roaring/config/env` (Zod-validated). Copy `lib/.env.example` to `lib/.env.local` in each app. Required vars include Supabase URL/keys, `DATABASE_URL`, and `RESEND_API_KEY`.
+- **`CRM_ENV` (`local` | `staging` | `production`) is required — there is no default** (`development` was retired and fails with a hint). `assertCrmEnvironment()` (`packages/config/src/environments.ts`) checks that `NEXT_PUBLIC_SUPABASE_URL`, both API keys and `DATABASE_URL` all belong to that environment: loopback-only with no hosted ref for `local`, exactly `gqkugpjmguufavbladxt` for `staging`, exactly `wvdwwmfzwvrniwpmiahu` for `production`. It runs before the Drizzle pool is created (`packages/db/src/client.ts`), in `createClient`/`createAdminClient` and `updateSession` (`packages/auth`), in `drizzle.config.ts` and in the integration-test setup. It also refuses `production` under `next dev`, Production in a Vercel Preview, and anything but production in Vercel Production. Any new privileged client or DB connection must call it first.
+- Credentials: Local — generated by the Supabase CLI and injected by `pnpm crm --local` (no file). Staging — `apps/platform/.env.staging.local` (git-ignored; template `apps/platform/.env.example`). Production — only in Vercel; never download them or write them into `apps/platform`.
+- `pnpm crm` refuses to run while `apps/platform/.env`, `.env.local`, `.env.development`, `.env.development.local`, `.env.production` or `.env.production.local` define Supabase variables (Next.js auto-loads them).
+- MCP (`.mcp.json`): `supabase-local` (the Docker stack, full access — use this for normal development) and `supabase-staging` (Staging, **read-only**). There is no Production MCP and there must never be one.
+- `lib/env.ts` in each app defines a `createEnv()` (Zod) schema for the full variable list, but nothing imports it, so it is not enforced at runtime (AUDIT.md E4).
 
 ### Tech Stack
 
@@ -120,23 +144,28 @@ per-audit, this file is a summary that can lag.
 - **`requireUser`/`requireRole` semantics** — many pages depend on their specific
   redirect targets (`/pending-approval`, `/rejected`, `/login?suspended=true`,
   `/unauthorised`). Check every call site before changing behavior.
-- **`packages/db/src/schema/*.ts`** — don't "fix" a live/Drizzle mismatch by
-  guessing which side is right; verify against the live database via the Supabase
-  MCP and check `docs/AUDIT.md` for known drift first.
+- **`packages/db/src/schema/*.ts`** — don't "fix" a migration/Drizzle mismatch by
+  guessing which side is right; check the migrations, Staging (read-only MCP) and
+  `docs/AUDIT.md` for known drift first.
+- **Applied migrations** — never edit a file in `supabase/migrations/` that has been
+  applied to Staging (see `packages/db-tools/fingerprints/staging.txt` → `applied-through`);
+  add a new migration instead. Never reset, re-seed or dump-restore Staging or
+  Production.
 - **The `app.audit_trigger()` pattern** — don't remove `setAuditUser(tx, user.id)`
   calls or the `db.transaction` wrapper around mutations without understanding the
   audit-log dependency on it (`docs/DATABASE.md` → "Audit trail mechanism").
-- **This is a live database with real operational data** — 4,564 customers, 240
-  deals, not seed/demo data. Treat any destructive DB operation with real caution,
-  and never run schema changes or data mutations against it without the user's
-  explicit go-ahead.
+- **Production is a live database with real operational data**, and **Staging also
+  contains a clone of real customer records** (plus the synthetic `stats-qa-synthetic`
+  tenant, which must be preserved). Never copy rows from either into Local, fixtures
+  or docs; never run schema changes or data mutations on either without the user's
+  explicit go-ahead. Destructive experiments belong on Local.
 
 ## Known technical debt (see `docs/AUDIT.md` for full detail)
 
 Top priority items as of the 2026-09-28 audit: no auth check on the `search` Server
 Action (CRITICAL), RLS policies provide no real isolation though not currently
 reachable (CRITICAL), a handful of Drizzle enum definitions missing values that
-exist live (HIGH), no tracked migration history (HIGH), 43 foreign keys with no
+exist live (HIGH), no tracked migration history (HIGH — remediated 2026-10-14, ADR 004), 43 foreign keys with no
 covering index (HIGH), minimal Zod validation coverage (HIGH). Full list with
 evidence and recommended fixes in `docs/AUDIT.md`.
 
@@ -144,9 +173,10 @@ evidence and recommended fixes in `docs/AUDIT.md`.
 
 - `pnpm lint` / `pnpm type-check` / `pnpm --filter @roaring/platform test` before
   considering any change done.
-- For anything touching the database, cross-check the live schema/RLS/data via the
-  Supabase MCP tools (`mcp__supabase__*`) rather than trusting `packages/db/src/schema/*.ts`
-  alone — see `docs/decisions/002-*.md` for why.
+- For anything touching the database: `pnpm db:reset` (Local, Docker),
+  `pnpm crm --local --test`, and `pnpm db:verify`. Inspect Local with the
+  `supabase-local` MCP tools and Staging read-only with `supabase-staging` rather than
+  trusting `packages/db/src/schema/*.ts` alone — see `docs/decisions/004-*.md`.
 - For anything touching auth/authorization, re-grep every `'use server'` file for
   `requireUser`/`requireRole` after the change to confirm coverage didn't regress
   (this is exactly how the `search` action's missing check was found).

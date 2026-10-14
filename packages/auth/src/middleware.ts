@@ -1,8 +1,10 @@
 // packages/auth/src/middleware.ts
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { assertCrmEnvironment } from '@roaring/config/environments'
 
 export async function updateSession(request: NextRequest) {
+  assertCrmEnvironment()
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(

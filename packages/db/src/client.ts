@@ -1,3 +1,4 @@
+import { assertCrmEnvironment } from '@roaring/config/environments'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import * as schema from './schema'
@@ -5,6 +6,10 @@ import * as schema from './schema'
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL is not set')
 }
+
+// Must run before the pool is created: refuses a DATABASE_URL (or any other
+// Supabase variable) that doesn't belong to the project CRM_ENV names.
+assertCrmEnvironment()
 
 const connectionString = process.env.DATABASE_URL
 

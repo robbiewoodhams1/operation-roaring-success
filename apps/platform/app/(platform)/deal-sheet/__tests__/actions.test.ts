@@ -1,15 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { submitDeal } from '../actions'
 
-const { chain, mockTx, mockDb, mockRequireUser, mockSetAuditUser, mockRedirect } = vi.hoisted(
-  () => {
+const { chain, state, mockTx, mockDb, mockRequireUser, mockSetAuditUser, mockRedirect } =
+  vi.hoisted(() => {
+    // What an awaited query chain without .limit()/.returning() resolves to —
+    // the agent lookup reads it.
+    const state = { thenValue: [] as unknown }
     const chain: any = {}
     for (const m of ['from', 'where', 'set', 'values', 'leftJoin', 'orderBy']) {
       chain[m] = vi.fn().mockReturnValue(chain)
     }
     chain.limit = vi.fn().mockResolvedValue([])
     chain.returning = vi.fn().mockResolvedValue([])
-    chain.then = (r: any, j: any) => Promise.resolve(undefined).then(r, j)
+    chain.then = (r: any, j: any) => Promise.resolve(state.thenValue).then(r, j)
     chain.catch = (j: any) => Promise.resolve(undefined).catch(j)
     chain.finally = (f: any) => Promise.resolve(undefined).finally(f)
 
@@ -26,13 +29,13 @@ const { chain, mockTx, mockDb, mockRequireUser, mockSetAuditUser, mockRedirect }
     const mockSetAuditUser = vi.fn().mockResolvedValue(undefined)
     const mockRedirect = vi.fn()
 
-    return { chain, mockTx, mockDb, mockRequireUser, mockSetAuditUser, mockRedirect }
-  }
-)
+    return { chain, state, mockTx, mockDb, mockRequireUser, mockSetAuditUser, mockRedirect }
+  })
 
 vi.mock('@roaring/db', () => ({
   db: mockDb,
   customers: {},
+  users: {},
   deals: {},
   dealServices: {},
   dealPricing: {},
@@ -69,6 +72,7 @@ vi.mock('drizzle-orm', () => ({
   like: vi.fn((...a: any[]) => ({ op: 'like', a })),
   desc: vi.fn((...a: any[]) => ({ op: 'desc', a })),
   gte: vi.fn((...a: any[]) => ({ op: 'gte', a })),
+  inArray: vi.fn((...a: any[]) => ({ op: 'inArray', a })),
   sql: Object.assign(vi.fn().mockReturnValue({}), { raw: vi.fn().mockReturnValue({}) }),
 }))
 
@@ -82,14 +86,23 @@ function setupMocks() {
   mockTx.select.mockReturnValue(chain)
   mockDb.select.mockReturnValue(chain)
   mockDb.transaction.mockImplementation(async (cb: any) => cb(mockTx))
-  mockRequireUser.mockResolvedValue({ id: 'user-id' })
+  mockRequireUser.mockResolvedValue({ id: 'user-id', tenantId: 'tenant-1' })
   mockSetAuditUser.mockResolvedValue(undefined)
+  state.thenValue = [SALES, CLOSER]
+}
+
+const SALES = { id: '11111111-1111-4111-8111-111111111111', fullName: 'Agent Smith' }
+const CLOSER = { id: '22222222-2222-4222-8222-222222222222', fullName: 'Closer Jones' }
+const SUBMISSION_KEY = '33333333-3333-4333-8333-333333333333'
+
+/** The values object passed to the deals insert (second insert when a customer is created). */
+function dealInsertValues(withNewCustomer = true) {
+  return chain.values.mock.calls[withNewCustomer ? 1 : 0]?.[0]
 }
 
 const baseData = {
   existingCustomerId: null,
-  tenantId: 'tenant-1',
-  createdBy: 'user-1',
+  submissionKey: SUBMISSION_KEY,
   businessName: 'ACME Corp',
   customerTitle: 'Mr',
   customerFirstName: 'John',
@@ -103,8 +116,8 @@ const baseData = {
   county: 'Greater London',
   dealType: 'Business',
   date: '2024-01-15',
-  salesAgent: 'Agent Smith',
-  closingAgent: 'Closer Jones',
+  salesAgentId: SALES.id,
+  closingAgentId: CLOSER.id,
   tradingAddress: '',
   softFacts: '',
   welcomeCall: 'Yes',
@@ -189,6 +202,7 @@ describe('submitDeal', () => {
   })
 
   it('skips customer insert when existingCustomerId is provided', async () => {
+    chain.limit.mockResolvedValueOnce([]).mockResolvedValueOnce([{ id: 'existing-cust-id' }])
     chain.returning
       .mockResolvedValueOnce([{ id: 'deal-id' }])
       .mockResolvedValueOnce([{ id: 'prov-id' }])
@@ -210,6 +224,7 @@ describe('submitDeal', () => {
   })
 
   it('redirects to the new deal id when using an existing customer', async () => {
+    chain.limit.mockResolvedValueOnce([]).mockResolvedValueOnce([{ id: 'existing-cust-id' }])
     chain.returning
       .mockResolvedValueOnce([{ id: 'deal-id' }])
       .mockResolvedValueOnce([{ id: 'prov-id' }])
@@ -252,7 +267,9 @@ describe('submitDeal', () => {
   })
 
   it('rejects a manual account number that is already in use', async () => {
-    chain.limit.mockResolvedValueOnce([{ id: 'existing-cust' }]) // clash lookup
+    chain.limit
+      .mockResolvedValueOnce([]) // no earlier submission with this key
+      .mockResolvedValueOnce([{ id: 'existing-cust' }]) // clash lookup
 
     const result = await submitDeal({ ...baseData, customerAccountNumber: 'DFB20001' })
 
@@ -269,6 +286,7 @@ describe('submitDeal', () => {
   })
 
   it('ignores a manual account number when using an existing customer', async () => {
+    chain.limit.mockResolvedValueOnce([]).mockResolvedValueOnce([{ id: 'existing-cust-id' }])
     chain.returning
       .mockResolvedValueOnce([{ id: 'deal-id' }])
       .mockResolvedValueOnce([{ id: 'prov-id' }])
@@ -293,5 +311,115 @@ describe('submitDeal', () => {
   it('throws if the customers insert returns no row', async () => {
     chain.returning.mockResolvedValue([]) // all returning calls return []
     await expect(submitDeal(baseData)).rejects.toThrow('Failed to create customer')
+  })
+
+  // ── Attribution ───────────────────────────────────────────────────────────
+
+  it('takes the tenant and creator from the session, never the payload', async () => {
+    chain.returning
+      .mockResolvedValueOnce([{ id: 'cust-id' }])
+      .mockResolvedValueOnce([{ id: 'deal-id' }])
+      .mockResolvedValueOnce([{ id: 'prov-id' }])
+
+    await submitDeal({ ...baseData, tenantId: 'forged-tenant', createdBy: 'forged-user' } as any)
+
+    expect(dealInsertValues()).toMatchObject({ tenantId: 'tenant-1', createdBy: 'user-id' })
+    expect(chain.values.mock.calls[0]?.[0]).toMatchObject({
+      tenantId: 'tenant-1',
+      createdBy: 'user-id',
+    })
+  })
+
+  it('records the selected agents by id, with their names as a snapshot', async () => {
+    chain.returning
+      .mockResolvedValueOnce([{ id: 'cust-id' }])
+      .mockResolvedValueOnce([{ id: 'deal-id' }])
+      .mockResolvedValueOnce([{ id: 'prov-id' }])
+
+    await submitDeal(baseData)
+
+    expect(dealInsertValues()).toMatchObject({
+      salesAgentId: SALES.id,
+      salesAgent: 'Agent Smith',
+      closingAgentId: CLOSER.id,
+      closingAgent: 'Closer Jones',
+      submissionKey: SUBMISSION_KEY,
+    })
+  })
+
+  it('accepts the same employee as both sales and closing agent', async () => {
+    state.thenValue = [SALES]
+    chain.returning
+      .mockResolvedValueOnce([{ id: 'cust-id' }])
+      .mockResolvedValueOnce([{ id: 'deal-id' }])
+      .mockResolvedValueOnce([{ id: 'prov-id' }])
+
+    await submitDeal({ ...baseData, closingAgentId: SALES.id })
+
+    expect(dealInsertValues()).toMatchObject({ salesAgentId: SALES.id, closingAgentId: SALES.id })
+  })
+
+  it('rejects an agent who is not an active employee of this tenant', async () => {
+    state.thenValue = [SALES] // the closer is not among the tenant's active staff
+
+    const result = await submitDeal(baseData)
+
+    expect(result).toEqual({ error: 'Choose a sales agent and a closing agent from the list.' })
+    expect(mockDb.transaction).not.toHaveBeenCalled()
+  })
+
+  it('rejects a free-text agent name in place of an id', async () => {
+    const result = await submitDeal({ ...baseData, salesAgentId: 'Agent Smith' })
+    expect(result?.error).toMatch(/sales agent/)
+    expect(mockDb.transaction).not.toHaveBeenCalled()
+  })
+
+  // ── Duplicate submissions ─────────────────────────────────────────────────
+
+  it('sends a resubmitted form to the deal it already created', async () => {
+    mockRedirect.mockImplementation(() => {
+      throw new Error('NEXT_REDIRECT')
+    })
+    chain.limit.mockResolvedValueOnce([{ id: 'deal-from-first-click' }])
+
+    await expect(submitDeal(baseData)).rejects.toThrow('NEXT_REDIRECT')
+
+    expect(mockRedirect).toHaveBeenCalledWith('/deals/deal-from-first-click')
+    expect(mockDb.transaction).not.toHaveBeenCalled()
+  })
+
+  it('lands on the winning deal when two identical submissions race', async () => {
+    const violation = Object.assign(new Error('duplicate key'), {
+      code: '23505',
+      constraint_name: 'deals_tenant_submission_key',
+    })
+    mockDb.transaction.mockRejectedValueOnce(violation)
+    chain.limit
+      .mockResolvedValueOnce([]) // not yet submitted when checked
+      .mockResolvedValueOnce([{ id: 'winning-deal' }]) // lookup after the conflict
+
+    await submitDeal(baseData)
+
+    expect(mockRedirect).toHaveBeenCalledWith('/deals/winning-deal')
+  })
+
+  it('rethrows database errors that are not a duplicate submission', async () => {
+    mockDb.transaction.mockRejectedValueOnce(new Error('connection lost'))
+    await expect(submitDeal(baseData)).rejects.toThrow('connection lost')
+  })
+
+  it('refuses a form without a valid submission key', async () => {
+    const result = await submitDeal({ ...baseData, submissionKey: 'not-a-uuid' })
+    expect(result?.error).toMatch(/expired/)
+    expect(mockDb.transaction).not.toHaveBeenCalled()
+  })
+
+  it('refuses an existing customer from another tenant', async () => {
+    chain.limit.mockResolvedValueOnce([]).mockResolvedValueOnce([])
+
+    const result = await submitDeal({ ...baseData, existingCustomerId: 'other-tenant-cust' })
+
+    expect(result).toEqual({ error: 'That customer could not be found.' })
+    expect(mockDb.transaction).not.toHaveBeenCalled()
   })
 })

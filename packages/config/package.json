@@ -16,6 +16,10 @@
     "./env": {
       "types": "./src/env.ts",
       "default": "./src/env.ts"
+    },
+    "./environments": {
+      "types": "./src/environments.ts",
+      "default": "./src/environments.ts"
     }
   }
 }

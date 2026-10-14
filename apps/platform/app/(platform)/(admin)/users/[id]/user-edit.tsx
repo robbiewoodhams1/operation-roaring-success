@@ -17,7 +17,17 @@ import { type User } from '@/lib/types'
 
 const ROLES = ['admin', 'manager', 'director', 'team_leader', 'agent', 'sales']
 
-export function UserEdit({ user, currentUserId }: { user: User; currentUserId: string }) {
+type TeamOption = { id: string; name: string; isActive: boolean }
+
+export function UserEdit({
+  user,
+  currentUserId,
+  teams,
+}: {
+  user: User & { teamId: string | null }
+  currentUserId: string
+  teams: TeamOption[]
+}) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -27,11 +37,17 @@ export function UserEdit({ user, currentUserId }: { user: User; currentUserId: s
   const [form, setForm] = useState({
     fullName: user.fullName,
     role: user.role,
+    teamId: user.teamId ?? '',
   })
+  const teamItems = [
+    { value: '', label: 'No team' },
+    ...teams.map((t) => ({ value: t.id, label: t.isActive ? t.name : `${t.name} (retired)` })),
+  ]
+  const currentTeam = teams.find((t) => t.id === user.teamId)
 
   async function handleSave() {
     setSaving(true)
-    await updateUser(user.id, form)
+    await updateUser(user.id, { ...form, teamId: form.teamId || null })
     setSaving(false)
     setIsEditing(false)
     router.refresh()
@@ -56,7 +72,7 @@ export function UserEdit({ user, currentUserId }: { user: User; currentUserId: s
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setForm({ fullName: user.fullName, role: user.role })
+                  setForm({ fullName: user.fullName, role: user.role, teamId: user.teamId ?? '' })
                   setIsEditing(false)
                 }}
                 disabled={saving}
@@ -108,6 +124,28 @@ export function UserEdit({ user, currentUserId }: { user: User; currentUserId: s
               </Select>
             ) : (
               <span className="text-sm capitalize">{user.role.replace('_', ' ')}</span>
+            )}
+          </Row>
+          <Row label="Team">
+            {isEditing ? (
+              <Select
+                value={form.teamId}
+                items={teamItems}
+                onValueChange={(v) => setForm((p) => ({ ...p, teamId: (v as string) ?? '' }))}
+              >
+                <SelectTrigger className="h-8 w-48">
+                  <SelectValue placeholder="No team" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teamItems.map((t) => (
+                    <SelectItem key={t.value || 'none'} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <span className="text-sm">{currentTeam?.name ?? '—'}</span>
             )}
           </Row>
           <Row label="Status">

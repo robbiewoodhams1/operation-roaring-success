@@ -1,6 +1,6 @@
 // packages/db/src/schema/audit-logs.ts
 import { jsonb, text, timestamp, uuid } from 'drizzle-orm/pg-core'
-import { appSchema, tenants } from './tenants'
+import { appSchema } from './tenants'
 
 export const auditLogs = appSchema.table('audit_logs', {
   id: uuid('id').primaryKey().defaultRandom(),

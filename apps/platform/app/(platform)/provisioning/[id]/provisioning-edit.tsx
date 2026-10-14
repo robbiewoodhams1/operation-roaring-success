@@ -472,6 +472,56 @@ function ServiceHistory({ services, label }: { services: ProvisioningService[]; 
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
+
+type StaffMember = { id: string; fullName: string; isActive: boolean }
+
+/** Picks a CRM user; credit for provisioning stats follows this id, not a typed name. */
+function StaffSelect({
+  value,
+  legacyName,
+  staff,
+  isEditing,
+  onChange,
+}: {
+  value: string
+  /** Free text from before provisioners were linked to users. */
+  legacyName: string | null
+  staff: StaffMember[]
+  isEditing: boolean
+  onChange: (v: string) => void
+}) {
+  const current = staff.find((s) => s.id === value)
+  if (!isEditing) {
+    if (current) return <span className="text-sm">{current.fullName}</span>
+    return (
+      <span className="text-sm text-muted-foreground">
+        {legacyName ? `${legacyName} (not linked)` : '—'}
+      </span>
+    )
+  }
+  const items = [
+    { value: '', label: 'Unassigned' },
+    ...staff.map((s) => ({
+      value: s.id,
+      label: s.isActive ? s.fullName : `${s.fullName} (inactive)`,
+    })),
+  ]
+  return (
+    <Select value={value} items={items} onValueChange={(v) => onChange((v as string) ?? '')}>
+      <SelectTrigger className="h-8 w-48">
+        <SelectValue placeholder="Unassigned" />
+      </SelectTrigger>
+      <SelectContent>
+        {items.map((i) => (
+          <SelectItem key={i.value || 'none'} value={i.value}>
+            {i.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
 export function ProvisioningEdit({
   prov,
   bbServices,
@@ -480,8 +530,10 @@ export function ProvisioningEdit({
   mpfBbServices,
   mpfVoiceServices,
   mobileServices,
+  staff,
 }: {
   prov: Provisioning
+  staff: StaffMember[]
   bbServices: ProvisioningService[]
   whcServices: ProvisioningService[]
   nfonServices: ProvisioningService[]
@@ -546,7 +598,8 @@ export function ProvisioningEdit({
     dateOrdered: formatDate(prov.dateOrdered),
     orderFaultRef: prov.orderFaultRef ?? '',
     orderComments: prov.orderComments ?? '',
-    provisioner: prov.provisioner ?? '',
+    provisionerUserId: prov.provisionerUserId ?? '',
+    routerAssignedUserId: prov.routerAssignedUserId ?? '',
     lastCheckedAt: formatDate(prov.lastCheckedAt),
     lastCheckedBy: prov.lastCheckedBy ?? '',
     routerDispatched: (prov.routerDispatched as string) ?? 'no',
@@ -573,7 +626,8 @@ export function ProvisioningEdit({
       dateOrdered: form.dateOrdered || null,
       orderFaultRef: form.orderFaultRef || null,
       orderComments: form.orderComments || null,
-      provisioner: form.provisioner || null,
+      provisionerUserId: form.provisionerUserId || null,
+      routerAssignedUserId: form.routerAssignedUserId || null,
       lastCheckedAt: form.lastCheckedAt || null,
       lastCheckedBy: form.lastCheckedBy || null,
       routerDispatched: form.routerDispatched,
@@ -599,7 +653,8 @@ export function ProvisioningEdit({
       dateOrdered: formatDate(prov.dateOrdered),
       orderFaultRef: prov.orderFaultRef ?? '',
       orderComments: prov.orderComments ?? '',
-      provisioner: prov.provisioner ?? '',
+      provisionerUserId: prov.provisionerUserId ?? '',
+      routerAssignedUserId: prov.routerAssignedUserId ?? '',
       lastCheckedAt: formatDate(prov.lastCheckedAt),
       lastCheckedBy: prov.lastCheckedBy ?? '',
       routerDispatched: (prov.routerDispatched as string) ?? 'no',
@@ -865,15 +920,13 @@ export function ProvisioningEdit({
               )}
             </Row>
             <Row label="Provisioner">
-              {isEditing ? (
-                <Input
-                  value={form.provisioner}
-                  onChange={(e) => update('provisioner', e.target.value)}
-                  className="h-8 w-48"
-                />
-              ) : (
-                <span className="text-sm">{form.provisioner || '—'}</span>
-              )}
+              <StaffSelect
+                value={form.provisionerUserId}
+                legacyName={prov.provisioner}
+                staff={staff}
+                isEditing={isEditing}
+                onChange={(v) => update('provisionerUserId', v)}
+              />
             </Row>
             <Row label="Last checked at">
               {isEditing ? (
@@ -1106,6 +1159,22 @@ export function ProvisioningEdit({
               ) : (
                 <span className="text-sm font-mono">{form.routerDispatchRef || '—'}</span>
               )}
+            </Row>
+            <Row label="Router assignee">
+              <div className="flex flex-col items-end gap-1">
+                <StaffSelect
+                  value={form.routerAssignedUserId}
+                  legacyName={null}
+                  staff={staff}
+                  isEditing={isEditing}
+                  onChange={(v) => update('routerAssignedUserId', v)}
+                />
+                {isEditing && (
+                  <span className="text-xs text-muted-foreground">
+                    Proposed credit for router dispatch stats (awaiting approval)
+                  </span>
+                )}
+              </div>
             </Row>
             <Row label="Router ordered date">
               {isEditing ? (

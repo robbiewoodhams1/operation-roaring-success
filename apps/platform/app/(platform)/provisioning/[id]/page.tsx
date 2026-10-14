@@ -119,6 +119,25 @@ export default async function ProvisioningDetailPage({
   const historyUserIds = [
     ...new Set(historyLogs.map((l) => l.changedBy).filter(Boolean)),
   ] as string[]
+  // Provisioner / router assignee options: active, approved employees plus
+  // whoever is assigned now, so a departed employee still shows by name.
+  const assignedIds = [prov.provisionerUserId, prov.routerAssignedUserId].filter(
+    (v): v is string => v !== null
+  )
+  const staff = await db
+    .select({ id: users.id, fullName: users.fullName, isActive: users.isActive })
+    .from(users)
+    .where(
+      and(
+        eq(users.tenantId, user.tenantId),
+        or(
+          and(eq(users.isActive, true), eq(users.approvalStatus, 'approved')),
+          ...assignedIds.map((assignedId) => eq(users.id, assignedId))
+        )
+      )
+    )
+    .orderBy(asc(users.fullName))
+
   const historyUserNames: Record<string, string> = {}
   if (historyUserIds.length > 0) {
     const userResults = await cachedQuery(
@@ -185,6 +204,7 @@ export default async function ProvisioningDetailPage({
 
       <ProvisioningEdit
         prov={prov}
+        staff={staff}
         bbServices={bbServices}
         whcServices={whcServices}
         nfonServices={nfonServices}

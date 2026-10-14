@@ -36,7 +36,7 @@ export default async function DealSheetPage({
 
     // Sales/closing agent options are the tenant's active, approved users.
     db
-      .select({ fullName: users.fullName })
+      .select({ id: users.id, fullName: users.fullName })
       .from(users)
       .where(
         and(
@@ -45,8 +45,7 @@ export default async function DealSheetPage({
           eq(users.approvalStatus, 'approved')
         )
       )
-      .orderBy(asc(users.fullName))
-      .then((rows) => rows.map((r) => r.fullName)),
+      .orderBy(asc(users.fullName)),
   ])
 
   return (
@@ -57,12 +56,7 @@ export default async function DealSheetPage({
           <p className="text-sm text-muted-foreground mt-1">v1.0.13</p>
         </div>
       </div>
-      <SalesForm
-        tenantId={user.tenantId}
-        createdBy={user.id}
-        salesAgents={salesAgents}
-        prefilledCustomer={prefilledCustomer}
-      />
+      <SalesForm salesAgents={salesAgents} prefilledCustomer={prefilledCustomer} />
     </div>
   )
 }

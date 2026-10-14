@@ -33,3 +33,10 @@ jobs:
 
       - name: Test
         run: pnpm --filter=platform test
+
+      # Fresh-install replay of supabase/migrations + seed + SQL checks on an
+      # in-process Postgres 17, compared with the recorded Staging schema
+      # fingerprint. Needs no Docker and no credentials; never touches a
+      # hosted database. CI does not apply migrations anywhere.
+      - name: Database migration replay
+        run: pnpm db:verify

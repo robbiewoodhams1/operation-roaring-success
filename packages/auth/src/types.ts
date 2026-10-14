@@ -1,5 +1,6 @@
 // packages/auth/src/types.ts
-export type UserRole = 'agent' | 'team_leader' | 'manager' | 'director' | 'admin'
+// Mirrors the live app.user_role enum.
+export type UserRole = 'agent' | 'team_leader' | 'manager' | 'director' | 'admin' | 'sales'
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected'
 
 export interface AuthUser {

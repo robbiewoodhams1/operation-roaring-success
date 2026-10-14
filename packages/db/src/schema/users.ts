@@ -8,6 +8,7 @@ export const userRoleEnum = appSchema.enum('user_role', [
   'manager',
   'director',
   'admin',
+  'sales',
 ])
 
 export const approvalStatusEnum = appSchema.enum('approval_status', [
@@ -28,7 +29,9 @@ export const users = appSchema.table('users', {
   isActive: boolean('is_active').notNull().default(true),
   phone: text('phone'),
   department: text('department'),
+  /** Legacy free-text team; teamId is the stable relationship (migration 0002). */
   team: text('team'),
+  teamId: uuid('team_id'),
   avatarUrl: text('avatar_url'),
   lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

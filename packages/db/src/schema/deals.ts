@@ -1,16 +1,7 @@
-import {
-  boolean,
-  date,
-  integer,
-  jsonb,
-  numeric,
-  pgEnum,
-  text,
-  timestamp,
-  uuid,
-} from 'drizzle-orm/pg-core'
+import { boolean, date, integer, jsonb, numeric, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { appSchema, tenants } from './tenants'
 import { customers } from './customers'
+import { users } from './users'
 
 export const dealTypeEnum = appSchema.enum('deal_type', ['business', 'residential'])
 export const dealStatusEnum = appSchema.enum('deal_status', ['pending', 'live', 'cancelled'])
@@ -48,6 +39,12 @@ export const deals = appSchema.table('deals', {
   dealDate: date('deal_date').notNull(),
   welcomeCall: welcomeCallEnum('welcome_call'),
   createdBy: uuid('created_by').notNull(),
+  // Stable references to the credited employees (migration 0002). The text
+  // columns above stay as a display snapshot and for legacy rows.
+  salesAgentId: uuid('sales_agent_id').references(() => users.id),
+  closingAgentId: uuid('closing_agent_id').references(() => users.id),
+  /** One deal per deal-sheet submission; unique per tenant. */
+  submissionKey: uuid('submission_key'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })

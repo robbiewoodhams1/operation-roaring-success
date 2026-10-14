@@ -52,6 +52,50 @@ function F({
   )
 }
 
+type Agent = { id: string; fullName: string; isActive: boolean }
+
+function AgentSelect({
+  value,
+  fallbackName,
+  agents,
+  onChange,
+  isEditing,
+}: {
+  value: string
+  /** Free-text name on legacy deals that have no stable agent id. */
+  fallbackName: string
+  agents: Agent[]
+  onChange: (v: string) => void
+  isEditing: boolean
+}) {
+  const current = agents.find((a) => a.id === value)
+  if (!isEditing) {
+    return <span className="text-sm">{current?.fullName ?? fallbackName ?? '—'}</span>
+  }
+  const items = agents.map((a) => ({
+    value: a.id,
+    label: a.isActive ? a.fullName : `${a.fullName} (inactive)`,
+  }))
+  return (
+    <Select
+      value={value || null}
+      items={items}
+      onValueChange={(v) => onChange((v as string) ?? '')}
+    >
+      <SelectTrigger className="h-8 w-full max-w-sm">
+        <SelectValue placeholder={fallbackName ? `${fallbackName} (not linked)` : 'Select agent'} />
+      </SelectTrigger>
+      <SelectContent>
+        {items.map((a) => (
+          <SelectItem key={a.value} value={a.value}>
+            {a.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
 function TA({
   value,
   onChange,
@@ -157,20 +201,22 @@ export function DealEdit({
   pricing,
   billing,
   customer,
+  agents,
 }: {
   deal: Deal
   services: DealService | null
   pricing: DealPricing | null
   billing: DealBilling | null
   customer: Customer
+  agents: Agent[]
 }) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const [form, setForm] = useState({
-    salesAgent: deal.salesAgent,
-    closingAgent: deal.closingAgent,
+    salesAgentId: deal.salesAgentId ?? '',
+    closingAgentId: deal.closingAgentId ?? '',
     dealType: deal.dealType as string,
     dealDate: deal.dealDate,
     welcomeCall: deal.welcomeCall ?? '',
@@ -237,8 +283,8 @@ export function DealEdit({
       servicesId: services?.id ?? '',
       pricingId: pricing?.id ?? '',
       billingId: billing?.id ?? '',
-      salesAgent: form.salesAgent,
-      closingAgent: form.closingAgent,
+      salesAgentId: form.salesAgentId || null,
+      closingAgentId: form.closingAgentId || null,
       dealType: form.dealType,
       dealDate: form.dealDate,
       welcomeCall: form.welcomeCall || null,
@@ -299,8 +345,8 @@ export function DealEdit({
 
   function handleCancel() {
     setForm({
-      salesAgent: deal.salesAgent,
-      closingAgent: deal.closingAgent,
+      salesAgentId: deal.salesAgentId ?? '',
+      closingAgentId: deal.closingAgentId ?? '',
       dealType: deal.dealType as string,
       dealDate: deal.dealDate,
       welcomeCall: deal.welcomeCall ?? '',
@@ -381,11 +427,29 @@ export function DealEdit({
 
       <Section title="Deal">
         <Row label="Sales agent">
-          <F value={form.salesAgent} onChange={(v) => update('salesAgent', v)} isEditing={e} />
+          <AgentSelect
+            value={form.salesAgentId}
+            fallbackName={deal.salesAgent}
+            agents={agents}
+            onChange={(v) => update('salesAgentId', v)}
+            isEditing={e}
+          />
         </Row>
         <Row label="Closing agent">
-          <F value={form.closingAgent} onChange={(v) => update('closingAgent', v)} isEditing={e} />
+          <AgentSelect
+            value={form.closingAgentId}
+            fallbackName={deal.closingAgent}
+            agents={agents}
+            onChange={(v) => update('closingAgentId', v)}
+            isEditing={e}
+          />
         </Row>
+        {e && (
+          <p className="text-xs text-muted-foreground px-1 py-2">
+            Changing an agent updates this deal. Stats credit already awarded at submission stays
+            with the original agents until a reassignment policy is agreed.
+          </p>
+        )}
         <Row label="Deal type">
           <SL
             value={form.dealType}

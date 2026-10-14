@@ -30,10 +30,13 @@ const { chain, mockTx, mockDb, mockRequireRole, mockSetAuditUser, mockRevalidate
   }
 )
 
-vi.mock('@roaring/db', () => ({ db: mockDb, users: {} }))
+vi.mock('@roaring/db', () => ({ db: mockDb, users: {}, teams: {} }))
 vi.mock('@roaring/auth', () => ({ requireRole: mockRequireRole, setAuditUser: mockSetAuditUser }))
 vi.mock('next/cache', () => ({ revalidatePath: mockRevalidatePath, revalidateTag: vi.fn() }))
-vi.mock('drizzle-orm', () => ({ eq: vi.fn((...a: any[]) => ({ op: 'eq', a })) }))
+vi.mock('drizzle-orm', () => ({
+  eq: vi.fn((...a: any[]) => ({ op: 'eq', a })),
+  and: vi.fn((...a: any[]) => ({ op: 'and', a })),
+}))
 
 function setupMocks() {
   for (const m of ['from', 'where', 'set', 'values', 'leftJoin', 'orderBy'])
@@ -45,7 +48,7 @@ function setupMocks() {
   mockTx.select.mockReturnValue(chain)
   mockDb.select.mockReturnValue(chain)
   mockDb.transaction.mockImplementation(async (cb: any) => cb(mockTx))
-  mockRequireRole.mockResolvedValue({ id: 'admin-id' })
+  mockRequireRole.mockResolvedValue({ id: 'admin-id', tenantId: 'tenant-1' })
   mockSetAuditUser.mockResolvedValue(undefined)
 }
 
@@ -108,5 +111,36 @@ describe('toggleUserSuspension', () => {
     mockRequireRole.mockRejectedValue(new Error('Forbidden'))
     await expect(toggleUserSuspension('user-1', true)).rejects.toThrow('Forbidden')
     expect(mockDb.transaction).not.toHaveBeenCalled()
+  })
+})
+
+describe('updateUser team assignment', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+    setupMocks()
+  })
+
+  it('assigns a team from the same tenant', async () => {
+    chain.limit.mockResolvedValueOnce([{ id: 'team-1' }])
+    await updateUser('user-1', { fullName: 'Jane', role: 'agent', teamId: 'team-1' })
+    expect(chain.set.mock.calls[0]?.[0]).toMatchObject({ teamId: 'team-1' })
+  })
+
+  it('refuses a team from another tenant', async () => {
+    chain.limit.mockResolvedValueOnce([])
+    await expect(
+      updateUser('user-1', { fullName: 'Jane', role: 'agent', teamId: 'foreign-team' })
+    ).rejects.toThrow('Team not found')
+    expect(mockDb.transaction).not.toHaveBeenCalled()
+  })
+
+  it('removes someone from their team', async () => {
+    await updateUser('user-1', { fullName: 'Jane', role: 'agent', teamId: null })
+    expect(chain.set.mock.calls[0]?.[0]).toMatchObject({ teamId: null })
+  })
+
+  it('leaves the team alone when none is passed', async () => {
+    await updateUser('user-1', { fullName: 'Jane', role: 'agent' })
+    expect(chain.set.mock.calls[0]?.[0]).not.toHaveProperty('teamId')
   })
 })

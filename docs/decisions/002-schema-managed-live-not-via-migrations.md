@@ -1,7 +1,9 @@
 # 002 — Schema has been managed directly against the live database, not via migrations
 
-**Status:** documented as-found (2026-09-28 audit). Flagged as HIGH-priority
-technical debt in AUDIT.md (H2), not yet remediated.
+**Status:** documented as-found (2026-09-28 audit). **Superseded 2026-10-14 by
+ADR 004** — the history now lives in `supabase/migrations/` from a verified,
+reconstructed baseline. The "Recommended remediation" below was not followed
+(introspection cannot capture the functions/triggers/policies); see ADR 004.
 
 ## Context
 

@@ -126,29 +126,24 @@ transaction wrapper pattern in any Server Action.
 
 ## Migrations
 
-**The live schema was not built through tracked migrations.** `packages/db/migrations/`
-contains exactly one file, `0001_platform_settings.sql`, whose own header comment says
-"Run once in the Supabase SQL editor" — i.e. even that one file is a manually-pasted
-script, not a `drizzle-kit`-generated, `drizzle-kit migrate`-applied migration. The
-other 18 tables, all enums, RLS policies, functions, and triggers exist live with
-**zero migration history** — they were built directly against the database (dashboard
-SQL editor or `execute_sql`-style tooling), and `packages/db/src/schema/*.ts` was
-written or hand-updated to describe what's there after the fact.
+**Since 2026-10-14 the schema has one migration history: `supabase/migrations/`**
+(Supabase CLI format). Full workflow: `docs/MIGRATIONS.md`; decision: ADR 004.
 
-Practical consequences:
+| Version          | File                      | Notes                                                                                                                                                                                |
+| ---------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `20260928000000` | `baseline_app_schema.sql` | The original hand-built schema (19 tables, enums, `audit_trigger`, `normalise_customer`, triggers, RLS), reconstructed from Staging's catalog                                        |
+| `20260928000100` | `platform_settings.sql`   | Formerly `packages/db/migrations/0001_platform_settings.sql`                                                                                                                         |
+| `20261013000000` | `performance_stats.sql`   | Formerly `packages/db/migrations/0002_performance_stats.sql` — Stats Board ledger, teams, attribution columns, triggers. **Not applied to Production.** See `docs/STATS.md`, ADR 003 |
 
-- There's no reproducible way to stand up a fresh environment (local dev, staging,
-  disaster recovery) from source — you'd have to hand-write the DDL by reading the
-  live database.
-- Any drift between the live DB and `packages/db/src/schema/*.ts` (see the enum
-  mismatches above, and the `transfer_cease_comments.body` type bug in AUDIT.md) has
-  no way to be caught automatically — `drizzle-kit` has nothing to diff against.
-- Recommended remediation: run `drizzle-kit introspect` (or `pull`) against the live
-  database to generate a baseline migration that matches current-state exactly, commit
-  it as migration `0001` (superseding the ad-hoc one), and require all schema changes
-  from that point on to go through `drizzle-kit generate` + a real migration file.
-  This is real, non-trivial work — flagged in AUDIT.md as HIGH priority but deferred
-  pending your sign-off, since it touches how the team works, not just code.
+Replaying all three into a fresh Postgres 17 reproduces Staging's `app` schema
+exactly (per-object fingerprint, `pnpm db:verify`, 2026-10-14). Before that date the
+schema had no history at all (ADR 002) — `packages/db/src/schema/*.ts` is still a
+hand-maintained description and may drift (AUDIT.md H1); the migrations, not the
+Drizzle files, define the schema.
+
+Hosted status: Staging contains every version but has not yet had them recorded in
+`supabase_migrations.schema_migrations` (`pnpm db staging:adopt`, pending). Production
+is unverified against the baseline (docs/RELEASE.md step 0).
 
 ## RLS
 

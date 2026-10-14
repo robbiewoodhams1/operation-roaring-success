@@ -24,6 +24,7 @@ import type { AuthUser, UserRole } from '@roaring/auth'
 import {
   House,
   Users,
+  UsersRound,
   FileChartLine,
   PanelBottomOpen,
   SquareX,
@@ -207,6 +208,13 @@ const navItems: NavGroup[] = [
         title: 'Users',
         href: '/users',
         icon: UserRoundPen,
+        roles: ['admin'],
+        active: true,
+      },
+      {
+        title: 'Teams',
+        href: '/teams',
+        icon: UsersRound,
         roles: ['admin'],
         active: true,
       },

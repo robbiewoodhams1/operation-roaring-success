@@ -1,6 +1,6 @@
 import { requireRole } from '@roaring/auth/server'
-import { db, users } from '@roaring/db'
-import { eq } from 'drizzle-orm'
+import { db, users, teams } from '@roaring/db'
+import { and, asc, eq, or } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
@@ -32,6 +32,20 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
   if (!user || user.tenantId !== currentUser.tenantId) notFound()
 
   const isSelf = user.id === currentUser.id
+
+  // Active teams, plus the user's current one even if it has been retired.
+  const teamOptions = await db
+    .select({ id: teams.id, name: teams.name, isActive: teams.isActive })
+    .from(teams)
+    .where(
+      and(
+        eq(teams.tenantId, currentUser.tenantId),
+        user.teamId
+          ? or(eq(teams.isActive, true), eq(teams.id, user.teamId))
+          : eq(teams.isActive, true)
+      )
+    )
+    .orderBy(asc(teams.name))
 
   return (
     <div className="p-6 w-full">
@@ -78,7 +92,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
         </div>
       )}
 
-      <UserEdit user={user} currentUserId={currentUser.id} />
+      <UserEdit user={user} currentUserId={currentUser.id} teams={teamOptions} />
     </div>
   )
 }

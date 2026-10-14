@@ -2,6 +2,7 @@ import { date, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { appSchema, tenants } from './tenants'
 import { deals } from './deals'
 import { customers } from './customers'
+import { users } from './users'
 
 export const wcOutcomeEnum = appSchema.enum('wc_outcome', [
   'call_back',
@@ -52,7 +53,14 @@ export const provisioning = appSchema.table('provisioning', {
   dateOrdered: date('date_ordered'),
   orderComments: text('order_comments'),
   orderFaultRef: text('order_fault_ref'),
+  /** Legacy free-text provisioner; kept as a display snapshot of provisionerUserId. */
   provisioner: text('provisioner'),
+  /** The provisioner credited for this record's service milestones (migration 0002). */
+  provisionerUserId: uuid('provisioner_user_id').references(() => users.id),
+  /** Proposed credit for router dispatch — metric pending approval. */
+  routerAssignedUserId: uuid('router_assigned_user_id').references(() => users.id),
+  /** Who last changed the record — set by the database from the session actor. */
+  updatedBy: uuid('updated_by').references(() => users.id),
   lastCheckedAt: timestamp('last_checked_at', { withTimezone: true }),
   lastCheckedBy: text('last_checked_by'),
 

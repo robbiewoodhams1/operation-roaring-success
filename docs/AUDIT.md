@@ -114,6 +114,7 @@ where rolname='postgres'` → `true`. Grepped the full repo for
 - **Recommended fix:** add `and(eq(<table>.tenantId, user.tenantId))` (or a dedicated ownership check where an entity has no direct `tenant_id`, e.g. via a join) to every `.where()` on an UPDATE/DELETE across all mutating Server Actions; for `submitDeal`, replace `data.tenantId`/`data.createdBy` with `user.tenantId`/`user.id` from `requireUser()`. Mechanical, low-risk per file, but wide in scope — recommend a full sweep (`grep -rn "requireUser\|\.where(eq(" apps/platform/app/**/actions.ts`) rather than fixing only the files confirmed here.
 - **Risk of changing:** low per-file; needs a full-file inventory first so nothing is missed, and a regression test per action once fixed (ties into M4).
 - **Fix now or defer:** **recommend fixing now, alongside C2** — this is more severe than C2 (broader surface, covers writes not just reads) and should be treated as equal or higher priority.
+- **Progress (2026-10-13, Stats Board work, Development only):** fixed in the actions that work touched — `submitDeal` now takes `tenantId`/`createdBy` from the session (and the database overwrites `deals.created_by` with the session actor); `updateDeal` refuses deals from other tenants and scopes every child update to the deal; `updateProvisioning`, `updateProvisioningService` and `addProvisioningServiceAttempt` check the record's tenant; `updateUser` and `toggleUserSuspension` are tenant-scoped. Each has unit tests. **Still open:** customers, todos, complaints, faults, debts, transfers/ceases and their comment actions.
 
 ---
 
@@ -418,7 +419,98 @@ covered in depth:
 2. Fix H1 and H3 (enum drift, `transfer_cease_comments.body` type) — trivial, safe, unblocks trusting the Drizzle schema.
 3. Decide on C1-context (accept app-layer-only authorization as the model, or invest in RLS as a real second layer) — this is a decision for you, not something to auto-fix.
 4. Rewrite the RLS policies (C1) to match whichever model is chosen in step 3.
-5. Establish migration discipline (H2) — `drizzle-kit introspect` baseline, then real migrations going forward.
+5. ~~Establish migration discipline (H2)~~ — done 2026-10-14 via `supabase/migrations` (see the 2026-10-14 entry and ADR 004).
 6. Add FK indexes (H4) — safe, mechanical, schedule whenever convenient.
 7. Resolve the empty `apps/admin` payments page (M2) — decide whether admin functionality lives in `apps/admin` or platform's `(admin)` group, then fix CLAUDE.md and the code to match.
 8. Incrementally introduce Zod validation on the highest-risk Server Actions (H5).
+
+---
+
+## Audit: 2026-10-14 — three-stage environment & migration pipeline
+
+**Scope:** repository, environment guards, CI, MCP configuration, and Staging
+(`gqkugpjmguufavbladxt`) via read-only catalog/aggregate queries. **Production was not
+accessed.** Changes are on branch `feature/three-stage-db-pipeline` (uncommitted).
+
+### Status of earlier findings
+
+- **H2 (no migration history)** — remediated in the repo: one history in
+  `supabase/migrations/` (baseline + 0001 + 0002), verified equal to Staging's schema
+  by fingerprint (ADR 004, `docs/MIGRATIONS.md`). Not yet recorded on any hosted
+  project (Staging adoption pending Docker-validated Local; Production pending
+  read-only verification).
+
+### New findings
+
+**E1 (HIGH) — Local Supabase cannot run on the development laptop yet.** Docker
+Desktop and WSL are not installed and the session has no admin rights. Evidence:
+`supabase status` → "docker: command not found (podman also not found)"; `wsl --status`
+→ not installed. Everything Docker-dependent is configured but unverified. Fix:
+install WSL 2 + Docker Desktop (docs/LOCAL_DEVELOPMENT.md).
+
+**E2 (HIGH) — Staging holds real personal data.** The cloned `roaring-success` tenant
+has 4,551 customers (≈4.5k phones and postcodes, 356 emails) and 5,853 audit-log rows
+embedding the same data; 0 bank details populated. Staging is reachable with
+development credentials. Recommendation (decision needed): replace with synthetic
+data or pseudonymise via a reviewed one-off script; until then treat Staging as
+confidential.
+
+**E3 (HIGH) — Vercel Preview and Supabase GitHub integration unverified.** No
+`vercel.json`; env-var scoping lives in the Vercel dashboard. A runtime guard now
+refuses Production credentials when `VERCEL_ENV ≠ production` and refuses a Vercel
+Production deployment that is not `CRM_ENV=production`. Manual checks listed in
+`docs/ENVIRONMENTS.md` must be done before merging (deployments without a valid
+`CRM_ENV` will refuse to start — by design).
+
+**E4 (MEDIUM) — `lib/env.ts` (Zod) is not imported anywhere** in either app, so its
+validation (including `RESEND_API_KEY`) never runs. The `environments.ts` guard is
+the only enforced check. No code sends email, calls telephony, Stripe or webhooks
+today, so there was nothing to sandbox for end-to-end tests.
+
+**E5 (LOW) — `pnpm type-check` does not cover `apps/platform`** (no `type-check`
+script); CI runs `tsc` on it separately. The root `scripts/` are type-checked by no
+tsconfig.
+
+**E6 (LOW) — `app.audit_trigger()` is `SECURITY DEFINER` without a fixed
+`search_path`** (kept as-is in the baseline for fidelity). Fix in a new migration.
+
+### Changes made
+
+- `supabase/` (config, migrations, seed, checks); `pnpm db` and extended `pnpm crm`
+  (`--local`, `--dev` alias, `--staging`, `--test`, `--status` for all three).
+- `CRM_ENV` is now `local | staging | production` (`development` fails with a hint);
+  Staging credentials moved from `apps/platform/.env.development.local` (auto-loaded
+  by `next dev`) to `.env.staging.local`, which `next dev` does not load.
+- `.mcp.json`: `supabase-local` + `supabase-staging` (read-only; functions,
+  branching and account tools removed). No Production server.
+- CI: `pnpm db:verify` (Docker-free migration replay + seed + checks).
+
+### Local verification pass (2026-10-14, Docker)
+
+**E7 (HIGH, fixed) — deal sheet auto account number always restarted at `startNumber`.**
+`submitDeal` found the latest `DFB…` number with `SUBSTRING(account_number FROM $n)`.
+With an untyped bind parameter Postgres resolves the regex overload
+`substring(text FROM pattern)`, so the lookup never matched and every auto-numbered
+customer got `DFB20001`. The second such deal in any environment failed with a 500
+(`customers_account_number_key`). This was in the committed code. Staging has no `DFB`
+numbers yet, so it was latent there. Fix: `::integer` on the position
+(`deal-sheet/actions.ts`). Verified by submitting through the UI on Local (→ `DFB20121`
+after 120 seeded numbers).
+
+**E8 (MEDIUM, mitigation documented) — local services listen on all interfaces.** The
+Supabase CLI publishes 54321–54324 on `0.0.0.0`/`[::]`, and Docker Desktop allows
+inbound on the Public firewall profile. `next dev` also listened on all interfaces.
+Fixed for `next dev` (`--hostname 127.0.0.1`). The Docker fix is a per-machine engine
+setting (`"ip": "127.0.0.1"`, see `docs/LOCAL_DEVELOPMENT.md` → Network exposure) and
+is **not yet applied** on the development laptop.
+
+**E9 (LOW) — suspended users don't see the "suspended" banner.** See the footnote in
+`docs/LOCAL_DEVELOPMENT.md` → Signing in locally.
+
+Also fixed: `seed.sql` wrote `deal_services.equipment` as an object, which crashed
+`/provisioning/[id]`; it is now the `[{item, qty, wholesale}]` array the app writes. The
+two Stats Board "today" integration tests used the runner's clock as the period end
+and failed whenever the runner's clock was behind the DB server (Staging, ~1.1 s).
+They now take the end time from the DB (`dbNow()` in `test/integration/fixtures.ts`).
+The assertions are unchanged, and a simulated −1.5 s skew reproduces the old failure
+and passes with the fix.

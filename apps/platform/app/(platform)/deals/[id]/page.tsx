@@ -1,6 +1,6 @@
 import { requireUser } from '@roaring/auth/server'
-import { db, deals, customers, dealServices, dealPricing, dealBilling } from '@roaring/db'
-import { eq } from 'drizzle-orm'
+import { db, deals, customers, dealServices, dealPricing, dealBilling, users } from '@roaring/db'
+import { and, asc, eq, or } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
@@ -64,6 +64,25 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
 
   const customerName = customer.companyName ?? `${customer.firstName} ${customer.lastName}`
 
+  // Agent options: active, approved employees — plus whoever is on the deal
+  // now, so an inactive agent still shows by name.
+  const currentAgentIds = [deal.salesAgentId, deal.closingAgentId].filter(
+    (v): v is string => v !== null
+  )
+  const agents = await db
+    .select({ id: users.id, fullName: users.fullName, isActive: users.isActive })
+    .from(users)
+    .where(
+      and(
+        eq(users.tenantId, user.tenantId),
+        or(
+          and(eq(users.isActive, true), eq(users.approvalStatus, 'approved')),
+          ...currentAgentIds.map((agentId) => eq(users.id, agentId))
+        )
+      )
+    )
+    .orderBy(asc(users.fullName))
+
   const { logs, userNames } = await getChangeHistory([
     { table: 'deals', ids: [deal.id] },
     { table: 'deal_services', parentField: 'deal_id', parentId: deal.id },
@@ -101,6 +120,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
         pricing={pricing ?? null}
         billing={billing ?? null}
         customer={customer}
+        agents={agents}
       />
 
       <div className="mt-6">

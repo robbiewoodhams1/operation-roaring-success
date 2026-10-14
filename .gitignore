@@ -37,3 +37,8 @@ pnpm-debug.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# claude code (personal, per-machine settings)
+.claude/settings.local.json
+
+# drizzle-kit drafts — never a migration history (see packages/db/drizzle.config.ts)
+packages/db/drizzle-drafts/

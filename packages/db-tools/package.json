@@ -1,0 +1,15 @@
+{
+  "name": "@roaring/db-tools",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Docker-free migration replay and schema fingerprints. Kept apart from @roaring/db so drizzle-orm never resolves PGlite as a peer.",
+  "scripts": {
+    "replay": "tsx scripts/replay.ts"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.3.16",
+    "@types/node": "^20",
+    "tsx": "^4.22.3"
+  }
+}

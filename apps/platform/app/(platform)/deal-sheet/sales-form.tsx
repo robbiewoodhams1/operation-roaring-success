@@ -152,14 +152,11 @@ function PriceBreakdown({ lines }: { lines: { label: string; amount: number }[] 
 }
 
 export default function SalesForm({
-  tenantId,
-  createdBy,
   salesAgents,
   prefilledCustomer,
 }: {
-  tenantId: string
-  createdBy: string
-  salesAgents: string[]
+  /** Active, approved employees of the tenant — credited by id. */
+  salesAgents: { id: string; fullName: string }[]
   prefilledCustomer: {
     id: string
     companyName: string | null
@@ -175,6 +172,10 @@ export default function SalesForm({
     addressLine3: string | null
   } | null
 }) {
+  // One key per form: resubmitting (double-click, retry) can't create a second deal.
+  const [submissionKey] = useState(() => crypto.randomUUID())
+  // Lets the select show the agent's name for the selected id.
+  const agentItems = salesAgents.map((a) => ({ value: a.id, label: a.fullName }))
   const [submitted, setSubmitted] = useState(false)
   const [errors, setErrors] = useState<Errors>({})
   const [submitting, setSubmitting] = useState(false)
@@ -381,8 +382,7 @@ export default function SalesForm({
     const result = await submitDeal({
       existingCustomerId: prefilledCustomer?.id ?? null,
       customerAccountNumber: customerAccountNumber.trim(),
-      tenantId,
-      createdBy,
+      submissionKey,
       businessName,
       customerTitle,
       customerFirstName,
@@ -396,8 +396,8 @@ export default function SalesForm({
       county,
       dealType,
       date,
-      salesAgent,
-      closingAgent,
+      salesAgentId: salesAgent,
+      closingAgentId: closingAgent,
       tradingAddress,
       softFacts,
       welcomeCall,
@@ -551,6 +551,7 @@ export default function SalesForm({
       <QuestionCard label="Sales Agent" required error={!!e.salesAgent}>
         <Select
           value={salesAgent}
+          items={agentItems}
           onValueChange={(v) => {
             setSalesAgent(v ?? '')
             clear('salesAgent')
@@ -561,8 +562,8 @@ export default function SalesForm({
           </SelectTrigger>
           <SelectContent>
             {salesAgents.map((a) => (
-              <SelectItem key={a} value={a}>
-                {a}
+              <SelectItem key={a.id} value={a.id}>
+                {a.fullName}
               </SelectItem>
             ))}
           </SelectContent>
@@ -571,6 +572,7 @@ export default function SalesForm({
       <QuestionCard label="Closing Agent" required error={!!e.closingAgent}>
         <Select
           value={closingAgent}
+          items={agentItems}
           onValueChange={(v) => {
             setClosingAgent(v ?? '')
             clear('closingAgent')
@@ -581,8 +583,8 @@ export default function SalesForm({
           </SelectTrigger>
           <SelectContent>
             {salesAgents.map((a) => (
-              <SelectItem key={a} value={a}>
-                {a}
+              <SelectItem key={a.id} value={a.id}>
+                {a.fullName}
               </SelectItem>
             ))}
           </SelectContent>

@@ -1,0 +1,3 @@
+# Migrations and seed are applied byte-for-byte; keep LF on every platform.
+supabase/**/*.sql text eol=lf
+packages/db-tools/scripts/**/*.sql text eol=lf

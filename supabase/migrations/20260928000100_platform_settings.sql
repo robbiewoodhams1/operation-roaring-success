@@ -1,7 +1,10 @@
--- Platform settings — dashboard-editable overrides for app.config.json.
+-- 0001 — Platform settings: dashboard-editable overrides for app.config.json.
 --
--- Run once in the Supabase SQL editor. Until it exists, getSettings() falls
--- back to the JSON defaults, so the app keeps working either way.
+-- Formerly packages/db/migrations/0001_platform_settings.sql, which was run by
+-- hand in the Supabase SQL editor (Staging on 2026-10-13; whether Production
+-- has it is unverified — check before recording it as applied there).
+-- Idempotent. Until it exists, getSettings() falls back to the JSON defaults,
+-- so the app keeps working either way.
 
 create table if not exists app.platform_settings (
   id         boolean primary key default true,

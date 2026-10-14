@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 export const env = createEnv(
   z.object({
+    CRM_ENV: z.enum(['local', 'staging', 'production']),
     NEXT_PUBLIC_SUPABASE_URL: z.url(),
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),

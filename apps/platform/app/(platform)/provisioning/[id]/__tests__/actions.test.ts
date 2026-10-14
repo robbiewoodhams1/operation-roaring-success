@@ -5,15 +5,16 @@ import {
   addProvisioningServiceAttempt,
 } from '../actions'
 
-const { chain, mockTx, mockDb, mockRequireUser, mockSetAuditUser, mockRevalidatePath } = vi.hoisted(
-  () => {
+const { chain, state, mockTx, mockDb, mockRequireUser, mockSetAuditUser, mockRevalidatePath } =
+  vi.hoisted(() => {
+    const state = { thenValue: [] as unknown }
     const chain: any = {}
-    for (const m of ['from', 'where', 'set', 'values', 'leftJoin', 'orderBy']) {
+    for (const m of ['from', 'where', 'set', 'values', 'leftJoin', 'innerJoin', 'orderBy']) {
       chain[m] = vi.fn().mockReturnValue(chain)
     }
     chain.limit = vi.fn().mockResolvedValue([])
     chain.returning = vi.fn().mockResolvedValue([])
-    chain.then = (r: any, j: any) => Promise.resolve(undefined).then(r, j)
+    chain.then = (r: any, j: any) => Promise.resolve(state.thenValue).then(r, j)
     chain.catch = (j: any) => Promise.resolve(undefined).catch(j)
     chain.finally = (f: any) => Promise.resolve(undefined).finally(f)
 
@@ -30,31 +31,46 @@ const { chain, mockTx, mockDb, mockRequireUser, mockSetAuditUser, mockRevalidate
     const mockSetAuditUser = vi.fn().mockResolvedValue(undefined)
     const mockRevalidatePath = vi.fn()
 
-    return { chain, mockTx, mockDb, mockRequireUser, mockSetAuditUser, mockRevalidatePath }
-  }
-)
+    return { chain, state, mockTx, mockDb, mockRequireUser, mockSetAuditUser, mockRevalidatePath }
+  })
 
 vi.mock('@roaring/db', () => ({
   db: mockDb,
   provisioning: {},
   provisioningServices: {},
+  users: {},
 }))
 vi.mock('@roaring/auth', () => ({ requireUser: mockRequireUser, setAuditUser: mockSetAuditUser }))
 vi.mock('next/cache', () => ({ revalidatePath: mockRevalidatePath, revalidateTag: vi.fn() }))
-vi.mock('drizzle-orm', () => ({ eq: vi.fn((...a: any[]) => ({ op: 'eq', a })) }))
+vi.mock('drizzle-orm', () => ({
+  eq: vi.fn((...a: any[]) => ({ op: 'eq', a })),
+  and: vi.fn((...a: any[]) => ({ op: 'and', a })),
+  inArray: vi.fn((...a: any[]) => ({ op: 'inArray', a })),
+}))
 
 function setupMocks() {
-  for (const m of ['from', 'where', 'set', 'values', 'leftJoin', 'orderBy'])
+  for (const m of ['from', 'where', 'set', 'values', 'leftJoin', 'innerJoin', 'orderBy'])
     chain[m].mockReturnValue(chain)
-  chain.limit.mockResolvedValue([])
+  // The record exists in the caller's tenant.
+  chain.limit.mockResolvedValue([
+    { id: 'prov-1', provisionerUserId: null, routerAssignedUserId: null },
+  ])
+  state.thenValue = [PROVISIONER]
   chain.returning.mockResolvedValue([])
   mockTx.update.mockReturnValue(chain)
   mockTx.insert.mockReturnValue(chain)
   mockTx.select.mockReturnValue(chain)
   mockDb.select.mockReturnValue(chain)
   mockDb.transaction.mockImplementation(async (cb: any) => cb(mockTx))
-  mockRequireUser.mockResolvedValue({ id: 'user-id' })
+  mockRequireUser.mockResolvedValue({ id: 'user-id', tenantId: 'tenant-1' })
   mockSetAuditUser.mockResolvedValue(undefined)
+}
+
+const PROVISIONER = {
+  id: 'prov-user',
+  fullName: 'Pat Provisioner',
+  isActive: true,
+  approvalStatus: 'approved',
 }
 
 const baseProvData = {
@@ -69,7 +85,8 @@ const baseProvData = {
   dateOrdered: null,
   orderFaultRef: null,
   orderComments: null,
-  provisioner: null,
+  provisionerUserId: null as string | null,
+  routerAssignedUserId: null as string | null,
   lastCheckedAt: null,
   lastCheckedBy: null,
   routerDispatched: 'no',
@@ -179,5 +196,58 @@ describe('addProvisioningServiceAttempt', () => {
     mockRequireUser.mockRejectedValue(new Error('Unauthorized'))
     await expect(addProvisioningServiceAttempt('prov-1', 'bb', 1)).rejects.toThrow('Unauthorized')
     expect(mockDb.transaction).not.toHaveBeenCalled()
+  })
+})
+
+describe('provisioning attribution and tenant checks', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+    setupMocks()
+  })
+
+  it('refuses a provisioning record from another tenant', async () => {
+    chain.limit.mockResolvedValue([])
+    await expect(updateProvisioning('prov-x', baseProvData)).rejects.toThrow('not found')
+    expect(mockDb.transaction).not.toHaveBeenCalled()
+  })
+
+  it('refuses a service from another tenant', async () => {
+    chain.limit.mockResolvedValue([])
+    await expect(updateProvisioningService('svc-x', baseServiceData)).rejects.toThrow('not found')
+    expect(mockDb.transaction).not.toHaveBeenCalled()
+  })
+
+  it('refuses a retry on another tenant’s record', async () => {
+    chain.limit.mockResolvedValue([])
+    await expect(addProvisioningServiceAttempt('prov-x', 'bb', 1)).rejects.toThrow('not found')
+    expect(mockDb.transaction).not.toHaveBeenCalled()
+  })
+
+  it('links the provisioner by id and snapshots the name for display', async () => {
+    await updateProvisioning('prov-1', { ...baseProvData, provisionerUserId: 'prov-user' })
+    expect(chain.set.mock.calls[0]?.[0]).toMatchObject({
+      provisionerUserId: 'prov-user',
+      provisioner: 'Pat Provisioner',
+    })
+  })
+
+  it('keeps a legacy free-text provisioner when nobody is linked', async () => {
+    await updateProvisioning('prov-1', baseProvData)
+    const set = chain.set.mock.calls[0]?.[0]
+    expect(set.provisionerUserId).toBeNull()
+    expect(set).not.toHaveProperty('provisioner')
+  })
+
+  it('refuses a provisioner who is not an active employee of this tenant', async () => {
+    state.thenValue = []
+    await expect(
+      updateProvisioning('prov-1', { ...baseProvData, provisionerUserId: 'stranger' })
+    ).rejects.toThrow('Choose an employee')
+    expect(mockDb.transaction).not.toHaveBeenCalled()
+  })
+
+  it('records the router assignee by id', async () => {
+    await updateProvisioning('prov-1', { ...baseProvData, routerAssignedUserId: 'prov-user' })
+    expect(chain.set.mock.calls[0]?.[0]).toMatchObject({ routerAssignedUserId: 'prov-user' })
   })
 })
