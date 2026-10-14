@@ -180,3 +180,20 @@ evidence and recommended fixes in `docs/AUDIT.md`.
 - For anything touching auth/authorization, re-grep every `'use server'` file for
   `requireUser`/`requireRole` after the change to confirm coverage didn't regress
   (this is exactly how the `search` action's missing check was found).
+
+## Project HQ (cross-project memory)
+
+This project is tracked in the owner's Project HQ Obsidian vault under `Projects/Roaring-Success-CRM/`.
+
+At the start of a substantial session:
+
+1. Locate Project HQ using the first method that works: (a) the `obsidian_project_hq` MCP tools (`mcp__obsidian_project_hq__*`); (b) the vault path in the user-level `~/.claude/CLAUDE.md`; (c) a read-only clone of the private `project-hq` repo, only with the owner's approval.
+2. Read `AGENTS.md` there, then `Projects/Roaring-Success-CRM/Overview.md`, `Progress.md` (Current state + latest entries) and `Backlog.md` (Now, Bugs, Blockers).
+3. Compare them with this repository (`git log`, branch, `docs/`) and report discrepancies. Commits after the notes' `source_commit` are progress the notes don't know about yet.
+4. Give the owner a short summary (status, recent progress, priorities, blockers, discrepancies) before starting work.
+
+At the end of significant work, update those notes as described in the vault's `AGENTS.md` §3. Never claim tests ran unless they ran in that session.
+
+If Project HQ can't be reached, say so in one line and work from this repository alone. Don't block on it.
+
+This repository (and `/docs`) remains the source of truth. Project HQ holds status, priorities and decisions only. **Never copy into the vault:** source code, secrets or connection strings, Supabase project refs, customer data, staff personal data, or Staging/Production database records. This is a company-owned project, so write summaries and link to `docs/` instead.
